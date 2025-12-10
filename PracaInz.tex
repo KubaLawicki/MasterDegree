@@ -1,0 +1,56 @@
+\documentclass{pginz}
+
+%%%%%%%%% Miejsce na dodatkowe pakiety %%%%%%%%%%%%%
+\usepackage{fontspec} % Pakiet do obsługi czcionek systemowych
+\setmainfont{Arial} % Ustawienie Arial jako głównej czcionki
+\usepackage{subcaption}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage[numbers]{natbib}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{float}
+\begin{document}
+
+\includepdf[]{StronaTytulowa.pdf}
+%\includepdf[page={1}]{Oswiadczenie.pdf}
+\setcounter{page}{2}
+
+\include{Abstrakt_pl}
+\include{Abstrakt_en}
+
+\tableofcontents
+\addcontentsline{toc}{chapter}{Spis treści}
+
+\include{Symbole}
+\include{Oznaczenia}
+
+\include{Rozdzial1}
+\include{Rozdzial2}
+\include{Rozdzial3}
+\include{Rozdzial4}
+\include{Rozdział5}
+\include{Rozdział6}
+% tu będą kolejne rozdziały
+
+\listoffigures
+\addcontentsline{toc}{chapter}{Spis rysunków}
+\listoftables
+\addcontentsline{toc}{chapter}{Spis tabel}
+
+\bibliographystyle{unsrt} % Wybór stylu bibliografii
+\bibliography{bibliografia}
+
+%*****************
+% wymagane dodatki:
+% Opis dyplomu
+% Zawartość płyty CD
+% Instrukcja dla projektanta
+% Instrukcja dla użytkownika
+\begin{appendices}
+\include{AppA}
+%\include{AppB}
+\end{appendices}
+%*****************
+
+\end{document}

@@ -1,0 +1,31 @@
+\chapter{Wstęp i cel pracy}
+Sztuczne sieci neuronowe są narzędziem niezwykle popularnym, wykorzystywanym do rozwiązywania różnorodnych problemów, zarówno w środowisku akademickim, jak i w przemyśle. Możliwości ich zastosowania są praktycznie nieograniczone i zależą przede wszystkim od wyobraźni projektanta oraz dostępnych zasobów obliczeniowych. 
+\\Jednym z podstawowych problemów, rozwiązywanych z pomocą  sztucznych sieci neuronowych, jest klasyfikacja danych wejściowych. Jest to zadanie praktyczne i powszechnie spotykane, polegające na przykład na  przypisywaniu danych liczbowych, takich jak wyniki badań medycznych czy sprawozdań finansowych do zdefiniowanych kategorii. Innym przykładem zastosowania jest klasyfikacja obrazów, spotykana często w diagnostyce medycznej lub w rozpoznawaniu obiektów w systemach wizyjnych w automatyce przemysłowej.
+
+Przy rozwiązywaniu zadania klasyfikacji danych użyteczne mogą okazać się samoorganizujące się sieci neuronowe, nazywane również sieciami Kohonena. Są one przykładem sieci uczonych bez nadzoru, co oznacza, że przetwarzają dane bez konieczności posiadania informacji o wartości oczekiwanej (tj. przynależności danych uczących do konkretnych klas). Pomimo tej istotnej zalety nie są one jednak tak popularne jak inne sieci neuronowe, ze względu na ich potencjalne ograniczenia przy rozwiązywaniu bardzo złożonych problemów. 
+W prezentowanej pracy zdecydowano się na sprawdzenie możliwości wykorzystania sieci SOM przy rozwiązywaniu problemu klasyfikacji. 
+\section{Cel pracy}
+Celem pracy jest zbadanie wpływu różnych funkcji sąsiedztwa (Gaussa, trójkątnej, progowej i eksponencjalnej) na  możliwości wykorzystania sieci SOM we wstępnym etapie procesu klasyfikacji danych, czyli klasteryzacji. Klasteryzację można przedstawić jako proces grupowania danych w zbiory, w których elementy są do siebie podobne względem obranego kryterium, a różnią się od elementów innych grup. W pracy zostanie zbadany dodatkowo wpływ wybranej topologii sieci.
+
+Jakość przypisania do klas oceniona będzie za pomocą dwóch powszechnie stosowanych miar w sieciach Kohonena: błędu kwantyzacji i błędu topograficznego. Dodatkowo wykorzystane zostaną mapy zwycięzców, do wizualnej weryfikacji jakości grupowania danych. Będą one jednak traktowane jako narzędzia pomocnicze.
+
+W celu realizacji postawionych założeń zostaną przeprowadzone badania implementujące sieci SOM w różnych kombinacjach funkcji sąsiedztwa, topologii sieci oraz sposobu określania wartości promienia sąsiedztwa. Sieci te zostaną poddane uczeniu na trzech zbiorach danych, różniących się między sobą wielkością, liczbą wymiarów oraz złożonością i strukturą klas.
+\section{Zawartość rozdziałów}
+Ogólną strukturę niniejszej pracy można przedstawić w następujący sposób:
+\begin{itemize}
+    
+    \item \textbf{Rozdział 2: Teoretyczny opis sztucznych sieci neuronowych.}  
+    \\Obejmuje podstawowe informacje na temat sztucznych sieci neuronowych, niezbędne do zrozumienia dalszej części pracy.
+    
+    \item \textbf{Rozdział 3: Opis samoorganizujących się sztucznych sieci neuronowych.}  
+    \\Omawia szczegółowo zasadę działania sieci samoorganizujących się, zawiera opis algorytmu uczenia WTM oraz niezbędne pojęcia takie jak funkcje sąsiedztwa oraz topologię sieci. Przedstawia zastosowania sieci Kohonena oraz inne algorytmy jej nauki.
+    
+    \item \textbf{Rozdział 4: Proponowana implementacja sieci SOM.}  
+    \\Opisuje zaimplementowaną sieć SOM wraz z wykorzystywanymi narzędziami programistycznymi. Ponadto, zawiera opis parametrów sieci SOM z zasadami doboru. 
+    
+    \item \textbf{Rozdział 5: Przeprowadzone badania.}  
+    \\Przybliża opis metodologii badawczej oraz wyniki przeprowadzonych badań. Każdy podrozdział zawiera szczegółowe omówienie wyników dla poszczególnych zbiorów danych oraz przedstawia wnioski.
+    
+    \item \textbf{Rozdział 6: Podsumowanie.}  
+    \\Zawiera wnioski z przeprowadzonych badań oraz propozycje potencjalnych kierunków dalszych badań w omawianej tematyce.
+\end{itemize}

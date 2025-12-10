@@ -1,0 +1,328 @@
+\chapter{Samoorganizujące się sztuczne sieci neuronowe}\label{Opis_sieci_kohonena}
+
+
+Samoorganizujące się sztuczne sieci neuronowe, znane również jako mapy SOM (ang. \textit{Self-Organizing Map}), sieci neuronowe Kohonena lub sieci SOFM (ang. \textit{Self-Organizing Feature Map}), stanowią przykład sieci neuronowych uczonych bez nauczyciela (ang. \textit{unsupervised learning)} \cite{Kolasa}. Zostały one zaprezentowane w 1988 roku przez fińskiego profesora Teuvo Kohonena \cite{Zurada, Kolasa, Kohonen}. W oryginalnej koncepcji zaproponowano dwie metody uczenia: algorytm „zwycięzca bierze wszystko” (ang. \textit{Winner Takes All}, skrót WTA) oraz algorytm „zwycięzca bierze większość” (ang. \textit{Winner Takes Most}, skrót WTM) \cite{Kohonen}.
+
+Sposób działania sieci neuronowych Kohonena opiera się na procesie samoorganizacji, występującym także w ludzkim mózgu. W systemie nerwowym człowieka różne narządy przekazują informacje do mózgu za pośrednictwem układu nerwowego, gdzie dochodzi do odwzorowywania i zestawiania informacji pochodzących ze zmysłów oraz porównywania ich z wcześniej nabytymi wzorcami zachowań. Reguły te można traktować jako źródło inspiracji do opracowania sieci SOM.
+
+Dzięki zastosowaniu techniki uczenia bez nadzoru, sieci SOM stają się wyjątkowo użyteczne w analizie i klasyfikacji dużych zbiorów danych, w których trudne jest przewidzenie struktury, rozumianej jako podział danych na grupy,ich liczność oraz powtarzalność. Zdolność sieci Kohonena do odwzorowywania wielowymiarowych przestrzeni danych na prostsze struktury znajduje zastosowanie w rozwiązywaniu złożonych problemów \cite{Ciechulski,Osowski,Zurada}.
+
+Mapy SOM mają na celu odwzorowanie wielowymiarowych danych wejściowych na przestrzenie o mniejszej liczbie wymiarów, zazwyczaj jedno- lub dwuwymiarowe. Zadanie to wymaga odpowiedniego sklasyfikowania wektorów wejściowych, według określonych kryteriów podobieństwa, przy jednoczesnym zachowaniu istotnych cech danych. W procesie uczenia, sieć SOFM grupuje wzorce uczące w klasy na podstawie podobieństwa sygnałów i przypisuje danej klasie neuron wyjściowy \cite{Kohonen, Kolasa}.
+%mozna dopisac ze jest to rozwiazanie niestandardowe
+
+Samoorganizujące się sieci neuronowe określa się jako sieci z uczeniem konkurencyjnym (ang. \textit{competitive learning}). Uczenie konkurencyjne polega na ocenie podobieństwa wektora wejściowego z wartościami wag neuronów. Konkurencyjność tego rozwiązania oznacza, że tylko neuron o najbardziej zbliżonych wagach (lub wąska grupa neuronów, jak w algorytmie WTM oraz w modelach z algorytmem gazu neuronowego ma prawo adaptacji swoich wag, tak aby lepiej reprezentować wzorzec wejściowy \cite{Zurada,Osowski}.
+
+Niniejsza praca poświęcona jest sieciom neuronowym Kohonena z algorytmem „zwycięzca bierze większość” (ang. \textit{Winner Takes Most}, WTM). W kolejnych częściach rozdziału omówione zostaną najpopularniejsze metody uczenia sieci SOM, ze szczególnym uwzględnieniem algorytmu WTM. Ponadto zaprezentowane zostaną również inne metody uczenia sieci SOM, takie jak algorytm WTA i gazu neuronowego. Następnie omówione zostaną miary jakości wytrenowania modelu oraz wybrane zastosowania sieci samoorganizujących się, ze szczególnym naciskiem na ich wykorzystanie w zadaniach klasyfikacji i klasteryzacji. 
+
+\newpage
+
+\section{Opis sieci samoorganizujących się}
+Samoorganizujące się sieci neuronowe to jednowarstwowe sieci, w których każdy \textit{n}-wymiarowy wektor wejściowy połączony jest z każdym neuronem. Sieć można przedstawić jako siatkę, bądź mapę, z liczbą "punktów" równą liczbie neuronów w sieci \cite{Kolasa}. %Dopisać dlaczego to jest rozwiązanie 
+Rysunek takiej siatki przedstawiono na rysunku \cref{fig:Rozkład sieci SOM}, dla wektora wejściowego o rozmiarze \textit{n} i sieci składającej się z 9 neuronów uporządkowanych w siatkę o topologii prostokątnej 3x3.
+
+Trening sieci samoorganizującej polega na wielokrotnym dostosowywaniu wag neuronów, aby odzwierciedlały one strukturę danych wejściowych. Sieć uczy się rozpoznawać podobieństwa między wzorcami, stopniowo organizując neurony w sposób, który odpowiada relacjom obecnym w zbiorze danych.
+
+
+W wyniku procesu treningu sieci, wagi neuronów zostają dostosowane w taki sposób, aby każdy neuron reprezentował jedną z klas ze zbioru wejściowego, odpowiadając najbardziej charakterystycznym wzorcom obecnym w danych. O jakości wytrenowania sieci świadczą wartości miar oceny efektywności sieci, opisane szerzej w sekcji \ref{sec:OcenaEfektywnosci}.
+
+
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\textwidth]{./img/Schemat_sieci.pdf}
+    \caption{Architektura sieci SOM}
+    \label{fig:Rozkład sieci SOM}
+\end{figure}
+
+\subsubsection{Algorytmy uczenia sieci SOM}
+Algorytm uczenia zastosowany w sieci samoorganizującej odgrywa kluczową rolę, ponieważ jego wybór wpływa na jakość końcowych rezultatów, czas potrzebny na trening oraz zużycie zasobów obliczeniowych. Różne algorytmy mogą znacząco różnić się efektywnością, zwłaszcza w odniesieniu do złożoności danych i precyzji odwzorowania. Odpowiednie dobranie metody uczenia jest zatem niezbędne do uzyskania optymalnych wyników przy jednoczesnej minimalizacji kosztów obliczeniowych, co pokazano w takich publikacjach jak \cite{Osowski,Ciechulski}. %SPRAWDZIC CZY MOZNA TAK DAWAC CYTATY
+
+W dalszej części pracy zaprezentowane zostaną następujące algorytmy uczenia stosowane w sieciach SOM:
+\begin{itemize}
+    \item algorytm \textbf{zwycięzca bierze wszystko, WTA} (ang. \textit{Winner Takes All}),
+    \item algorytm \textbf{zwycięzca bierze większość, WTM} (ang. \textit{Winner Takes Most}),
+    \item algorytm \textbf{gazu neuronowego, NG} (ang. \textit{Neural Gas}).
+\end{itemize} 
+
+Należy dodać, że algorytmów uczenia sieci samoorganizujących jest znaczenie więcej, jednak w ramach niniejszej pracy opisane zostaną tylko wyżej wymienione. Szerszy opis można znaleźć w pozycjach \cite{Osowski, Kolasa}.
+
+%OPIS WTM
+
+\section{Algorytm Zwycięzca bierze większość (WTM)}\label{Sekcja_o_WTM}
+Algorytm WTM jest, obok algorytmu WTA, jednym z najpowszechniej stosowanych algorytmów w uczeniu sieci SOM.
+
+
+Algorytm WTM  oparty jest na rywalizacji między neuronami. Po przekazaniu do sieci \textit{n}-wymiarowego wektora wejściowego \( X \) wybierany jest neuron o wagach najbardziej zbliżonych wartości \( X \), który następnie, wraz z wybranymi neuronami sąsiadującymi, aktualizuje swoje wagi, aby lepiej reprezentować dany wzorzec. \cite{Ciechulski,Kolasa,FazaKooperacyjna}
+
+Niekiedy w literaturze algorytm WTM dzieli się na fazę rywalizacyjną (ang. \textit{Competitive Phase}) oraz fazę kooperacyjną (ang. \textit{Cooperative Phase}) \cite{FazaKooperacyjna,VanHULle}, co pozwala podkreślić zarówno konkurencyjny charakter wyboru neuronu "zwycięzcy", jak i współpracę neuronów sąsiednich podczas aktualizacji wag.
+
+Niniejsza praca poświęcona jest wykorzystaniu algorytmu WTM oraz prezentacji procesu uczenia dla różnych przypadków budowy siatki, jak i definicji funkcji sąsiedztwa.
+
+\subsection{Opis algorytmu}
+W pierwszym kroku algorytmu przypisuje się losowe wartości wag dla każdego neuronu.
+Przy inicjalizacji istotną  kwestią jest możliwe równomierne rozłożenie neuronów, tak aby w początkowych etapach treningu neurony mogły reprezentować poprawnie dane wejściowe \cite{Zurada}.
+
+
+W kolejnym kroku działania sieci oblicza się odległość \ \( D(X, W_j) \) między wektorem wejściowym, a wektorem wag każdego neuronu w sieci neuronowej.
+Wybór metryki, w której mierzona jest odległość między wektorem wejściowym a wagami neuronów, ma wpływ na końcowy wynik (w tym efektywność) uczenia sieci.
+
+Najczęściej używane miary \cite{Osowski}:
+
+\begin{itemize}\label{Miary_odleglosci}
+    \item miara euklidesowa (według normy L2)
+    \begin{equation}\label{eq:euklidesowa}
+    D(X, W_j) = \sqrt{\sum_{c=1}^{n} (x_{c,c} - w_{j,c})^2}, 
+    \end{equation}
+    \item miara według normy L1 (tzw. miara Manhattan)
+    \begin{equation}\label{eq:manhattan}
+    D(X, W_j) = \sum_{c=1}^{n} |x_{c,c} - w_{j,c}|, 
+    \end{equation}
+    \item iloczyn skalarny (tzw. miarta kosinusowa)
+    \begin{equation}\label{eq:skalarny}
+    D(X, W_j) = X \cdot W_j = \|X\| \|W_j\| \cos(X, W_j), 
+    \end{equation}
+    \item miara według normy \( L_\infty \) 
+    \begin{equation}
+    D(X, W_j) = \max_{c} |x_{j} - w_{j}|,
+    \end{equation}
+\end{itemize}
+gdzie \( X \) to \textit{n}-wymiarowy wektor wejściowy, \( W_j \) – \textit{n}-wymiarowy wektor wag \( j \)-tego neuronu , \ \( D(X, W_j) \) – odległość pomiędzy wektorem wejściowym \( X \) a wektorem wag \( W_j \) \( j \)-tego neuronu.
+Spośród wyżej wymienionych miar podobieństwa najczęściej używana jest miara Euklidesa, chociaż patrząc z punktu widzenia szybkości działania lepsza wydaje się i jest miara według normy L1.
+
+Po procesie wyznaczania odległości \( D(X, W_j) \) zostaje wybrany neuron najbardziej podobny do wzorca wejściowego – tak zwany "zwycięzca" (ang. \textit{"winner"}). W momencie wyznaczenia neuronu zwycięzcy kończy się faza rywalizacji (rozumiana jako wybór neuronu zwycięzcy na podstawie zadanej miary podobieństwa), a rozpoczyna faza kooperacji, podczas której neuron zwycięzca oraz neurony należące do jego sąsiedztwa (ang. \textit{"neighbors"}) aktualizują swoje wagi \cite{VanHULle,FazaKooperacyjna}. 
+Dostosowywanie wag przebiega zgodnie z zależnością \cite{Tadeusiewicz}:
+\begin{equation}\label{WzorModyfikacjiWag}
+W_j(l+1) = W_j(l) + \eta(k) \cdot G(R, d(i, j)) \cdot \left[ X(l) - W_j(l) \right],
+\end{equation}
+gdzie \( W_j(l) \) to wektor wag neuronu w iteracji \( l \), \( \eta(k) \) oznacza współczynnik uczenia w epoce \( k \), \( G(R, d(i, j)) \) to funkcja sąsiedztwa, zależna od promienia \( R \) oraz odległości topologicznej \( d(i, j) \) pomiędzy neuronami \( i \) i \( j \), \( X(l) \) to wektor wejściowy w iteracji \( l \).
+
+W zależności \eqref{WzorModyfikacjiWag} pojawiają się niespotykane dotąd pojęcia takie jak funkcja sąsiedztwa \( G(R, d(i, j)) \), promień sąsiedztwa \( R \) oraz odległość topologiczna  między neuronami \( d(i, j) \). Ostatnie dwa z tych pojęć związane są z pojęciem topologii sieci. Terminy te zostaną wyjaśnione w kolejnych sekcjach tego rozdziału.
+\subsection{Topologia samoorganizującej się sieci neuronowej}\label{OpisTopologiSieci}
+Pojęcie topologii sąsiedztwa w sieciach SOM odnosi się do przestrzennej organizacji neuronów. Neurony są zorganizowane w regularną siatkę, zwykle jedno- lub dwuwymiarową, gdzie każdy neuron ma określony zestaw sąsiadów, zależny od promienia sąsiedztwa w danej iteracji. Wyjątkiem tu mogą być neurony leżące na krawędziach siatki, które siłą rzeczy będą posiadały mniejszą liczbę sąsiadów \cite{Kolasa}.
+
+Topologia sąsiedztwa definiuje, które neurony są traktowane jako bliskie sobie w sensie odległości topologicznej, a to bezpośrednio wpływa na proces uczenia. W miarę postępu procesu uczenia sieci, neurony znajdujące się bliżej siebie, w zadanej topologii, będą bardziej skłonne do aktualizowania swoich wag w podobny sposób, co pozwali na zachowanie relacji przestrzennych pomiędzy wzorcami danych. W typowych przypadkach stosuje się topologię prostokątną lub heksagonalną \cite{Kohonen}, których obraz przedstawiono na rysunku \eqref{fig:Topologie}.
+
+Wartość promienia sąsiedztwa w sieci SOM maleje stopniowo w trakcie procesu uczenia, przechodząc od wartości maksymalnej na początku treningu, do zera pod koniec. \cite{Kohonen} Na początku, gdy promień sąsiedztwa jest duży, dostosowywanie wag obejmuje większą liczbę neuronów wokół neuronu „zwycięskiego”, co umożliwia sieci szerokie uogólnienie i uchwycenie globalnych wzorców danych w pierwszych epokach treningu \cite{Kolasa}.
+
+W miarę, jak wartość promienia maleje z każdą iteracją, obszar sąsiedztwa skupia się coraz bardziej wokół neuronu zwycięskiego, redukując liczbę neuronów, które dostosowują swoje wagi. Ostatecznie, gdy promień sąsiedztwa osiągnie zero, dostosowywany jest jedynie neuron „zwycięzca”, co sprawia, że sieć działa podobnie do algorytmu „zwycięzca bierze wszystko” (ang. \textit{Winner Takes All}, WTA), \cite{Kolasa} opisanego dalej w pracy w podrozdziale  \eqref{sec:WTA}. W takim przypadku zmiany są bardziej lokalne i precyzyjne, co umożliwia sieci WTM dostrajanie swoich wag w końcowym etapie treningu \cite{Kohonen}.
+
+
+\begin{figure}[h!]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}  % Zmniejszona szerokość obrazków
+        \includegraphics[width=\textwidth]{img/Rect4.pdf}
+        \caption{topologia Rect4}
+        \label{fig:refpresdw}
+    \end{subfigure}
+    % \hspace{0.05\textwidth}  % Zwiększony odstęp poziomy
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{img/Rect8.pdf}
+        \caption{topologia Rect8}
+        \label{fig:refprespm}
+    \end{subfigure}
+    
+    \vspace{0.3cm}  % Zwiększony odstęp pionowy
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{img/Hex.pdf}
+        \caption{topologia hexagonalna}
+        \label{fig:refpresother}
+    \end{subfigure}
+    
+    \caption{Przykłady topologi sieci SOM: a) topologia prostokątna z czterema sąsiadami (Rect4), b) topologia prostokątna z ośmioma sąsiadami (Rect8), c) topologia hexagonalna.}
+    \label{fig:Topologie}
+\end{figure}
+
+\subsection{Funkcje sąsiedztwa}
+Funkcja sąsiedztwa w algorytmie WTM jest elementem wyróżniającym ten algorytm spośród innych, odgrywając kluczową rolę w procesie uczenia sieci. Funkcja ta decyduje o tym, które neurony będą poddane aktualizacji wag w odpowiedzi na wzorzec wejściowy oraz w jakim stopniu wagi te zostaną zmienione w zależności od odległości od neuronu zwycięskiego \cite{Kolasa,VanHULle}.
+
+Dobór odpowiedniej funkcji sąsiedztwa ma kluczowe znaczenie, ponieważ wpływa nie tylko na jakość wytrenowania sieci, ale także na koszty związane z treningiem modelu, takie jak zużycie mocy obliczeniowej. W niniejszej pracy sieci SOM implementowane są programowo, co umożliwia elastyczne testowanie różnych funkcji sąsiedztwa i ocenę ich efektów. W przypadku implementacji sprzętowych, gdzie zasoby obliczeniowe są ograniczone, wybór funkcji sąsiedztwa staje się jednak szczególnie istotny, ponieważ wymaga kompromisu między jakością modelu a kosztami mocy obliczeniowej i czasem treningu \cite{Kolasa,Kolasa_artykul}.
+
+Najprostszą stosowaną funkcją sąsiedztwa jest prostokątna funkcja sąsiedztwa (ang. \textit{Rectangular Neighborhood Function}), znana również jako funkcja \textit{bubble}. Definiowana jest wzorem \eqref{buuble} \cite{Osowski} :
+\begin{equation}\label{buuble}
+G(R, d(i, j)) = 
+\begin{cases} 
+      1 & \text{dla } d(i, j) \leq R, \\
+      0 & \text{dla } d(i, j) > R,
+\end{cases}
+\end{equation}
+gdzie \( G(R, d(i, j)) \) oznacza wartość funkcji sąsiedztwa, \( R \) jest promieniem sąsiedztwa, a \( d(i, j) \) to odległość topologiczna między neuronem \( i \) a neuronem \( j \).  
+Prostokątną funkcję sąsiedztwa stosuje się ze względu na prostotę jej implementacji oraz niski koszt obliczeniowy. Funkcja przyjmuje wartość 1 dla neuronów znajdujących się w promieniu \( R \) wokół neuronu zwycięskiego oraz 0 dla neuronów poza tym zakresem. Takie uproszczenie umożliwia bezpośrednie określenie sąsiedztwa, bez konieczności stosowania złożonych operacji matematycznych, co znacznie usprawnia proces uczenia.
+
+
+Ze względu na ograniczoną precyzję funkcji \textit{bubble}, częściej stosowanym rozwiązaniem jest funkcja sąsiedztwa Gaussa (ang. \textit{Gaussian Neighborhood Function}), która zapewnia bardziej "płynny spadek"\ wartości sąsiedztwa w zależności od odległości. Jest ona definiowana wzorem \eqref{sasiedztwo_gaussa} \cite{Osowski}
+
+
+\begin{equation}\label{sasiedztwo_gaussa}
+G(R, d(i, j)) = \exp\left(-\frac{d(i, j)^2}{2R^2}\right),
+\end{equation}
+
+Funkcja Gaussa umożliwia bardziej płynne (stopnieowe) zmniejszanie wartości funkcji sąsiedztwa wraz ze wzrostem odległości od neuronu zwycięskiego. Zapewnia to bardziej stabilne niż poprzednio dopasowanie wag sąsiednich neuronów. Dzięki temu możemy także lepiej odwzorować zależności między wzorcami, co sprzyja naturalnemu kształtowaniu struktury mapy SOM.
+
+Innymi często spotykanymi funkcjami są  funkcja eksponencjalna \cite{Funkcja_eksponencjalna}, opisana zależnością \eqref{sasiedztwo_exponeciajlne} i funkcja trójkątna \cite{Marine_Traffic}  opisana zależnością \eqref{sasiedztwo_trojkatne}. 
+
+\begin{equation}\label{sasiedztwo_exponeciajlne}
+G(R, d(i, j)) = 
+\begin{cases} 
+      0.5^{d(i, j)} & \text{dla } d(i, j) \leq R, \\
+      0 & \text{dla } d(i, j) > R
+\end{cases}
+\end{equation}
+
+Funkcja eksponencjalna, podobnie jak gaussa, zapewnia stopniowe zmniejszanie wartości funkcji sąsiedztwa wraz ze wzrostem odległości \( d_{ij} \) między neuronami \( i \) i \( j \). 
+
+\begin{equation}\label{sasiedztwo_trojkatne}
+G(R, d(i, j)) = 
+\begin{cases} 
+      1 - \frac{d(i, j)}{R} & \text{dla } d(i, j) \leq R, \\
+      0 & \text{dla } d(i, j) > R
+\end{cases}
+\end{equation}
+
+Funkcja trójkątna pozwala na liniowy spadek wartości sąsiedztwa w miarę zwiększania się odległości od neuronu zwycięskiego aż do zera poza zakresem promienia \( R(t) \). Funkcja ta jest znacznym uproszczeniem funkcji Gaussa, z uwagi na brak konieczności stosowania skomplikowanych operacji arytmetycznych, dlatego często jest używana w implementacjach sprzętowych sieci SOM uczonych metodą WTM \cite{Kolasa,Kolasa_artykul}.
+
+W literaturze można spotkać także inne funkcje sąsiedztwa, które różnią się charakterystyką wpływu na sąsiednie neurony. Przykładem są funkcje sąsiedztwa typu \textit{Cut Gaussian} oraz \textit{Mexican-hat}, które wprowadzają różne modyfikacje do klasycznej funkcji Gaussa, wpływając na sposób, w jaki wartości sąsiedztwa maleją wraz z odległością od neuronu zwycięskiego. Te funkcje nie będą jednak przedmiotem niniejszej pracy \cite{Kohonen,Marine_Traffic}.
+
+\subsection{Adaptacja parametrów w czasie}
+
+W przedstawionym procesie uczenia algorytmu WTM istotne jest stopniowe zmniejszanie współczynnika szybkości uczenia $\eta$ (ang. \textit{learning rate}) oraz promienia sąsiedztwa $R$. Początkowo wysoka wartość $\eta$ pozwala pojedynczemu neuronowi szybko dostosować się do głównych wzorców w danych, a jego stopniowe zmniejszanie umożliwia bardziej precyzyjne dopasowanie wag na dalszych etapach treningu \cite{Osowski}. 
+Analogicznie, duża wartość promienia sąsiedztwa, na początku procesu uczenia pozwala na globalne uogólnienie danych poprzez aktualizacje wag wielu neuronów w sieci. W miarę postępu treningu promień maleje, zawężając obszar dostosowania do neuronów najbliższych neuronowi zwycięskiemu, co umożliwia dokładniejsze dostrajanie wag sieci \cite{Kolasa}.
+
+Powyżej przedstawiony proces uczenia sieci metodą WTM został  przedstawiony na schemacie blokowym, widocznym na rysunku \eqref{fig:SchematWTM}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[height=0.5\textheight]{./img/AlgorytmWTM.pdf}
+    \caption{Schemat blokowy algorytmu WTM}
+    \label{fig:SchematWTM}
+\end{figure}
+
+%OPIS ALGORYTMY WTA
+
+\section{Algorytm WTA}\label{sec:WTA}
+Kolejną, po WTM, najczęściej stosowaną metodą uczenia sieci SOM jest algorytm „Zwycięzca bierze wszystko” (ang. \textit{Winner Takes All}, skrót WTA). Został on zaproponowany przez Teuvo Kohonena w \cite{Kohonen}.
+
+Ogólna struktura algorytmu WTA jest zbliżona do schematu przedstawionego wcześniej w algorytmie WTM, przedstawionego w sekcji \eqref{Sekcja_o_WTM}). Schemat działania WTA można przedstawić w kilku krokach:
+
+\begin{enumerate}
+    \item losowa inicjalizacja wag neuronów,
+    \item obliczenie odległości pomiędzy wektorem wejściowym (uczącym) a wektorami wag wszystkich neuronów,
+    \item wybór neuronu zwycięskiego,
+    \item aktualizacja wag TYLKO dla neuronu zwycięskiego, zgodnie z ustalonym współczynnikiem szybkości uczenia, $\eta$.
+\end{enumerate}
+
+Podstawową różnicą między algorytmem WTA i WTM jest brak fazy kooperacji. W algorytmie WTA tylko jeden neuron - zwycięski - dostosowuje swoje wagi do wektora uczącego, natomiast pozostałe neurony nie podlegają aktualizacji \cite{VanHULle}. Pozostałe elementy procesu uczenia pozostają takie same, jak w algorytmie WTM – współczynnik uczenia stopniowo maleje w trakcie treningu, a odległość między wektorem wejściowym a wagami neuronów jest mierzona według jednej z wybranych metryk, opisanych w \eqref{Miary_odleglosci}.
+
+Brak funkcji sąsiedztwa w algorytmie WTA sprawia, że proces uczenia skupia się wyłącznie na dostosowaniu wag wybranego (zwycięskiego) neuronu, bez konieczności uwzględniania pozostałych (sąsiadujących). Takie uproszczenie eliminuje konieczność brania pod uwagę topologii sieci, ponieważ nie ma potrzeby wyznaczania wartości funkcji sąsiedztwa dla każdego neuronu w każdej iteracji. Dzięki temu algorytm WTA jest istotnie efektywniejszy obliczeniowo i mniej złożony w stosunku do WTM \cite{Zurada}.
+
+Uproszczenie to niesie ze sobą także pewne problemy. Jednym z nich jest zjawisko tzw. martwych neuronów, czyli neuronów, które nigdy nie wygrywają rywalizacji z innymi i pozostają nieaktywne w procesie uczenia. W literaturze spotyka się różne metody radzenia sobie z tym problemem, w tym zastosowanie mechanizmu „sumienia” \textit{(ang. conscience mechanism}), który ma na celu eliminacje tego problemu \cite{Osowski,Talaska}.
+
+\subsection{Mechanizm Sumienia}
+Mechanizm "sumienia", zwany również mechanizmem zmęczenia neuronów, polega na wprowadzeniu konieczności zapisu wyników rywalizacji, czyli zwycięskiego neuronu. Każdemu neuronowi przypisuje się dodatkowy parametr „potencjał”, która wzrasta, przy zwycięstwie neuronu i maleje w przeciwnym wypadku. W literaturze zaproponowano między innymi takie rozwiązanie mechanizmu sumienia \cite{Osowski}:
+\begin{equation}\label{Mechanizm_Sumienia}
+p_i(l+1) = 
+\begin{cases} 
+      p_i(l) + \frac{1}{n} & \text{jeśli neuron } i \text{ jest zwycięski}, \\
+      p_i(l) - p_{\text{min}} & \text{jeśli neuron } i \text{ nie jest zwycięski}
+\end{cases}
+\end{equation}
+gdzie \( p_i(l) \) oznacza potencjał neuronu \( i \) w iteracji \( l \), \( n \) reprezentuje całkowitą liczbę neuronów, \( p_{\text{min}} \) to minimalna potencjał uprawniający do wzięcia udziału w rywalizacji. Po wyznaczeniu wartości potencjału zwycięzcę wybiera się korzystając z zależności \cite{Osowski}:
+\begin{equation}
+d(x, W_w) = \min \{ d(x, W_i) \}, \quad 1 \leq i \leq n \quad \text{oraz} \quad p_i \geq p_{\text{min}}
+\end{equation}
+
+Mechanizm ten pozwala ograniczyć liczbę martwych neuronów. Inne rozwiązania mechanizmu "sumienia" zostały zaprezentowane również w \cite{Talaska}
+
+\section{Algorytm gazu Neuronowego}
+Ostatnim Algorytmem zaprezentowanym w pracy będzie algorytm gazu neuronowego (\textit{ang. Neural Gas}).
+Rozwiązanie te zostało zaprezentowane w 1993 roku w pracy \cite{Neural_Gas}. Jakkolwiek można się dopatrywać pewnych podobieństw względem metod WTM i WTA, w metodzie tej zastosowano pewne rozwiązania, które znacząco zmieniają proces uczenia sieci.
+
+Uproszczony schemat algorytmu gazu neuronowego prezentuje się następująco:
+\begin{enumerate}
+    \item Losowa inicjalizacja wag neuronów. 
+    \item Obliczenie odległości pomiędzy wektorem wejściowym \( X \) a wektorami wag każdego z neuronów.
+    \item Sortowanie neuronów według rosnącej odległości od wzorca \( X \).
+    \item Przypisanie indeksu \( h \) na podstawie jego pozycji w posortowanym zbiorze.
+    \item Aktualizacja wag neuronów.
+\end{enumerate}
+
+Jak widać, pierwsze 2 kroki są takie same jak w algorytmach WTA i WTM. Po przedstawieniu wzorca uczącego \( X \) obliczana jest odległość między wektorem wag \( W \) a wektorem wejściowym \( X \). Następnie wybierany jest neuron zwycięski, którego wagi są najbliższe, według wybranej miary podobieństwa \cref{Miary_odleglosci}, wektorowi wejściowemu \cite{Neural_Gas}. W przeciwieństwie do WTM i WTA, w algorytmie gazu neuronowego neurony są następnie sortowane według ich odległości od wzorca uczącego, a każdemu neuronowi przypisywany jest indeks \( h \), określający jego miejsce w posortowanej kolejności \cite{Osowski}:
+
+\begin{equation}
+D(X, W_j)_0 < D(X, W_j)_1 < \cdots <D(X, W_j)_{n-1}
+\end{equation}
+
+Po procesie sortowania neuronów, zwycięski neuron przyjmuje indeks \( h = 0 \), a kolejne neurony odpowiednio kolejne liczby całkowite (\( h = 1, 2, \dots \)).
+
+
+Modyfikacja wag w algorytmie \textit{Neural Gas} odbywa się zgodnie z poniższą zależnością \cite{Neural_Gas,Osowski}:
+
+\begin{equation}
+W_j (l + 1) = W_j (l) + \eta(k) \cdot G(f) \cdot \left[ X(l) - W_j (l) \right]
+\end{equation}
+
+W algorytmie NG stosuje się funkcję sąsiedztwa \( G(f) \), która obejmuje wszystkie neurony w sieci i maleje wraz ze wzrostem odległości wag neuronu od wzorca uczącego \cite{Neural_Gas}. Funkcja ta jest opisana wzorem:
+
+\begin{equation}
+G(f) = \exp\left(-\frac{h(j)}{\lambda}\right)
+\end{equation}
+
+gdzie \( h(j) \) określa pozycję j-tego neuronu w uszeregowanej liście neuronów, a \( \lambda \) jest parametrem odpowiadającym promieniowi sąsiedztwa \( R \) w WTM. Im mniejsza odległość między wektorem wejściowym, a wagami neuronu, tym silniejsza modyfikacja jego wag. Przy \( \lambda = 1 \) tylko zwycięski neuron dokonuje aktualizacji wag, co upodabnia algorytm NG do WTA \cite{Kolasa}.
+
+Algorytm gazu neuronowego, według niektórych prac naukowych \cite{Neural_Gas} jest skuteczniejszy niż algorytmy WTM i WTA, zwłaszcza w przypadku nierównomiernie rozmieszczonych wektorów wejściowych. Implementacja metody może jednak wiązać się z większymi kosztami i wymagać wyższej mocy obliczeniowej, między innymi ze względu na konieczność sortowania neuronów
+
+
+\section{Miary organizacji sieci}\label{sec:OcenaEfektywnosci}
+W ocenie jakości organizacji sieci samoorganizujących się stosuje się różne miary, opisane szczegółowo w literaturze \cite{Kolasa,Kohonen}. Na potrzeby tej pracy zostaną użyte dwie podstawowe miary: błąd kwantyzacji (ang. \textit{quantization error}) oraz błąd topograficzny (ang. \textit{topographic error}).
+
+\subsubsection{Błąd kwantyzacji}
+Błąd kwantyzacji służy do określania jakości odwzorowania danego wzorca wejściowego przez wagi neuronu uporządkowane w sieci. W procesie uczenia sieci dąży się do zmniejszania wartości błędu kwantyzacji.
+
+Błąd kwantyzacji dla pojedynczego wektora wejściowego \( X_i \) mierzy odległość euklidesową pomiędzy \( X_i \) a najbliższym wektorem wag \( W_b \) neuronu zwycięskiego, według zadanej formuły \cite{OpisUni}:
+
+\begin{equation}
+Q(X_i) = \| X_i - W_{b}(X_i) \|
+\end{equation}
+
+Im mniejsza wartość \( Q(X_i) \), tym lepiej neuron zwycięski dopasowuje się do danego wektora wejściowego.
+Błąd kwantyzacji ilustruje dopasowanie sieci neuronowej do konkretnego wzorca wejściowego. Patrząc na wartość pojedynczego błędu kwantyzacji nie można wyciągnąć wniosków na temat jakości wytrenowania całej sieci. Bardziej efektywną metodą oceny procesu wytrenowania jest średni błąd kwantyzacji, który mówi o tym jak dobrze sieć reprezentuje cały zbiór danych wejściowy.
+ 
+Średni błąd kwantyzacji można opisać zależnością \cite{Kolasa}:
+\begin{equation}
+\mathrm{Q\_error} = \frac{1}{N} \sum_{i=1}^{N} Q(X_i) = \frac{1}{N} \sum_{i=1}^{N} \| X_i - W_{b}(X_i) \|,
+\end{equation}
+
+gdzie \( N \) jest liczbą wektorów wejściowych. Niska wartość średniego błędu kwantyzacji świadczy o dobrej jakości dopasowania neuronów sieci do rozkładu danych wejściowych.
+
+Można również wyznaczyć maksymalny błąd kwantyzacji dla danego zbioru danych, opisany równaniem \ref{maksymalny_blad_kwantyzacji}. Można go traktować jako wartość referencyjną, z która można porównywać otrzymane wyniki. W wyrażeniu tym n oznacza liczbę danych w zbiorze.
+\begin{equation}
+Q_{\text{max}} = \sqrt{n}.
+\label{maksymalny_blad_kwantyzacji}
+\end{equation}
+\subsubsection{Błąd topograficzny}
+Błąd topograficzny mierzy stopień naruszenia spójności topologicznej w mapie WTM, czyli to, czy neurony najbliższe danemu wektorowi wejściowemu \( X \) również są jego sąsiadami na mapie. Jest on definiowany jako odsetek wektorów wejściowych, dla których drugi najbliższy neuron nie jest sąsiadem neuronu zwycięskiego:
+
+\begin{equation}
+\mathrm{T_{\text{error}}} = \frac{1}{N} \sum_{i=1}^{N} T(X_i),
+\end{equation}
+
+gdzie \( T(X_i) = 1 \) jeśli drugi najbliższy neuron dla \( X_i \) nie jest sąsiadem neuronu zwycięskiego, a \( T(X_i) = 0 \) w przeciwnym razie. 
+
+Wysoki błąd topograficzny wskazuje na naruszenie topologii sieci, co oznacza słabe odwzorowanie relacji sąsiedztwa między danymi.
+\newpage
+\section{Przykłady możliwości zastosowania sieci SOM }\label{ZastosowaniaSieci}
+Samoorganizujące się sztuczne sieci neuronowe są uniwersalnym narzędziem, znajdującym zastosowanie w wielu dziedzinach nauki i przemysłu. Skala ich zastosowań w znacznej mierze zależy od kreatywności oraz wyobraźni projektanta. W pracy \cite{VanHULle} wymieniono kilka podstawowych zastosowania sieci SOM, w tym klasteryzację (ang. \textit{clustering}) i kwantowanie wektorowe (ang. \textit{vector quantization}). 
+
+Jednym z najczęstszych zastosowań sieci samoorganizujących się jest rozwiązywanie problemu klasteryzacji danych. Proces ten polega na grupowaniu danych wejściowych w klasy, ze względu na ich wzajemne podobieństwo, bez wcześniejszej informacji o ich istnieniu lub liczbie \cite{VanHULle}. Można to rozumieć jako ekstrakcje kluczowych cech z wielowymiarowych danych i odnajdywanie elementów podobnych w zbiorze danych. W przypadku sieci sieci SOM, po wykonaniu treningu, neurony dopasowane są do danych uczących w taki sposób, że wagi pojedynczego elementu sieci można traktować jako reprezentantów różnych klas. Faza właściwej pracy sieci polega na odnajdywaniu najlepiej dopasowanego neuronu (ang. \textit{Best Matching Unit}, skrót BMU) \cite{Kohonen}. Znalezienie go polega na wyborze takiego neuronu, który jest najbardziej podobny do wzorca wejściowego, z użyciem wybranej miary podobieństwa. Po znalezieniu można założyć, że dana wejściowa należy do klasy reprezentowanej przez ten neuron. 
+\\Jedną z istotnych zalet stosowania sieci SOM w zadaniach klasteryzacji jest ich zdolność do zachowania topologii danych wejściowych \cite{Haykin}. Jest to kluczowa cecha, ponieważ można za jej pomocą ocenić stopień podobieństwa danych klas między sobą, tylko za pomocą analizy położeń BMU reprezentujących konkretne klasy. Ta właściwość jest szczególnie użyteczna z uwagi na prostotę i intuicyjność interpretacji zależności między klasami, nawet dla użytkownika nierozumiejącego zasad działania algorytmu \cite{Ciechulski}.
+\\Za pomocą klasteryzacji danych można również pośrednio rozwiązać inny problem - identyfikacje wartości odstających od klas, czyli tak zwanych outlierów. Można nazwać to również detekcją anomalii \cite{Osowski}. Realizować to można poprzez analizę podobieństwa między wektorem danych, a jego BMU. W przypadku stwierdzenia, że odległość jest za duża, czy to poprzez średnią odległość innych danych z tym samym BMU, czy to poprzez zastosowania odległości progowej, można stwierdzić, że dana nie reprezentuje żadnej z klas. To zastosowanie bywa niezwykle istotne, gdyż pozwala na wykrywanie nietypowych danych. Ma to kluczowe znaczenie między innymi w takich dziedzinach jak finanse, medycyna czy bezpieczeństwo systemów \cite{Kohonen}.
+\\Niniejsza praca opiera się na zastosowaniu sieci SOM w zadaniach klasyfikacji danych. Klasyfikacje można rozumieć jako rozszerzenie zadania klasteryzacji, ponieważ klasyfikacja polega na dopasowaniu wzorca wejściowego do jednej z wcześniej zdefiniowanych klas.
+\\W literaturze opisano wiele implementacji sieci Kohonena w zadaniach klasteryzacji, wykorzystywanych w przeróżnych i niezwiązanych wzajemnie dyscyplinach, takich jak finanse, biologia, przetwarzanie obrazów, czy analiza obciążeń sieci energetycznych. Zastosowanie te zostały opisane między innymi w pozycjach \cite{Ciechulski,VanHULle,Haykin}.
+
+Kwantowanie wektorowe polega na aproksymacji pewnego zbioru danych za pomocą dużo mniejszej liczby reprezentantów, stanowiących uogólnienie grup występujących w danych. W przypadku użycia sieci SOM zamiast terminu kwantyzacji wektorowej używa się czasem sformułowania angielskiego \textit{Learning Vector Quantization}, skrót LVQ \cite{Kohonen}, w celu podkreślenia obecności fazy uczenia w tym procesie. Po zakończeniu treningu neurony stają się ogólnymi reprezentantami poszczególnych klas danych. Wagi neuronów pełnią rolę wartości reprezentatywnych, opisujące szersze grupy wektorów wejściowych, dla których konkretny neuron stanowi najlepsze dopasowanie (czyli BMU). \cite{Zurada}
+Kwantowanie wektorowe użyteczne jest zwłaszcza w zadaniach redukcji wymiarowości danych, przykładowo w zadaniach kompresji sygnałów i obrazów. Zastosowanie to zaprezentowano między innymi w \cite{Osowski}.
+
+
+Należy dodatkowo nadmienić, że sieci SOM mogą znaleźć zastosowanie jako narzędzia przy konstrukcji bardziej zaawansowanych modeli uczenia maszynowego \cite{Osowski}. Istnieje możliwość ich wykorzystania jako narzędzie do analizy danych, gdzie dokonują redukcji wymiarowości lub wstępnej segmentacji, co upraszcza późniejsze przetwarzanie inną techniką. 
+\\W literaturze można znaleźć wiele takich przykładów, między innymi w wykorzystaniu jako narzędzie wspierające diagnostykę medyczną. Przykładów w tej dziedzinie można znaleźć wiele, w tym takie, które łączą sieci SOM z algorytmem Fuzzy K-Mean, zaproponowano w pracy \cite{breast}.
+\\Koncepcja sieci samoorganizujących się jest wciąż rozwijana, co prowadzi do jej zastosowania w bardziej złożonych modelach. Przykładem są sieci Deep SOM (skrót DSOM), czyli modele stanowiące połączenie sieci SOM z innymi warstwami sieci neuronowych, takimi jak między innymi sieci splotowe (konwolucyjne). Rozwiązanie zawierające rozszerzenie tego konceptu, o algorytm nazwany przez autorów E-DSOM (ang. \textit{Extended Deep SOM}, rozszerzony deep som), zaprezentowano w pracy \cite{DeepSOM}.
+\section{Podsumowanie rozdziału}
+Prezentowany rozdział, wraz z rozdziałem \ref{teoria_ogolnych_sieci}, stanowi niezbędne przygotowanie teoretyczne do pełnego zrozumienia niniejszej pracy. Opisane zostały takie zagadnienia, jak różne topologie sieci, funkcje sąsiedztwa czy różne miary podobieństwa wektorów danych wejściowych. Zagadnienia te stanowią fundament teoretyczny implementacji programowej, opisanej w kolejnym, tj. \ref{Opis_rozwiazania} rozdziale niniejszej pracy.

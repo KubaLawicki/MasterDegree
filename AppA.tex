@@ -1,0 +1,25 @@
+\chapter[Instrukcja dla użytkownika]{Instrukcja dla u\.Zytkownika}
+
+Programy w języku Python, zawierające implementację klas do obsługi logiki oraz wizualizacji wyników znajdują się w archiwum ZIP, dołączonym do niniejszej pracy.
+W celu poprawnego działania należy pobrać ten folder i go rozpakować. Aby powtórzyć badania opisane w pracy należy następnie podjąć następujące kroki:
+\begin{enumerate}
+    \item Pobrać wybrany zbiór uczący
+    \item Znormalizować dane ze zbioru
+    \item Podzielić zbiór na dane uczące i testowe
+    \item Stworzyć obiekt klasy SelfOrganizingMap z poprawnym doborem parametrów 
+    \item Przeprowadzić trening, wykorzystując metodę train
+    \item Przeprowadzić ewaluacje modelu 
+\end{enumerate}
+Do pobrania zbiorów uczących można użyć pomocniczych pakietów, takich jak \texttt{scipy}, choć nie jest to konieczne. Można też skorzystać z źródeł internetowych, z których można bezpośrednio pobrać pliki z danymi. W badaniach normalizację przeprowadzono za pomocą zależności podanej w rozdziale \ref{WykonaneBadania}, jednak można również skorzystać metody MinMaxScaller z \texttt{scipy}. Przykładowe tworzenie obiektu klasy przedstawiono na \ref{lst:som_initialization}. Pod zmienne należy podstawić wybrane parametry sieci SOM.
+\begin{lstlisting}[language=Python, caption={Przykład inicjalizacji klasy \texttt{SelfOrganizingMap}}, label={lst:som_initialization}]
+som = SelfOrganizingMap(
+    dim_x=DIM_X, dim_y=DIM_Y, num_of_iterations=NUM_OF_EPOCHS, input_dimension=DIM,
+    distance_metric=WYBRANA_METRYKA, initial_radius=INITIAL_R, 
+    initial_learning_rate=LEARNING_RATE,
+    network_topology= WYBRANA_TOPOLOGIA,
+    neighbourhood_function=SASIEDZTWO,
+    int_radius=RADIUS_FLAG
+)
+\end{lstlisting}
+W celu uruchomienia programu niezbędne jest posiadanie pakietów, wraz z odpowiednią wersją Pythona. Wszystkie wymagane biblioteki, wraz z użytą wersją Pythona, dostępne są w pliku \texttt{requirements.txt}. Zaleca się tworzenie wirtualnego środowiska za pomocą narzędzia \texttt{venv} oraz instalowanie pakietów z pomocą menadżera \texttt{pip}. W celu instalacji poprawnej wersji pakietu Pytorch należy skorzystać ze strony internetowej  \href{https://pytorch.org/get-started/locally/}{pakietu Pytorch}. Spowodowane jest to koniecznym wyborem wersji pakietu, zależnej od dostępnych środowisk pracy, takich jak wersja Pythona czy obsługiwane sterowniki GPU.
+Ewaluacji modelu można dokonywać za pomocą analizy błędu kwantyzacji i błędu topograficznego, korzystając z metod \texttt{quantization\_error} oraz \texttt{topographic\_error}. Dodatkowo, możliwe jest wyświetlenie mapy zwycięzców za pomocą metody \texttt{make\_winmap} z klasy \texttt{VisualizeSOMResults}.

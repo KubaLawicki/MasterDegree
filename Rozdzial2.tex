@@ -1,0 +1,160 @@
+\chapter{Teoretyczny opis sztucznych sieci neuronowych}\label{teoria_ogolnych_sieci}
+
+
+
+ Sztuczne sieci neuronowe (ang. \textit{Artificial Neural Networks}, skrót \textit{ANN}) , potocznie zwane sieciami neuronowymi, stanowią aktualnie jedne z najprężniej rozwijających się systemów  przetwarzania informacji. Koncept ich rozwiązania bazuje na mechanizmach zachodzących w ludzkim mózgu, który bez wątpienia można nazwać najważniejszym organem w organizmie człowieka. Model sztucznego neuronu, czyli podstawowej jednostki obliczeniowej w sieciach neuronowych, inspirowany jest komórką nerwową, zwaną również neuronem \cite{Zurada}. Odpowiednie połączenia między neuronami były inspirowane budową biologicznych sieci neuronowych, występujących w ludzkim systemie nerwowym.
+
+Sztuczne sieci neuronowe cieszą się rosnącą popularnością ze względu na swoją wszechstronność. Są narzędziem uniwersalnym, szeroko stosowanym, zarówno w środowisku akademickim jak i w przemyśle \cite{Tadeusiewicz}. Ich wyjątkową cechą jest zdolność samodzielnego dostosowywania parametrów w procesie uczenia (tak zwanych wag), co umożliwia poprawne reagowanie na dane wejściowe w fazie pracy, nawet dla pobudzeń, które nie wystąpiły w fazie treningu \cite{Zurada, Osowski}.
+
+Na początku prezentowanego rozdziału przedstawiony zostanie model sztucznego neuronu, zawierający również krótki opis biologicznej komórki nerwowej. W kolejnych częściach omawiane będą takie zagadnienia jak wybrane struktury sieci neuronowych oraz proces uczenia wraz z podziałem.
+\section{Opis sztucznego neuronu}
+W celu lepszego zrozumienia zasady działania sztucznego neuronu przedstawione zostaną w skrócie zasady działające w systemie nerwowym człowieka, na którym bazuje koncept sztucznych sieci neuronowych.
+\subsubsection{Neuron biologiczny}\label{Biologiczny_neuron_opis}
+Jednym z elementów, z jakich składa się mózg ludzki, są komórki nerwowe, zwane neuronami. Ich ilość w mózgu można oszacować na około $10^{11}$ \cite{Tadeusiewicz}. Komórki te są podstawowymi elementami, tworzącymi biologiczną sieć neuronową \cite{Kolasa,Zurada}
+\\ Uproszczoną budowę neuronu można przedstawić jako \cite{Zurada}:
+\begin{itemize}
+    \item Ciało komórki (ang. \textit{soma}) wraz z jądrem komórkowym (ang. \textit{nucleus}) -
+     jest to centrum neuronu, w którym odbywa się przetwarzanie informacji. Oprócz tego zawiera jądro komórkowe oraz większość organelli, które odpowiadają za prawidłowe funkcjonowanie komórki nerwowej.
+
+    \item Dendryty (ang. \textit{dendrite}) -
+    rozgałęzione wypustki neuronu, które odbierają sygnały wejściowe z innych komórek i przekazują je do ciała komórki.
+
+    \item Akson (ang. \textit{axon}) -
+    długa wypustka neuronu, która przewodzi wyjściowe impulsy nerwowe z ciała komórki do dendrytów innych komórek.
+\end{itemize}
+Komórka nerwowa zawiera oczywiście dużo więcej elementów, jednak na potrzeby  pracy wystarczy przytoczenie głównych składników.
+\\ Neuron działa poprzez odbieranie sygnałów elektrycznych od innych komórek za pomocą dendrytów, które następnie przekazują je do ciała komórki. W ciele komórki sygnały są sumowane w krótkim przedziale czasowym, zwanym okresem utajonego sumowani \cite{Osowski}. Ciało komórki tworzy impuls wyjściowy, jeśli skumulowany potencjał impulsów przekroczy określony próg aktywacji, przy czym sygnały wejściowe dochodzące do ciała komórki mogą być hamujące lub pobudzające, co można rozumieć jako dodatnie bądź ujemne. Wytworzony sygnał jest przekazywany następnie do kolejnych komórek nerwowych za pomocą aksonu \cite{Zurada}.
+\\Schemat biologicznego neuronu przedstawiono na rysunku \ref{fig:KomorkaNerwowa} \cite{Kolasa}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{./img/neuron.pdf}
+    \caption{Schemat budowy komórki nerwowej, z pracy \cite{Kolasa}}
+    \label{fig:KomorkaNerwowa}
+\end{figure}
+
+
+\subsubsection{Model sztucznego neuronu}
+Klasyczny model sztucznego neuron bazuje na uproszczonej zasadzie działania neuronu biologicznego, opisanej w sekcji \ref{Biologiczny_neuron_opis}. Sztuczny neuron posiada wiele wejść i jedno wyjście \cite{Zurada}. 
+Na każde z wejść podać można wartość wyjścia innego neuronu, bądź bezpośrednio wartość tak zwanego wzorca wejściowego , rozumianego jako zewnętrzną wartość pobudzenia podanego na sieć w celu przetworzenia.
+Oprócz tego model sztucznego neuronu zawiera blok sumacyjny oraz blok wyznaczający wartość funkcji aktywacji \cite{Tadeusiewicz}. Wszystkie z tych elementów zostaną omówione w dalszej części rozdziału.
+\\Graficzny schemat sztucznego neuronu został zaprezentowany na rysunku \ref{fig:Schemat_sztucznego_neuronu} \cite{Zurada}.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.7\textwidth]{./img/SztucznyNeuronSchemat.pdf}
+    \caption{Schemat modelu sztucznego neuronu}
+    \label{fig:Schemat_sztucznego_neuronu}
+\end{figure}
+\\ Pierwszy krok przetwarzania informacji przez neuron stanowi sumowanie wartości poszczególnych wejść przemnożonych przez wagi \cite{Haykin}. Pod pojęciem wagi rozumie się tutaj parametr przypisany każdemu wejściu, który określa, jak silny wpływ dane wejście ma na całkowity wynik. Do tej sumy niekiedy dodaje się czynnik stały, zwany również składową stałą (ang. \textit{bias}) \cite{Zurada}. Podejście to można również zapisać wektorowo jako iloczyn, transponowanego wektora wag z wektorem wejściowym.
+\\Matematycznie etap ten można opisać zależnościami \ref{PotencjalPobudzenia} \cite{Osowski}
+
+\begin{equation} \label{PotencjalPobudzenia}
+ v = \mathbf{W}^\mathrm{T} \cdot \mathbf{X} + b = \sum_{i=1}^n w_i x_i + b
+\end{equation}
+
+\noindent gdzie \(v\) to całkowita wartość pobudzenia neuronu, \(\mathbf{W}\) to wektor wag, \(\mathbf{X}\) to wektor wejściowy, \(b\) to bias (składowa stała). \(x_i\) oznacza natomiast \textit{i}-te wejście, a  \(w_i\) wagę przypisaną \textit{i}-temu wejściu.
+
+W kolejnym kroku następuje wyznaczenie wartości wyjściowej neuronu \( y \), rozumianej jako wartość funkcji aktywacji \( f( ) \) na podstawie całkowitej wartości pobudzenia neuronu \( v \). \\Zależność tą przedstawiono na  \ref{Ogolny_Wzor_Neuronu} \cite{Kolasa}
+\begin{equation}\label{Ogolny_Wzor_Neuronu}
+y = f(v)
+\end{equation}
+
+Wybór funkcji aktywacji neuronu jest niezwykle istotny w kontekście przyszłego działania sieci. Sieci neuronowe można podzielić na liniowe i nieliniowe \cite{Tadeusiewicz}, różniące się między sobą zastosowaną funkcją aktywacji. Przy użyciu nieliniowych funkcji aktywacji łatwiej odwzorowywać dane o nieregularnych strukturach. Podejście nieliniowe bliższe jest naturalnym procesom zachodzącym  w biologicznych sieciach neuronowych, ponieważ one również nie działają w sposób liniowy. Ze względu na większą użyteczność sieci z nieliniowymi funkcjami aktywacji \cite{Zurada},  ich funkcję zostaną poniżej pokrótce zaprezentowane. 
+\\W literaturze zaproponowano wiele różnych nieliniowych funkcji aktywacji, począwszy od prostych funkcji takich jak funkcje progowe, aż po bardziej złożone, takie jak funkcja sigmoidalna \cite{Zurada,Tadeusiewicz}. Każda z nich znajduje zastosowanie w innych typach problemów. 
+
+W początkowym okresie prac nad rozwojem sztucznych sieci neuronowych stosowano głównie funkcje progowe, przedstawione zależnościami \ref{Progowa_1} oraz \ref{Progowa_2} \cite{Osowski}. Ze względu na ich nieciągłość i gwałtowną zmianę sygnału wyjściowego nie są jednak tak powszechnie używane jak funkcja sigmoidalna, przedstawiona za pomocą wyrażenia \ref{Sigmoidalna} \cite{Zurada}. W zależności tej występuje parametr $\beta$, który jest parametrem odpowiadającym za kształt charakterystyki funkcji.
+
+\begin{equation}\label{Progowa_1}
+f(v) = \begin{cases} 
+      1 & \text{dla } v \geq 0 \\
+      0 & \text{dla } v < 0 
+   \end{cases}
+\end{equation}
+\begin{equation}\label{Progowa_2}
+f(v) = \begin{cases} 
+      1 & \text{dla } v \geq 0 \\
+      -1 & \text{dla } v < 0 
+   \end{cases}
+\end{equation}
+\begin{equation}\label{Sigmoidalna}
+f(v) = \frac{1}{1 + \exp(-\beta \cdot v)}
+\end{equation}
+
+Idea neuronu sztucznego jest uproszczonym modelem neuronu biologicznego. Zastosowanie funkcji nieliniowych pozwala na osiągnięcie lepszych rezultatów \cite{Zurada} w przedstawionych zadaniach. W kolejnej sekcji tego rozdziału przedstawione zostaną sposoby grupowania neuronów w sieć, w celu realizacji postawionych zadań.
+
+
+
+\section{Klasyczny model sztucznych sieci neuronowych}
+Zwięzłe zdefiniowanie, w jednym lub kilku zdaniach, tak obszernego zagadnienia, jakim są sztuczne sieci neuronowe jest zadaniem bardzo trudnym. W literaturze spotyka się różne definicje, bazujące na tym samym koncepcie. Na potrzeby tej pracy zostanie użyta ogólna definicja zaprezentowana w książce \cite{Zurada}:
+\\"Sieć neuronowa jest układem neuronów, w którym wyjścia każdego neuronu są połączone, poprzez wagi, z wejściami wszystkich neuronów, w tym także z jego własnym wejściem". 
+\\Z przytoczonej definicji jasno wynika, że sieć składa się z wielu neuronów. Możliwości pojedynczego sztucznego neuronu są dość ograniczone, podobnie jak ma to miejsce w ich biologicznych odpowiednikach \cite{Haykin}. Do celów lepszej realizacji założonych zadań neurony grupuje się w warstwy, rozumiane jako zbiory neuronów działających równocześnie i przetwarzających te same dane wejściowe \cite{Osowski}.
+
+Sztuczna sieć neuronowa może zawierać wiele warstw, połączonych ze sobą w taki sposób, że wyjście jednej z warstw jest wejściem kolejnej. Warstwy mogą różnić się między sobą ilością neuronów oraz pełnić zróżnicowane role, w zależności od konkretnego zastosowania sieci \cite{Zurada}. W większości współcześnie stosowanych sieci neuronowych warstwy dzieli się na: wejściową, na której wejścia podaję się wektory wejściowe, wyjściową, z której wyjścia stanowią odpowiedź sieci na dane pobudzenie oraz warstwy ukryte, znajdujące się między wyjściem neuronów z warstwy wejściowej oraz wejściem neuronów w warstwie wyjściowej \cite{Tadeusiewicz}.
+
+Działanie sieci neuronowej można opisać w dwóch fazach \cite{Osowski}. Pierwsza z nich to faza treningu, nazywana też fazą uczenia. Polega na przekazywaniu do sieci wzorców uczących ze zbioru treningowego i obserwowaniu reakcji sieci. W procesie tym, w sposób określony danym algorytmem uczenia, sieć dostraja swoje wagi, w celu poprawy działania modelu \cite{Zurada}. Więcej informacji o procesie uczenia sieci zawarte zostanie w sekcji \ref{Uczenie_sieci}.
+\\Drugim etapem jest faza właściwego działania sieci neuronowej, w której po przekazaniu wzorca wejściowego, sieć samodzielnie dokonuje przetwarzania informacji i podaje swoją odpowiedź. Ta zdolność sieci nie byłaby możliwa bez etapu treningu, ponieważ to wagi poszczególnych neuronów reprezentują pamięć i wiedzę nabytą w procesie uczenia \cite{Haykin}.
+
+Z uwagi na to, że sieć neuronowa do swojego poprawnego działania wymaga fazy treningu, w której sieć samodzielnie dostosowuje swoje wagi, zadaniem jej projektanta jest przede wszystkim odpowiedni dobór parametrów sieci, takich jak na przykład jej architektura, rozumiana jako liczba neuronów w poszczególnych warstwach, liczba warstw \cite{Zurada}, poprawna implementacja algorytmu uczącego oraz wybór odpowiedniego zbioru uczącego. 
+
+Podziału sieci neuronowych można dokonać względem wielu kryteriów, szerzej opisanych w takich pozycjach jak \cite{Haykin,Tadeusiewicz,Zurada}. 
+W tej pracy omówiony zostaną podziały ze względu na zastosowaną architekturę oraz na rodzaj algorytmu ucznia. W kolejnej sekcji przedstawiony zostanie podział względem stosowanej architektury.
+\subsubsection{Podział sieci neuronowych względem architektury}
+Ze względu na zastosowaną architekturę  sieci można podzielić na wiele rożnych grup, z pośród których podstawowe to:
+\begin{itemize}
+    \item sieci jednokierunkowe (ang. \textit{Feedforward Neural Networks}, skrót FNN)
+    \item sieci rekurencyjne (ang. \textit{Recurrent Neural Networks}, skrót RNN), nazywane również sieciami ze sprzężeniem zwrotnym
+\end{itemize}
+
+Nazwa "jednokierunkowe"\ związana jest ze sposobem w jaki sieć przesyła sygnały w swoim obrębie - zawsze w kierunku od warstwy wejściowej, przez warstwy ukryte, aż do warstwy wyjściowej. Ten mechanizm można również nazwać brakiem sprzężenia zwrotnego \cite{Osowski}.
+\\Sieci FNN, w większości spotykanych zastosowań, są zazwyczaj wielowarstwowe, czyli zawierają warstwy ukryte. Zdarzają się jednak sieci jednowarstwowe, których przykładami mogą być między innymi sieci Kohonena, opisane w tej pracy w rozdziale \ref{Opis_sieci_kohonena}.
+\\Schematyczny obraz przepływu informacji w sieciach FNN, dla przykładu sieci z wektorem wejściowym dwuelementowym oraz dwoma wyjściami, przedstawiony został na rysunku \ref{fig:jednokierunkowe} \cite{Zurada}.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{./img/SchematFNN.pdf}
+    \caption{Schemat przepływu informacji w sieciach FNN, \cite{Zurada}}
+    \label{fig:jednokierunkowe}
+\end{figure}
+
+Rekurencyjne sieci neuronowe posiadają sprzężenie zwrotne, czyli mechanizm, w którym wyjścia neuronów z warstw bliżej warstwy wyjściowej mogą być ponownie wprowadzane na wejście sieci \cite{Zurada}. Mechanizm ten powoduje, że sieć staje się dynamiczna, czyli jej odpowiedź zależy nie tylko od podanego wzorca wejściowego, ale też od stanu początkowego sieci, na który wpływ miały poprzednie pobudzenia. Modyfikacja ta często daje możliwość przetwarzania skomplikowanych wzorców z wykorzystaniem mniejszej ilości neuronów czy ich warstw, w porównaniu do sieci FNN \cite{Zurada}.
+
+Schematyczny obraz przepływu informacji w sieciach RNN, dla przykładu sieci z wektorem wejściowym dwuelementowym oraz dwoma wyjściami, przedstawiony został na rysunku \ref{fig:rekurencyjne}. 
+\\Na schemacie tym występują bloki z oznaczeniem $\Delta$. Symbolizują one graficznie koncept opóźnienia wyjścia w celu podania go w następnym kroku na wejście sieci \cite{Zurada}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{./img/SchematRNN.pdf}
+    \caption{Schemat przepływu informacji w sieciach RNN, \cite{Osowski}}
+    \label{fig:rekurencyjne}
+\end{figure}
+Cechą wspólną sieci jednokierunkowych i rekurencyjnych jest stała struktura sieci, utrzymana zarówno w procesie treningu, jak i właściwej pracy sieci. Oznacza to, że architektura zaproponowana przez użytkownika na etapie projektowania sieci, jest niezmienna i niemodyfikowalna \cite{Haykin}.
+\\Znane są rozwiązania sieci neuronowych, które same modyfikują swoją architekturę w procesie treningu. Takie sieci nazywa się sieciami ontogenicznymi. Zmiana rozkładu sieci może odbywać się poprzez ograniczanie lub zwiększanie liczby neuronów w poszczególnych warstwach, a czasem nawet poprzez usuwanie lub dodawanie całych warstw. Mechanizm ten pozwala na rozwiązanie problemu dobrania optymalnej architektury sieci,tak aby spełniała swoje zadania, równocześnie gwarantując minimalne zużycie zasobów. W sieciach jednokierunkowych i rekurencyjnych jest to zadanie użytkownika, z kolei w sieciach ontogenicznych początkowa architektura jest modyfikowana przez algorytm uczenia. 
+\\ Powyżej opisane założenia sieci ontogenicznych są bardzo zwięzłe. Ich tematyka jest jednak bardziej złożona i wymaga dogłębnego zrozumienia. W literaturze można znaleźć wiele szczegółowych opisów, między innymi w pozycji \cite{Growing}.
+
+\section{Uczenie sieci neuronowych}\label{Uczenie_sieci}
+Faza uczenia sieci neuronowych jest niezbędna do wykonywania zadań założonych przez użytkownika. W literaturze wielokrotnie określana jest mianem najważniejszego etapu, w kontekście wpływu na końcową efektywność działania sieci neuronowej \cite{Zurada}. Szczególnym wyróżnikiem jest pełna autonomiczność procesu uczenia, niewymagająca od użytkownika bezpośredniej ingerencji w czasie jego trwania. Podczas uczenia sieć dostosowuje swoje wagi w oparciu o analizę dostarczonych danych, zgrupowanych w zbiorze uczącym. Skala dostosowania zależna jest od zastosowanego algorytmu uczenia \cite{Tadeusiewicz}.   
+\\Proces uczenia inspirowany jest naturalnym  procesem poszerzania swojej wiedzy przez człowieka. W organizmie ludzkim nabieranie nowych umiejętności wymaga powtarzania pewnego procesu, na który składa się wykonywanie określonej czynności, obserwacji jej skutków i wyciągnięcie z nich wniosków.
+Wielokrotna realizacja tego cyklu powoduje stopniowe nabieranie umiejętności, aż do momentu, w którym można uznać, że dana czynność została opanowana.  
+Zależność tą również jest obecna w procesie uczenia sztucznych sieci neuronowych. W tym wypadku również wymagane jest wielokrotne przedstawienie pewnego wzorca uczącego, wykonanie określonej czynności, zdefiniowanej przez projektanta, oraz określenie czy czynność ta została wykonana poprawnie. Wymagane jest wielokrotne powtórzenie procesu z zasilaniem go wzorcami wejściowymi z tego samego zbioru danych uczących \cite{Haykin}.
+
+Sposób reakcji sieci na wzorzec wejściowy, wraz z zakresem dostrajania wag, zależy od zastosowanej metody uczenia, zwanej również algorytmem uczenia. W ostatnich latach pojawiają kolejne propozycje jego implementacji, które jednak można podzielić na kategorię różniące się formą prezentacji wzorca wejściowego.
+\\ Zwykle wyróżnia się trzy podstawowe podziały algorytmów uczenia sieci neuronowych \cite{Osowski}:
+\begin{itemize}
+    \item Uczenie z nauczycielem (ang. \textit{Supervised Learning})
+    \item Uczenie bez nauczycielem (ang. \textit{Unsupervised Learning})
+    \item Uczenie z krytykiem (ang. \textit{Reinforcement Learning})
+\end{itemize}
+W dalszych sekcjach tego rozdziału metody te zostaną opisane w sposób skondensowany.
+\subsubsection{Uczenie z nauczycielem}
+Uczenie z nauczycielem, znane jako uczenie nadzorowane, swoją nazwę zawdzięcza obecności umownego „nauczyciela”, który podpowiada oczekiwane reakcje sieci neuronowej na dane pobudzenie \cite{Zurada}. Realizowane jest to w ten sposób, że podczas każdej iteracji, w fazie uczenia, na wejście sieci podaje się daną wejściową oraz oczekiwaną reakcję sieci, zwaną etykietą. Po przetworzeniu wzorca wejściowego przez sieć wyjście sieci porównuje się z etykietą i na tej podstawie modyfikowane są wagi neuronów \cite{Osowski}.
+Uczenie z nauczycielem jest jedną z najpopularniejszych metod uczenia sztucznych sieci neuronowych i stanowi bardzo obszerne zagadnienie. Na jakość modelu wpływ ma między innymi wybrana reguła modyfikacji wag (jak na przykład reguła delta czy algorytm wstecznej propagacji błędu (BP)), rozmaite optymalizatory oraz szereg innych parametrów. Dobór tych parametrów został szeroko opisany w literaturze, w pozycjach \cite{Tadeusiewicz,Zurada,VanHULle,Haykin}.
+\subsubsection{Uczenie bez nauczyciela}
+Uczenie bez nauczyciela, nazywane również uczeniem nienadzorowanym, polega na przekazywaniu na wejście sieci neuronowej jedynie danych wejściowych. Konsekwencją tego jest brak znajomości poprawnej reakcji sieci. W efekcie sieć sama uczy się rozpoznawać wzorce w danych wejściowych, na przykład na podstawie ich powtarzalności, podobieństw między poszczególnymi elementami czy charakterystycznych cech grupujących. \cite{Tadeusiewicz}. Proces ten często nazywany jest samouczeniem lub samoorganizacją \cite{Zurada}. 
+\\Za podstawowe metody uczenia nienadzorowanego uznaje się metody uczenia korelacyjnego, nazywane również metodą Hebba oraz metody rywalizacyjne, nazywane niekiedy uczeniem z regułami Kohonena \cite{Tadeusiewicz}. Metody rywalizacyjne nazywane są czasem również metodami konkurencyjnymi. Obie z tych metod są szeroko opisywane w literaturze, między innymi w pozycjach \cite{Kolasa,Zurada,Osowski}. Uczenie konkurencyjne, z zastosowaniem algorytmu "zwycięzca bierze większość"\ jest głównym tematem niniejszej pracy, z tego powodu zostanie on szczegółowo opisane w rozdziale \ref{Opis_sieci_kohonena}.
+
+\subsubsection{Uczenie z krytykiem}
+Uczenie z krytykiem nazywa się często uczeniem ze wzmocnieniem. Traktuje się je jako szczególną odmianę uczenia z nauczycielem. W tym wypadku nauczyciel nie wskazuje bezpośrednio oczekiwanych reakcji sieci, a jedynie informację, czy podjęta przez sieć decyzja zbliża ją do oczekiwanego rezultatu czy oddala. Gdy reakcja zbliża system do osiągnięcia celu założonego przez projektanta, przyznawana jest metaforyczna „nagroda”, rozumiana jako zachęta do kontynuacji tej strategii. W przeciwnym razie przyznaje się "karę", która jest sygnałem dla sieci, że poszukuje się innych wzorców \cite{Osowski}. W związku z tym, jako róźnicę między klasycznym uczeniem z nauczycielem, a uczeniem z krytykiem, można nakreślić moment podania informacji o poprawności podjętych przez sieć działań. W uczeniu nadzorowanym sieć zawsze otrzyma wartość referencyjną, która jest stała i niezależna od odpowiedzi sieci. W uczeniu ze wzmocnieniem natomiast kara bądź nagroda przyznawana jest dopiero po wykonaniu przetwarzania przez sieć i podjęciu działań \cite{Osowski}.
+
+
+\section{Podsumowanie rozdziału}
+Zaprezentowany rozdział miał na celu przybliżenie czytelnikowi ogólnych wiadomości z zakresu tematyki sztucznych sieci neuronowych. Opis został celowo skrócony, koncentrując się wyłącznie na kluczowych pojęciach, które są niezbędne dla zrozumienia kolejnych rozdziałów. Pominięto szczegółowe omówienie takich aspektów jak powszechnie stosowane typy sieci, praktyczne zastosowania sieci neuronowych czy reguły ich uczenia.
+\\Z uwagi na to, że głównym tematem pracy są sieci samoorganizujące, korzystające z algorytmu "zwycięzca bierze większość",  rozdział \ref{Opis_sieci_kohonena} dotyczył będzie opisu tych właśnie sieci.
