@@ -1,7 +1,45 @@
-\chapter{Charakterystyka systemów wbudowanych opartych na systemie Linux}\label{}
+\chapter{Architektura systemów operacyjnych w zastosowaniach wbudowanych}\label{}
+%Gemini generated, raczej do wypierdolenia
+Współczesna inżynieria systemów wbudowanych znajduje się w punkcie zwrotnym, w którym tradycyjne podejście oparte na bezpośrednim sterowaniu sprzętem (Bare-Metal) ustępuje miejsca zaawansowanym platformom zintegrowanym z systemami operacyjnymi klasy Linux. Ta ewolucja jest podyktowana rosnącą złożonością realizowanych zadań, wymagających nie tylko wysokiej mocy obliczeniowej, ale również sprawnego zarządzania współbieżnością, pamięcią wirtualną oraz interfejsami komunikacyjnymi.
 
- \section{Architektura systemów wbudowanych}
- \section{Roznica systemów wbudowanych czasu rzeczywistego i tradycyjnych systemów operacyjnych}
- \section{Budowa i architektura jądra systemu Linux}
- \section{Zarządzanie procesami i wątkami}
- \section{Algorytmy szeregowania zadań }
+System operacyjny, zgodnie z klasyczną definicją A. Tanenbauma, pełni w tym układzie rolę zarządcy zasobów, którego zadaniem jest sprawiedliwy i bezpieczny arbitraż dostępu do fizycznych komponentów platformy. Jednakże, w przypadku algorytmów o wysokiej intensywności obliczeniowej, takich jak Szybka Transformata Fouriera (FFT), ta warstwa abstrakcji staje się źródłem specyficznych wyzwań inżynierskich. Mechanizmy jądra, takie jak szeregowanie zadań czy obsługa przerwń, wprowadzają do systemu niedeterminizm, objawiający się fluktuacjami czasu wykonania kodu (jitterem) oraz narzutem administracyjnym (overhead).
+
+Zrozumienie architektury systemu operacyjnego w zastosowaniach wbudowanych jest zatem kluczowe dla procesu optymalizacji. Niniejszy rozdział stanowi fundament teoretyczny dla dalszych badań, analizując drogę danych od fizycznego sygnału, przez mechanizmy izolacji przestrzeni jądra i użytkownika, aż po polityki planisty systemowego. Celem poniższych rozważań jest wskazanie wąskich gardeł systemowych, które mogą ograniczać teoretyczną wydajność algorytmów cyfrowego przetwarzania sygnałów na platformach o ograniczonych zasobach
+%Koniec gemini generated
+\cite{Tanenbaum}
+\section{Specyfika systemów wbudowanych}
+Systemem wbudowanym możemy nazwać taki system komputerowy, którego rola jest ściśle określona. Cecha ta jest wyrózniajaca je od systemów komputerowych ogólnego przeznacznia. Wąska specjalizacja takich systemów
+pozwala na zagwarantowanie poprawnosci systemu. 
+
+
+\subsection{Model warstwowy systemów wbudowanych}
+
+%Czy można pisać w pracy "Powyżej?>?"
+W inżynieri oprogramowania istotną rolę odgrywa koncepcja \textbf{abstrakcji}, polegająca na  celowym ukryciu szczegółów implementacji danej funkcjonalności oprogramowania, przed jej potencjalnym użytkownikiem.
+Podejście to opiera się na założeniu, że należy dostarczyć gotowe rozwiązanie wraz z odpowiednią dokumentacją opisującą sposób jego wykorzystania, zamiast wymagać od użytkownika zrozumienia wewnętrznych mechanizmów działania wytworzonego modułu.
+Taka praktyka w sposób znaczący podnosi wygodę wytwarzania nowych funkcjonalności, umożliwia zrównoleglenie wytwarzania oprogramowania oraz pozwala na większą specjalizacje jej producentów. 
+
+
+Podejście te jest równiż  standardem nowoczesnego wytwarzania systemów komputerowych. 
+Wynika to z wielu przyczyn, począwszy od tych wymienionych powyżej, lecz niewątpliwie jedną z najważniejszych jest konieczność zapewnienia bezpieczeństwa systemu. 
+Systemy wbudowane, jak pozostałe systemy komputerowe, są w rzeczywistości rozwiązaniami o niezwykłej złożoności, których kod źródłowy sięga kilkudziesięciu milionów linii \cite{Tanenbaum}. 
+W takich rozwiązaniach kluczowym jest ustanowinie jasnych granic odpowiedzialności poszczególnych modułów oprogramowania za konkretne funkcjonalności.
+Realizuje się to poprzez wytwarzanie \textbf{interfejsów} (ang. \textit{Application Programming Interface}, skrót \textbf{API})
+
+W ogólności system operacyjny składa się z warstwy sprzętowej (ang. \textit{hardware}) i warstwy oprogramowania (ang. \textit{software}).
+% Tutaj piszemy o abstrakcji, o relacji konsument - software, dostawca to hardware
+% Ta sekcja ma byc o tym ze jest systemy wbudowane skladaja sie z warstwy sprzetowej i programowej
+% Tutaj można też napisać coś o metodologi przetwarzania danych w systemie wbudowanym, jak projektuje sie system, aby
+% w sposob odpowiedzialny przetwarzal dane, czyli dana z zewnatrz -> ADC -> przerwanie (kernelSpace)-> driver -> dane uzyte w przestrzeni 
+% uzytkownika 
+\subsection{Systemy wbudowane czasu rzeczywistego wraz z ich podziałem}
+% tutaj masz pisac o systemach hard, firm, soft
+\subsection{Z czego wynika koniecznosc stosowania systemow operacyjnych a nie bare metal}
+\section{Budowa i architektura systemu Linux}
+\subsection{Jądro systemu}
+% Tutaj nalezy wspomniec o przestrzeni uzytkownika i przestrzeni jadra systemu
+\subsection{Mechanizm stronnicowania pamięci i wykorzystanie pamieci cache}
+\subsection{wykorzystanie systemu Linux w systemach wbudowanych}
+\section{Procesy i wątki w systemie Linux}
+\section{Szeregowani zadań i determinizm czasowy w systemach wbudowanych opartych na Linuxie}
+% Planista, priotytety wątków, algorytmy szeregowania zadań, po co szeregujemy zadania, etc.
