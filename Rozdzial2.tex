@@ -7,26 +7,45 @@ System operacyjny, zgodnie z klasyczną definicją A. Tanenbauma, pełni w tym u
 Zrozumienie architektury systemu operacyjnego w zastosowaniach wbudowanych jest zatem kluczowe dla procesu optymalizacji. Niniejszy rozdział stanowi fundament teoretyczny dla dalszych badań, analizując drogę danych od fizycznego sygnału, przez mechanizmy izolacji przestrzeni jądra i użytkownika, aż po polityki planisty systemowego. Celem poniższych rozważań jest wskazanie wąskich gardeł systemowych, które mogą ograniczać teoretyczną wydajność algorytmów cyfrowego przetwarzania sygnałów na platformach o ograniczonych zasobach
 %Koniec gemini generated
 \cite{Tanenbaum}
-\section{Specyfika systemów wbudowanych}
-Systemem wbudowanym możemy nazwać taki system komputerowy, którego rola jest ściśle określona. Cecha ta jest wyrózniajaca je od systemów komputerowych ogólnego przeznacznia. Wąska specjalizacja takich systemów
-pozwala na zagwarantowanie poprawnosci systemu. 
+
+%System operacyjny jest posrednikiem miedzy uzytkownikiem i jego oprogramowanie a sprzetem
+\section{Rola systemów operacyjnych w systemach wbudowanych}
+Systemem wbudowanym możemy nazwać taki system komputerowy, którego rola jest ściśle określona. Cecha ta jest wyrózniajaca je od systemów komputerowych ogólnego przeznacznia.
+Wąska specjalizacja takich systemów pozwala na zagwarantowanie poprawnosci systemu. 
 
 
-\subsection{Model warstwowy systemów wbudowanych}
-
-%Czy można pisać w pracy "Powyżej?>?"
-W inżynieri oprogramowania istotną rolę odgrywa koncepcja \textbf{abstrakcji}, polegająca na  celowym ukryciu szczegółów implementacji danej funkcjonalności oprogramowania, przed jej potencjalnym użytkownikiem.
-Podejście to opiera się na założeniu, że należy dostarczyć gotowe rozwiązanie wraz z odpowiednią dokumentacją opisującą sposób jego wykorzystania, zamiast wymagać od użytkownika zrozumienia wewnętrznych mechanizmów działania wytworzonego modułu.
-Taka praktyka w sposób znaczący podnosi wygodę wytwarzania nowych funkcjonalności, umożliwia zrównoleglenie wytwarzania oprogramowania oraz pozwala na większą specjalizacje jej producentów. 
+\subsection{Model warstwowy systemów operacyjnych}
 
 
-Podejście te jest równiż  standardem nowoczesnego wytwarzania systemów komputerowych. 
-Wynika to z wielu przyczyn, począwszy od tych wymienionych powyżej, lecz niewątpliwie jedną z najważniejszych jest konieczność zapewnienia bezpieczeństwa systemu. 
-Systemy wbudowane, jak pozostałe systemy komputerowe, są w rzeczywistości rozwiązaniami o niezwykłej złożoności, których kod źródłowy sięga kilkudziesięciu milionów linii \cite{Tanenbaum}. 
-W takich rozwiązaniach kluczowym jest ustanowinie jasnych granic odpowiedzialności poszczególnych modułów oprogramowania za konkretne funkcjonalności.
-Realizuje się to poprzez wytwarzanie \textbf{interfejsów} (ang. \textit{Application Programming Interface}, skrót \textbf{API})
+W inżynieri oprogramowania istotną rolę odgrywa koncepcja \textbf{abstrakcji}, polegająca na  celowym ukryciu szczegółów implementacji danej funkcjonalności oprogramowania, przed jej potencjalnym użytkownikiem \cite{Tanenbaum}.
+Podejście to opiera się na założeniu, że należy dostarczyć gotowe funkcjonalność  wraz z odpowiednią dokumentacją opisującą sposób jej wykorzystania, zamiast wymagać od użytkownika zrozumienia wewnętrznych mechanizmów działania wytworzonego modułu.
+Taka praktyka w sposób znaczący podnosi wygodę wytwarzania nowych elementów systemu, umożliwia zrównoleglenie wytwarzania oprogramowania oraz pozwala na większą specjalizacje jej producentów. 
+W celu realizacji komunikacji między kolejnymi modułami systemu stosuj się takie narzędzia jak \textbf{interfejsy programistyczne} (ang. \textit{Application Programming Interface}, skrót \textbf{API}), czyli zbiór ściśle określonych reguł i sposobów komunikacji, które umożliwają komunikację między różnymi warstwami oprogramowania.
+Narzędzie to jest niezbędne, aby w sposób przewidywalny i bezpieczny przekazywać danę lub sterowanie, między różnymi elemenetami systemu, bez konieczności znajmości szczegółów implementacji elementu systemy, który jest odbiorcą API.    
 
-W ogólności system operacyjny składa się z warstwy sprzętowej (ang. \textit{hardware}) i warstwy oprogramowania (ang. \textit{software}).
+Użycie abstrakcji jest również standardem w projektowaniu systemów operacyjnych. 
+Wynika to z wielu przyczyn, z których bardzo istotne to:
+\begin{enumerate}
+    \item \textbf{Konieczność zapewnienia bezpieczeństwa systemu} -  Systemy operacyjnego są w rzeczywistości rozwiązaniami o niezwykłej złożoności, których kod źródłowy sięga kilkudziesięciu milionów linii \cite{Tanenbaum}. Użycie abstrakcji, w tym wypadku, wprowadza wyraźną hierarchię uprawnień, która oddziela ogólne operacje użytkownika od krytycznych zadań całego systemu. 
+    Dzięki temu mechanizmowi, błąd powstały w jednej części oprogramowania pozostaje odizolowany i nie wpływa na poprawne funkcjonowanie pozostałych elementów systemu, zarówno sprzętowych jak i programowych.  
+    \item \textbf{Zapewnienie przenoszalności oprogramowania} - System wbudowany, jak każdy system komputerowy, składa się z fizycznego sprzętu i oprogramowania, które jest na nim uruchamiane. Te dwa elementy działają wspólnie, jednakże dąży się do tego,
+    aby nie były one od siebie w pełni zależne, jeśli chodzi o swoją architekturę. Dzięki zastosowaniu pewnych abstrakcji, możliwe jest tworzenie oprogramowania, które będzie możliwe do uruchomienia na różnym sprzęcie fizycznym. Rozwiązanie to jest niezwykle korzystne, ponieważ pozwala na niezależny rozwój systemu zarówno pod kątem sprzętowym, jak i programowym.
+    \item \textbf{Umożliwienie korzystania z języków i narzędzi wysokiego poziomu} - Ukrycie technicznych detali działania sprzętu pozwala na wytwarzanie oprogramowania w językach wysokiego poziomu, 
+    w których większy nacisk kładzię się na tworzenie programów, które są spójne ze sposobem myślenia człowieka, zamiast skupiać się na bezpośredniej obsłudze fizycznych komponentów urządzenia elektornicznego, które wykonuje program. 
+\end{enumerate} 
+
+Pojęcię abstrakcji jest kluczowe, aby zrozumieć architekture systemów operacyjnych. W literaturze spotyka się różne podziału na warstwy systemu komputerowego \cite{Tanenbaum,Abraham_Silberschatz}. Cechą wspólną dla propozycji podziału systemów komputerowych jest to, że wyodrębnia się w nich zasoby sprzętowe od programów na nich wykonywanych, tworząc odpowiednio \textbf{warstwę sprzętową i warstwę oprogramowania}. 
+Do warstwy sprzętowej zaliczamy wszystkie urządzenia fizyczne, występujące w systemie takie jak na przykład \textbf{jeednostka centralna} (ang. \textbf{Central Processing Unit}, \textbf{CPU}), \textbf{pamięć operacyjna} (ang. \textbf{Random Access Memory}, \textbf{RAM}), oraz \textbf{urządzenia wejścia-wyjścia} (ang. \textbf{Input/Output Devices}, \textbf{I/O}).
+Do warstwy programowej zaliczamy zestaw programów aplikacyjnych, które definiują sposoby wykorzystania zasobów sprzętowych systemu w celu rozwiązywania konkretnych problemów użytkownika \cite{Abraham_Silberschatz}.
+
+Na potrzebę niniejszej pracy przytoczona zostanie propozycja podziału systemu komputerowego zaprezentowana w książce \cite{Abraham_Silberschatz}, zaprezentowana na rysunku \ref{fig:rysunek1}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/Rysunek1.pdf}
+    \caption{Warstwowy model systemu komputerowego}
+    \label{fig:rysunek1}
+\end{figure}
 % Tutaj piszemy o abstrakcji, o relacji konsument - software, dostawca to hardware
 % Ta sekcja ma byc o tym ze jest systemy wbudowane skladaja sie z warstwy sprzetowej i programowej
 % Tutaj można też napisać coś o metodologi przetwarzania danych w systemie wbudowanym, jak projektuje sie system, aby
