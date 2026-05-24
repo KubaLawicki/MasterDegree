@@ -1,9 +1,16 @@
 \chapter{Architektura systemów operacyjnych w zastosowaniach wbudowanych}\label{}
+<<<<<<< HEAD
 Projektowanie złożonych systemów komputerowych, zwłaszcza takich jak rozwiązania bazujące na implementacji algorytmów przetwarzania sygnałów w rygorze czasu rzeczywistego przy jednocześnie ograniczonych zasobach sprzętowych, jest zadaniem, które wymaga wielu przemyślanych decyzji przy doborze architektury tworzonego systemu.
+=======
+%Gemini generated, raczej do wypierdolenia
+\textbf{TO JEST DO WYJEBANIA}
+Współczesna inżynieria systemów wbudowanych znajduje się w punkcie zwrotnym, w którym tradycyjne podejście oparte na bezpośrednim sterowaniu sprzętem (Bare-Metal) ustępuje miejsca zaawansowanym platformom zintegrowanym z systemami operacyjnymi klasy Linux. Ta ewolucja jest podyktowana rosnącą złożonością realizowanych zadań, wymagających nie tylko wysokiej mocy obliczeniowej, ale również sprawnego zarządzania współbieżnością, pamięcią wirtualną oraz interfejsami komunikacyjnymi.
+>>>>>>> 150208d (Praca nad rozdzialem 2, cd)
 
 Wybór odpowiedniej platformy programowej jest jedną z kluczowych decyzji projektowych. Projektant systemu wbudowanego staje wówczas często przed wyborem między podejściem bezsystemowym, zapewniającym pełną kontrolę nad sprzętem, a zastosowaniem systemu operacyjnego, który wprowadza warstwę abstrakcji kosztem częściowej utraty determinizmu czasowego oraz zwiększenia zużycia fizycznych zasobów systemu ~\cite{Tanenbaum}. Decyzja ta ma bezpośredni wpływ na poprawność systemu, nie tylko z uwagi na osiąganą wydajność obliczeniową, ale również poprzez bezpieczeństwo i stabilność systemu.
 W celu zapewnienia wysokiej jakości projektowanego systemu, inżynier oprogramowania powinien posiadać podstawową wiedzę na temat działania systemów operacyjnych. Znajomość ich mechanizmów pozwala projektować systemy komputerowe charakteryzujące się wysoką wydajnością i niezawodnością.
 
+<<<<<<< HEAD
 Celem prezentowanego rozdziału jest usystematyzowanie wiedzy niezbędnej do zrozumienia, w jaki sposób architektura stosowanego systemu operacyjnego wpływa na wydajność uruchamianych na nim programów. Rozważania rozpoczynają się od przedstawienia warstwowego modelu systemów operacyjnych oraz kluczowych mechanizmów jądra, takich jak tryby pracy procesora, procesy, wątki, szeregowanie zadań, pamięć wirtualna czy synchronizacja współbieżnych operacji. Na tej podstawie omówiony zostaje podział systemów wbudowanych czasu rzeczywistego, a także dwa podstawowe modele budowy jądra: architektura monolityczna oraz mikrojądrowa. Ostatnia część rozdziału zawiera studium przypadku systemu operacyjnego Linux, w którym w skrócony sposób starano się przedstawić niezbędne szczegóły implementacji mechanizmów systemowych.
 
 \section{Rola systemów operacyjnych w systemach wbudowanych}
@@ -26,6 +33,15 @@ Aby w pełni zrozumieć, jak system operacyjny realizuje te zadania w środowisk
  W dalszych sekcjach zostaną szczegółowo omówione kluczowe mechanizmy oraz podstawowa struktura ogólnych systemów operacyjnych.
 
 \subsection{Model warstwowy systemów operacyjnych}
+=======
+Zrozumienie architektury systemu operacyjnego w zastosowaniach wbudowanych jest zatem kluczowe dla procesu optymalizacji. Niniejszy rozdział stanowi fundament teoretyczny dla dalszych badań, analizując drogę danych od fizycznego sygnału, przez mechanizmy izolacji przestrzeni jądra i użytkownika, aż po polityki planisty systemowego. Celem poniższych rozważań jest wskazanie wąskich gardeł systemowych, które mogą ograniczać teoretyczną wydajność algorytmów cyfrowego przetwarzania sygnałów na platformach o ograniczonych zasobach
+\textbf{TO JEST DO WYJEBANIA KONIEC}
+%Koniec gemini generated
+\cite{Tanenbaum}
+\section{Specyfika systemów wbudowanych}
+Systemem wbudowanym możemy nazwać taki system komputerowy, którego rola jest ściśle określona. Cecha ta jest wyrózniajaca je od systemów komputerowych ogólnego przeznacznia. Wąska specjalizacja takich systemów
+pozwala na zagwarantowanie poprawnosci systemu. 
+>>>>>>> 150208d (Praca nad rozdzialem 2, cd)
 
 
 W inżynierii oprogramowania istotną rolę odgrywa koncepcja \textbf{abstrakcji}, polegająca na  celowym ukryciu szczegółów implementacji danej funkcjonalności oprogramowania, przed jej potencjalnym użytkownikiem ~\cite{Tanenbaum}.
@@ -125,6 +141,7 @@ Systemem wbudowanym nazywamy dedykowany system komputerowy, który stanowi integ
 ściśle określonego zadania ~\cite{Tanenbaum}. W przeciwieństwie do komputerów ogólnego przeznaczenia (takich jak komputery osobiste czy smartfony), 
 na których użytkownik może uruchamiać dowolne aplikacje, system wbudowany ma z góry zdefiniowaną funkcję i nie jest przeznaczony do późniejszych, swobodnych modyfikacji przez użytkownika końcowego~\cite{Abraham_Silberschatz}.
 
+<<<<<<< HEAD
 Szczególną grupą w obrębie systemów wbudowanych są \textbf{systemy wbudowane czasu rzeczywistego}. Są to takie systemy, których poprawność wyniku przetwarzania nie zależy tylko od poprawności logicznej odpowiedzi, ale też od czasu przetwarzania, poprzedzającego odpowiedź systemu~\cite{WangK}.
 W przypadku niewypracowania odpowiedzi w zadanym czasie zdarzenie to jest traktowane jako błąd systemu, co w skrajnych przypadkach może prowadzić do awarii lub uszkodzenia fizycznego sprzętu. 
 
@@ -322,3 +339,40 @@ Każdy proces uruchomiony w systemie operuje na własnej wirtualnej przestrzeni 
 Do zarządzania przydziałem fizycznych stron pamięci Linux wykorzystuje \textbf{algorytm bliźniaków} (ang. \textit{buddy algorithm}) ~\cite{Tanenbaum}. Choć mechanizm ten jest w większości przypadków wysoce wydajny, może prowadzić do zjawiska fragmentacji wewnętrznej w przypadku konieczności alokacji struktur o rozmiarach znacznie mniejszych niż domyślne wielkości strony. Aby zminimalizować ten problem i zredukować narzut systemowy, system wdraża mechanizm dyspozytora płytowego (ang. \textit{slab allocator}) ~\cite{LinuxKernelDevelopment}, który dysponuje pamięcią poprzez algorytm bliźniaków, aby później podzielić stronę na mniejsze fragmenty i umożliwić jej zarządzanie ~\cite{Tanenbaum}. 
 
 Na poziomie interfejsu programistycznego jądra, alokacja pamięci odbywa się za pomocą kilku wyspecjalizowanych funkcji do zarządzania pamięcią. Warto tutaj wspomnieć o tych najpowszechniejszych, czyli \texttt{kmalloc}, gwarantująca przydział obszaru ciągłego zarówno w przestrzeni wirtualnej, jak i fizycznej ~\cite{LinuxKernelDevelopment} oraz \texttt{vmalloc} wykorzystywana do alokacji większych struktur, niewymagających ciągłości fizycznej. Ta druga jednak wiąże się  z  większym narzutem wydajnościowym wynikającym z konieczności modyfikacji tablic stron ~\cite{LinuxKernelDevelopment}.
+=======
+W ogólności system operacyjny składa się z warstwy sprzętowej (ang. \textit{hardware}) i warstwy oprogramowania (ang. \textit{software}). 
+Graficzne przedstawienie tej struktury oraz wzajemnych zależności pomiędzy poszczególnymi poziomami architektonicznymi zostało zaprezentowane na rysunku~\ref{fig:Model_Warstwowy}. 
+
+Warstwa sprzętowa obejmuje samo fizyczne urządzenie oraz niekiedy zintegrowane z nim, najbardziej podstawowe mechanizmy i niskopoziomowe oprogramowanie 
+układowe umożliwiające podstawowy dostęp do rejestrów i kontrolerów. Bezpośrednia interakcja z tak surowym środowiskiem sprzętowym jest jednak niezwykle złożona 
+i uciążliwa z punktu widzenia programisty aplikacji. Aby uprościć sterowanie fizycznymi komponentami, stosuje się system operacyjny.
+W architekturze systemów opartych na jądrze Linux fundamentalne znaczenie ma również podział na dwa odizolowane tryby pracy procesora: tryb użytkownika oraz tryb jądra. 
+Zagadnienia te, wraz ze szczegółową charakterystyką przestrzeni użytkownika (ang. \textit{user space}) i przestrzeni jądra (ang. \textit{kernel space}), zostaną szczegółowo omówione
+i przeanalizowane w późniejszych sekcjach tego rozdziału.
+
+\begin{figure}[htbp]
+    \centering % Środkuje grafikę na stronie
+    % W opcjach [width=...] definiujesz szerokość, np. 0.8 szerokości tekstu
+    \includegraphics[width=0.8\textwidth]{img/Rysunek1.drawio.pdf} 
+    \caption{Model warstwowy systemów operacyjnych}
+    \label{fig:Model_Warstwowy} % Etykieta do odwoływania się w tekście (np. \ref{fig:moje_zdjecie})
+\end{figure}
+
+% Tutaj piszemy o abstrakcji, o relacji konsument - software, dostawca to hardware
+% Ta sekcja ma byc o tym ze jest systemy wbudowane skladaja sie z warstwy sprzetowej i programowej
+% Tutaj można też napisać coś o metodologi przetwarzania danych w systemie wbudowanym, jak projektuje sie system, aby
+% w sposob odpowiedzialny przetwarzal dane, czyli dana z zewnatrz -> ADC -> przerwanie (kernelSpace)-> driver -> dane uzyte w przestrzeni 
+% uzytkownika 
+\subsection{Systemy wbudowane czasu rzeczywistego wraz z ich podziałem}
+% tutaj masz pisac o systemach hard, firm, soft
+\subsection{Z czego wynika koniecznosc stosowania systemow operacyjnych a nie bare metal}
+\section{Budowa i architektura systemu Linux}
+% tutaj bedziemy pisac o ogólnych założeniach linuxa, jego wykorzystaniu, tego, że wyszedł z Unixa, ze jest openSource, etc
+\subsection{Separacja przestrzni jądra systemu od przestrzeni użytkownika}
+% Tutaj nalezy wspomniec o przestrzeni uzytkownika i przestrzeni jadra systemu
+\subsection{Mechanizm stronnicowania pamięci i wykorzystanie pamieci cache}
+\subsection{wykorzystanie systemu Linux w systemach wbudowanych}
+\section{Procesy i wątki w systemie Linux}
+\section{Szeregowani zadań i determinizm czasowy w systemach wbudowanych opartych na Linuxie}
+% Planista, priotytety wątków, algorytmy szeregowania zadań, po co szeregujemy zadania, etc.
+>>>>>>> 150208d (Praca nad rozdzialem 2, cd)

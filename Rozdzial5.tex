@@ -80,10 +80,37 @@ stockham & 1,55 & 0,41 & 0,25 & 0,80 & 0,76 & 0,24 & 0,91 & 1,04 & 0,26 & 0,54 &
 \section{Analiza wpływu optymalizacji programu sekwencyjnego}
 
 \subsection{Wpływ poziomów optymalizacji kompilatora}
-Pierwsze rozważania dotyczą wpływu stosowanych flag kompilatora na przygotowane algorytmu sekwencyjne (inaczej jednowątkowe).
+Wyniki pomiarów czasu zestawiono w~\cref{tab:med-merged-16k}. Największy
+i~zarazem jedyny konsekwentny efekt daje odejście od poziomu \texttt{-O0}: samo
+przejście na \texttt{-O1} skraca czas wykonania o~62-88\% pod GCC
+i~o~46-87\% pod Clang, co odpowiada przyspieszeniu od 2,6 do 8,2~razy, zilustrowanego w tabeli \cref{tab:peedup-gcc-16k}.
+Najsilniej reagują warianty radix-2, najsłabiej \texttt{splitradix}
+i~\texttt{radix4\_naive}. Dalsze podnoszenie poziomu optymalizacji przynosi już
+wyraźnie mniej - najlepszy zestaw flag skraca czas względem \texttt{-O1}
+o~kolejne 0,5-29\%, przy medianie około 12\%. Nie ma przy tym zestawu, który
+byłby najlepszy dla wszystkich algorytmów: w~szesnastu wierszach tabeli
+najkrótszy czas osiąga osiem różnych zestawów flag, a~\texttt{-O3} nie wygrywa
+w~żadnym z~nich. Wyjątkiem od ogólnego obrazu jest \texttt{radix4\_naive}, dla
+którego pod GCC poziomy \texttt{-O2} i~\texttt{-O3} okazują się o~około 40\%
+wolniejsze od \texttt{-O1}. Wiersz \texttt{fftw} pozostaje płaski w~zakresie
+0,3470-0,3764~ms, ponieważ biblioteka pochodzi z~gotowego pakietu i~nie
+podlegała badanym ustawieniom kompilacji.
 
-Robocze:
-Przeskok z O0 daje najwiecej zdecydowanie, pozniej te czasy sie wyplaszczaja. Loop unrooling widac po rozmiarach .text z asm
+Zróżnicowanie reakcji poszczególnych algorytmów na przejście z~\texttt{-O0}
+wynikać możę z tego, że poziom ten, dla ułatwienia debbugowania kodu, ogranicza znacząco przydział rejestrów  procesora dla zmiennych, w 
+taki sposób, aby można je było prosto podejrzeć ze stosu.
+Z tego powodu, przy użyciu wyższego poziomu optymalizacji zyskują najbardziej warianty o~zwartej pętli
+wewnętrznej i~niewielkiej liczbie zmiennych żywych - pojedynczy etap
+algorytmu, takie jak radix-2, który operuje na kilku wartościach, które po włączeniu
+\texttt{-O1} mogą być trzymane bezpośrednio w rejestrach. Warianty \texttt{splitradix}
+i~\texttt{radix4\_naive}, o~bardziej rozbudowanej strukturze algorytmu,
+spędzają poza właściwymi obliczeniami, większą część czasu, którego
+przydział rejestrów nie skraca. Osobnego wyjaśnienia wymaga marginalny wpływ \texttt{-O3}: poziom
+ten dodaje względem \texttt{-O2} przede wszystkim automatyczną wektoryzację,
+a~ta powiodła się jedynie dla dwóch z~ośmiu algorytmów pod GCC i~jednego pod
+Clang, co widać w tabeli \cref{tab:simd-skal-gcc}. W~pozostałych
+przypadkach kod wynikowy jest niemal identyczny jak przy \texttt{-O2}, więc
+obserwowane różnice mogą nie mieć źródła w procesie kompilacji.
 
 %============================================================================
 % Tabela 1.2+1.5 -- tab:med-merged-16k
@@ -91,7 +118,8 @@ Przeskok z O0 daje najwiecej zdecydowanie, pozniej te czasy sie wyplaszczaja. Lo
 %============================================================================
 \begin{table}[H]
 \centering
-\caption{Mediana czasu wykonania transformaty dla GCC i Clang, 16384 próbek, wersja sekwencyjna. Wartości w~milisekundach. Pogrubiono krótszy z dwóch czasów w~każdej komórce.}
+\caption{Mediana czasu wykonania transformaty dla GCC i~Clang, 16384 próbek,
+         wersja sekwencyjna. Wartości w~milisekundach.}
 \label{tab:med-merged-16k}
 \scriptsize
 \setlength{\tabcolsep}{3.0pt}
@@ -100,40 +128,40 @@ Przeskok z O0 daje najwiecej zdecydowanie, pozniej te czasy sie wyplaszczaja. Lo
 Algorytm & Kompilator & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
 \midrule
 \multirow{2}{*}{radix2\_v0}
-  & GCC   & 8,6189 & 1,0518 & 0,9270 & 0,9421 & 0,9592 & 0,8966 & 0,9259 & 0,9315 & 0,9156 & 0,9143 & 0,9405 \\
-  & Clang & \textbf{6,4565} & \textbf{0,9253} & \textbf{0,9261} & \textbf{0,9018} & \textbf{0,9199} & \textbf{0,9060} & \textbf{0,8185} & \textbf{0,7955} & \textbf{0,8049} & \textbf{0,8040} & \textbf{0,9320} \\
+  & GCC   & 8,6189 & 1,0518 & 0,9270 & 0,9421 & 0,9592 & \textbf{0,8966} & 0,9259 & 0,9315 & 0,9156 & 0,9143 & 0,9405 \\
+  & Clang & 6,4565 & 0,9253 & 0,9261 & 0,9018 & 0,9199 & 0,9060 & 0,8185 & \textbf{0,7955} & 0,8049 & 0,8040 & 0,9320 \\
 \addlinespace
 \multirow{2}{*}{radix2\_v1}
-  & GCC   & 6,4426 & 0,9004 & 0,7562 & 0,7563 & 0,9076 & 0,7775 & 0,8442 & 0,8871 & 0,8472 & 0,8453 & 0,7858 \\
-  & Clang & \textbf{5,0313} & \textbf{0,6843} & \textbf{0,7063} & \textbf{0,7172} & \textbf{0,6778} & \textbf{0,7136} & \textbf{0,7277} & \textbf{0,7377} & \textbf{0,7551} & \textbf{0,7569} & \textbf{0,7188} \\
+  & GCC   & 6,4426 & 0,9004 & \textbf{0,7562} & 0,7563 & 0,9076 & 0,7775 & 0,8442 & 0,8871 & 0,8472 & 0,8453 & 0,7858 \\
+  & Clang & 5,0313 & 0,6843 & 0,7063 & 0,7172 & \textbf{0,6778} & 0,7136 & 0,7277 & 0,7377 & 0,7551 & 0,7569 & 0,7188 \\
 \addlinespace
 \multirow{2}{*}{radix2\_v2\_soa}
   & GCC   & 4,2421 & 0,9567 & 0,8427 & 0,8594 & 0,9564 & 0,8606 & 0,8561 & 0,8834 & 0,8826 & \textbf{0,7111} & 0,9681 \\
-  & Clang & \textbf{4,1100} & \textbf{0,8651} & \textbf{0,6758} & \textbf{0,6579} & \textbf{0,8528} & \textbf{0,6484} & \textbf{0,6248} & \textbf{0,6239} & \textbf{0,6290} & 0,6153 & \textbf{0,7038} \\
+  & Clang & 4,1100 & 0,8651 & 0,6758 & 0,6579 & 0,8528 & 0,6484 & 0,6248 & 0,6239 & 0,6290 & \textbf{0,6153} & 0,7038 \\
 \addlinespace
 \multirow{2}{*}{radix2\_v3\_neon}
-  & GCC   & \textbf{3,6592} & \textbf{0,5794} & \textbf{0,5624} & \textbf{0,5643} & \textbf{0,6118} & \textbf{0,5635} & \textbf{0,5656} & \textbf{0,5721} & \textbf{0,5840} & \textbf{0,6496} & \textbf{0,5872} \\
-  & Clang & 4,5329 & 0,6017 & 0,5995 & 0,6188 & 0,5986 & 0,6420 & 0,6603 & 0,6267 & 0,6265 & 0,6362 & 0,6335 \\
+  & GCC   & 3,6592 & 0,5794 & \textbf{0,5624} & 0,5643 & 0,6118 & 0,5635 & 0,5656 & 0,5721 & 0,5840 & 0,6496 & 0,5872 \\
+  & Clang & 4,5329 & 0,6017 & 0,5995 & 0,6188 & \textbf{0,5986} & 0,6420 & 0,6603 & 0,6267 & 0,6265 & 0,6362 & 0,6335 \\
 \addlinespace
 \multirow{2}{*}{radix4}
-  & GCC   & 4,6056 & 0,9789 & 0,9057 & 0,8940 & 0,9521 & 0,8850 & 0,9829 & 0,9307 & 0,9901 & 0,9858 & 0,9310 \\
-  & Clang & \textbf{3,7740} & \textbf{0,9248} & \textbf{0,9086} & \textbf{0,8852} & \textbf{0,8792} & \textbf{0,8759} & \textbf{0,9005} & \textbf{0,8518} & \textbf{0,8478} & \textbf{0,8480} & \textbf{0,8920} \\
+  & GCC   & 4,6056 & 0,9789 & 0,9057 & 0,8940 & 0,9521 & \textbf{0,8850} & 0,9829 & 0,9307 & 0,9901 & 0,9858 & 0,9310 \\
+  & Clang & 3,7740 & 0,9248 & 0,9086 & 0,8852 & 0,8792 & 0,8759 & 0,9005 & 0,8518 & \textbf{0,8478} & 0,8480 & 0,8920 \\
 \addlinespace
 \multirow{2}{*}{radix4\_naive}
-  & GCC   & 6,0956 & \textbf{2,1677} & 3,0243 & 3,0293 & \textbf{2,2145} & 3,0125 & \textbf{2,0307} & 3,0414 & \textbf{1,9943} & \textbf{1,9947} & \textbf{2,1756} \\
-  & Clang & \textbf{5,1931} & 2,7980 & \textbf{2,7485} & \textbf{2,7394} & 2,7238 & \textbf{2,6721} & 2,1736 & \textbf{2,7164} & 2,1778 & 2,1781 & 2,6662 \\
+  & GCC   & 6,0956 & 2,1677 & 3,0243 & 3,0293 & 2,2145 & 3,0125 & 2,0307 & 3,0414 & \textbf{1,9943} & 1,9947 & 2,1756 \\
+  & Clang & 5,1931 & 2,7980 & 2,7485 & 2,7394 & 2,7238 & 2,6721 & \textbf{2,1736} & 2,7164 & 2,1778 & 2,1781 & 2,6662 \\
 \addlinespace
 \multirow{2}{*}{splitradix}
-  & GCC   & \textbf{3,1690} & \textbf{1,1991} & 1,0808 & 1,0852 & 1,1302 & 1,1023 & 1,1422 & 1,0561 & 1,1259 & 1,1261 & 1,1097 \\
-  & Clang & 3,2003 & 1,0451 & \textbf{1,0273} & \textbf{1,0389} & \textbf{1,0633} & \textbf{1,0200} & \textbf{0,9967} & \textbf{0,9883} & \textbf{1,0310} & \textbf{1,0090} & \textbf{1,0474} \\
+  & GCC   & 3,1690 & 1,1991 & 1,0808 & 1,0852 & 1,1302 & 1,1023 & 1,1422 & \textbf{1,0561} & 1,1259 & 1,1261 & 1,1097 \\
+  & Clang & 3,2003 & 1,0451 & 1,0273 & 1,0389 & 1,0633 & 1,0200 & 0,9967 & \textbf{0,9883} & 1,0310 & 1,0090 & 1,0474 \\
 \addlinespace
 \multirow{2}{*}{stockham}
   & GCC   & 3,5101 & 0,6360 & 0,6060 & 0,6218 & \textbf{0,5544} & 0,6218 & 0,6022 & 0,6189 & 0,6149 & 0,6203 & 0,6245 \\
-  & Clang & \textbf{3,5632} & \textbf{0,4995} & \textbf{0,4456} & \textbf{0,4475} & 0,4702 & \textbf{0,4395} & \textbf{0,4433} & \textbf{0,4742} & \textbf{0,4478} & \textbf{0,4548} & \textbf{0,4296} \\
+  & Clang & 3,5632 & 0,4995 & 0,4456 & 0,4475 & 0,4702 & 0,4395 & 0,4433 & 0,4742 & 0,4478 & 0,4548 & \textbf{0,4296} \\
 \addlinespace
 \multirow{2}{*}{fftw}
-  & GCC   & 0,3596 & 0,3764 & 0,3513 & 0,3704 & 0,3649 & \textbf{0,3514} & 0,3701 & 0,3730 & \textbf{0,3498} & 0,3679 & 0,3631 \\
-  & Clang & \textbf{0,3516} & \textbf{0,3535} & \textbf{0,3470} & \textbf{0,3625} & \textbf{0,3502} & 0,3570 & \textbf{0,3671} & \textbf{0,3659} & 0,3630 & \textbf{0,3622} & \textbf{0,3589} \\
+  & GCC   & 0,3596 & 0,3764 & 0,3513 & 0,3704 & 0,3649 & 0,3514 & 0,3701 & 0,3730 & \textbf{0,3498} & 0,3679 & 0,3631 \\
+  & Clang & 0,3516 & 0,3535 & \textbf{0,3470} & 0,3625 & 0,3502 & 0,3570 & 0,3671 & 0,3659 & 0,3630 & 0,3622 & 0,3589 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -141,10 +169,54 @@ Algorytm & Kompilator & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & 
 
 
 \subsection{Wpływ celowych modyfikacji kodu programu, w tym wybór algorytmu}
-Robocze 
-Widac, ze neon jest duzo szybszy od v1 i v2, pewnie gdyby wykorzystac tez te instrukcje neon dla pozostalych to byloby jeszcze lepiej.
-Soa od poziomu 02, poza 0s jest tez szybsza troche, ale tylko dla Clanga tez w innych wariantach to wiekszy danych widac. Poziom O1 działa najgorzej dla soa, trzeba zobaczyc w ASM dlaczego.
-Wyliczanie kazdorazowe w wersjach v0 i naive zabija predkosc wywolania, dla rozsadnych rozmiarow warto przekazywac wspolczynniki jako parametry wejsciowe, a nie liczyc je w locie.
+Wpływ celowych modyfikacji kodu przy niezmienionym schemacie, dla algorytmu radix-2 zestawiono
+w~\cref{tab:med-merged-16k}. Zastąpienie przeliczanych na bieżąco współczynników
+obrotu tablicą przekazaną jako argument, w przypadku (\texttt{radix2\_v1}), skraca czas wobec
+\texttt{radix2\_v0} o~18\% pod GCC i~24\% pod Clang, a~jednocześnie podnosi
+stosunek sygnału do szumu, co omówiono w~\cref{sec:WplywBledyNumeryczne}. Zmiana
+układu danych na strukturę tablic (\texttt{radix2\_v2\_soa}) daje wynik zależny
+od kompilatora: pod Clang skraca czas do 0,6758~ms, czyli poniżej wariantu
+\texttt{radix2\_v1}, natomiast pod GCC zatrzymuje się na 0,8427~ms i~pozostaje
+wolniejsza od niego. Przyczyną jest to, że sam układ danych nie przyspiesza
+obliczeń - umożliwia jedynie wektoryzację, którą w~badanych warunkach
+przeprowadził skuteczniej kompilator Clang. Tłumaczy to również
+zachowanie tego wariantu przy poziomach \texttt{-O1} i~\texttt{-Os}, przy
+których czas rośnie do 0,8651 i~0,8528~ms, a~więc do wartości bliskiej
+\texttt{radix2\_v0}: oba poziomy nie włączają wektoryzacji, więc korzyść
+z~przebudowy układu danych zanika. Najszybszy w~tej grupie jest wariant
+z~jawnym użyciem instrukcji NEON (\texttt{radix2\_v3\_neon}) - 0,5624~ms pod
+GCC, czyli o~39\% mniej niż \texttt{radix2\_v0} i~o~26\% mniej niż
+\texttt{radix2\_v1}. Warto jednak zauważyć, że pod Clang jego przewaga nad
+\texttt{radix2\_v2\_soa} wynosi już tylko 11\%, ponieważ kompilator ten
+wektoryzuje układ SoA samodzielnie.
+Zestawienie wyników dla rodziny algorytmów radix-2 pokazuje, że same modyfikacje kodu,
+przy niezmienionym schemacie obliczeń, skróciły czas wykonania o~39\%.
+Pozostałe badane warianty, takie jak \texttt{radix4},
+\texttt{splitradix} oraz \texttt{stockham},  zaimplementowano wyłącznie
+w postaci bazowej, bez przebudowy układu danych, bez jawnego użycia instrukcji
+wektorowych czy innych technik wewnątrz programowych do optymalizacji. 
+Korzyść uzyskana dla radix2 może budzić nadziję, że zastosowanie wobec nich analogicznych
+technik przyniosłoby wymierne efekty, a~zmierzone tu czasy wykonania należy traktować
+jako punkt wyjścia, a~nie jako granicę możliwości tych schematów. Weryfikacja
+tego przypuszczenia wykracza poza zakres niniejszej pracy i~stanowi naturalny
+kierunek dalszych badań.
+
+Skala zmian uzyskanych za pomocną jawnych technik optymalizacji w programie,
+pozostaje mniejsza niż skala wynikająca z~wyboru samego
+schematu obliczeń. W~obrębie algorytmów radix-2, z pominięciem programów skompilowanych z flagą O0, różnica między najlepszym a~najgorszym wariantem nie
+przekracza 65\%. Dla algorytmów niestosujących założeń Radix2 uzyskany za to zysk przekracza 24\%, względem najszybszego wariantu. Zysk ten osiągnięto dla 
+dla algorytmu \texttt{stockham}, którego najmniejszy czas wykonania to 0,4296~ms pod Clang.
+
+Należy się również pochylić nad rozmiarami kodu wynikowego zestawiono
+w~\cref{tab:text-merged}. W~jedenastu z~szesnastu wierszy najmniejszą sekcję
+\texttt{.text} daje poziom \texttt{-Os}, przy czym różnice bywają znaczne:
+dla \texttt{stockham} pod Clang jest to 216~bajtów wobec 1080 przy \texttt{-O2},
+czyli pięciokrotnie mniej. Rozrost kodu towarzyszy wektoryzacji i~rozwijaniu
+pętli, nie zawsze przynosząc korzyść w~czasie - dla \texttt{stockham} pod GCC
+zestaw \texttt{unroll} powiększa sekcję z~320 do 1544~bajtów, pozostawiając czas
+na poziomie 0,6218~ms wobec 0,6060~ms przy \texttt{-O2}. Zdarza się też
+przeciwnie: dla \texttt{radix4\_naive} pod Clang zestaw \texttt{ffast} powiększa
+kod z~560 do 2208~bajtów i~skraca czas o~21\%.
 %============================================================================
 % Tabela 1.8   (etykieta: tab:speedup-gcc-1M)
 % Przyspieszenie względem -O0 dla GCC i 16384 próbek, wersja sekwencyjna. Wartości bezwymiarowe, poziom \texttt{-O0} przyjęto za~1,00.
@@ -173,20 +245,44 @@ stockham & 1,00 & 5,52 & 5,79 & 5,65 & 6,33 & 5,65 & 5,83 & 5,67 & 5,71 & 5,66 &
 %tutaj o instrukcjach SIMD, ulozenie danych 
 
 \subsection{Porównanie kompilatorów GCC i Clang}
-Choć oba kompilatory generują mniejszy kod z podobną częstością (GCC w 45 z
-88 przypadków, Clang w 42), średni rozmiar kodu wynikowego dla GCC (518~B)
-jest o 40\% mniejszy niż dla Clang (724~B). 
+Zestawienie kompilatorów GCC i Clang prowadzi do czytelnego podziału ról. Pod względem
+rozmiaru kodu przewagę ma GCC: choć mniejszą sekcję \texttt{.text} generuje
+w~45 z~88 przypadków, a~Clang w~42 (\cref{tab:text-merged}), o~wyniku decyduje
+skala różnic w~pozostałych komórkach - średni rozmiar wynosi 518~B dla GCC
+i~724~B dla Clang, czyli o~40\% więcej. Największe rozbieżności dotyczą
+wariantów używających wektoryzacji : dla \texttt{radix2\_v1} przy \texttt{-O2} jest to
+224~B wobec 840~B, a~dla \texttt{stockham} 320~B wobec 1080~B.
 
-Clang generuje szybszy kod w 78 z 99 przypadków (79\%), przy średniej
-przewadze rzędu 1,15 raza; łączny średni czas wykonania jest dla Clang
-o~6,7\% niższy niż dla GCC (z~pominięciem \texttt{-O0}).
+Pod względem czasu wykonania relacja jest znacząco inna. Clang osiąga krótszy czas w~63 z~80 konfiguracji przy 1024 i~przy 16384
+próbkach danych wejściowych, skracając go średnio o około ~8,5\%
+(\cref{tab:med-merged-16k}). Przewaga ta zanika jednak przy 1048576 próbkach wektora wejściowego,
+gdzie mediana skrócenia spada do 0,5\%, a~liczba wygranych do 44 z~80. Wynikać to może, z faktu, że przy rozmiarze tego rzędu
+o~czasie wykonania decyduje dostęp do pamięci, a~nie jakość
+wygenerowanego kodu.
+
+Źródłem przewagi Clang jest skuteczniejsza wektoryzacja automatyczna.
+W~\cref{tab:simd-skal-gcc} instrukcje SIMD występują w~38 z~80 konfiguracji dla
+Clang wobec 30 dla GCC, a~różnica dotyczy przede wszystkim wariantów, w~których
+GCC nie wektoryzuje w~ogóle: dla \texttt{radix2\_v2\_soa} generuje zero
+instrukcji wektorowych w~dziewięciu z~dziesięciu zestawów flag, podczas gdy
+Clang emituje ich osiem lub dziewięć w~ośmiu zestawach. Clang zachowuje przy tym
+wektoryzację niezależnie od zestawu flag, natomiast GCC traci ją po dodaniu
+\texttt{-ffast-math} lub \texttt{-mcpu} do poziomu \texttt{-O2}. Zagadnienie to
+omówiono szerzej w~\cref{sec:WplywFlagWektoryzacja}.
+
+Wybór między kompilatorami sprowadza się zatem do kompromisu między rozmiarem
+kodu a~czasem wykonania. W~systemach wbudowanych, wybór ten możę być szczególnie kluczony, ponieważ
+często pojemność pamięci
+programu bywa ograniczeniem twardszym niż wydajność.
 %============================================================================
 % Tabela 1.53 i 1.54   (etykieta: tab:med-clang-16k)
 % Rozmiar sekcji kodu wynikowego algorytmu dla GCC i Clang, wersja sekwencyjna. Rozmiar sekcj.
 %============================================================================
 \begin{table}[H]
 \centering
-\caption{Rozmiar sekcji kodu wynikowego algorytmu dla GCC i Clang, wersja sekwencyjna. Rozmiar sekcji \texttt{.text} w~bajtach. Pogrubiono mniejszą z dwóch wartości w~każdej komórce.}
+\caption{Rozmiar sekcji kodu wynikowego algorytmu dla GCC i~Clang, wersja
+         sekwencyjna. Rozmiar sekcji \texttt{.text} w~bajtach. Pogrubiono
+         najmniejszą wartość w~każdym wierszu.}
 \label{tab:text-merged}
 \scriptsize
 \setlength{\tabcolsep}{3.0pt}
@@ -196,46 +292,64 @@ Algorytm & Kompilator & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & 
 \midrule
 \multirow{2}{*}{radix2\_v0}
   & GCC   & 732  & 344 & 348  & 344  & \textbf{276} & 580  & 344  & 336  & 336  & 336  & 344 \\
-  & Clang & \textbf{628}  & \textbf{292} & \textbf{292}  & \textbf{280}  & \textbf{276} & \textbf{280}  & \textbf{272}  & \textbf{280}  & \textbf{280}  & \textbf{280}  & \textbf{280} \\
+  & Clang & 628  & 292 & 292  & 280  & 276 & 280  & \textbf{272}  & 280  & 280  & 280  & 280 \\
 \addlinespace
 \multirow{2}{*}{radix2\_v1}
-  & GCC   & 704  & 260 & \textbf{224}  & \textbf{228}  & 236 & \textbf{392}  & \textbf{260}  & \textbf{244}  & \textbf{244}  & \textbf{244}  & \textbf{228} \\
-  & Clang & \textbf{604}  & \textbf{236} & 840  & 852  & \textbf{224} & 852  & 848  & 864  & 860  & 860  & 852 \\
+  & GCC   & 704  & 260 & \textbf{224}  & 228  & 236 & 392  & 260  & 244  & 244  & 244  & 228 \\
+  & Clang & 604  & 236 & 840  & 852  & \textbf{224} & 852  & 848  & 864  & 860  & 860  & 852 \\
 \addlinespace
 \multirow{2}{*}{radix2\_v2\_soa}
-  & GCC   & 784  & \textbf{272} & \textbf{268}  & \textbf{272}  & \textbf{260} & \textbf{460}  & \textbf{272}  & \textbf{264}  & \textbf{264}  & 1032 & \textbf{272} \\
-  & Clang & \textbf{652}  & 288 & 712  & 740  & 264 & 740  & 736  & 772  & 768  & \textbf{768}  & 740 \\
+  & GCC   & 784  & 272 & 268  & 272  & \textbf{260} & 460  & 272  & 264  & 264  & 1032 & 272 \\
+  & Clang & 652  & 288 & 712  & 740  & \textbf{264} & 740  & 736  & 772  & 768  & 768  & 740 \\
 \addlinespace
 \multirow{2}{*}{radix2\_v3\_neon}
-  & GCC   & 1448 & \textbf{404} & \textbf{384}  & \textbf{564}  & \textbf{360} & \textbf{832}  & \textbf{564}  & \textbf{560}  & \textbf{560}  & \textbf{1068} & \textbf{564} \\
-  & Clang & \textbf{1396} & 444 & 1048 & 1536 & 412 & 1536 & 1532 & 1528 & 1528 & 1528 & 1536 \\
+  & GCC   & 1448 & 404 & 384  & 564  & \textbf{360} & 832  & 564  & 560  & 560  & 1068 & 564 \\
+  & Clang & 1396 & 444 & 1048 & 1536 & \textbf{412} & 1536 & 1532 & 1528 & 1528 & 1528 & 1536 \\
 \addlinespace
 \multirow{2}{*}{radix4}
-  & GCC   & 1216 & 476 & 452  & 456  & 428 & 456  & 472  & 440  & 468  & 468  & 456 \\
-  & Clang & \textbf{1068} & \textbf{416} & \textbf{416}  & \textbf{384}  & \textbf{416} & \textbf{384}  & \textbf{384}  & \textbf{396}  & \textbf{396}  & \textbf{396}  & \textbf{384} \\
+  & GCC   & 1216 & 476 & 452  & 456  & \textbf{428} & 456  & 472  & 440  & 468  & 468  & 456 \\
+  & Clang & 1068 & 416 & 416  & \textbf{384}  & 416 & \textbf{384}  & \textbf{384}  & 396  & 396  & 396  & \textbf{384} \\
 \addlinespace
 \multirow{2}{*}{radix4\_naive}
-  & GCC   & \textbf{1188} & \textbf{536} & \textbf{512}  & \textbf{512}  & \textbf{500} & \textbf{512}  & \textbf{572}  & \textbf{524}  & \textbf{572}  & \textbf{572}  & \textbf{512} \\
-  & Clang & 1080 & 560 & 560  & 548  & 548 & 548  & 2208 & 552  & 2232 & 2232 & 548 \\
+  & GCC   & 1188 & 536 & 512  & 512  & \textbf{500} & 512  & 572  & 524  & 572  & 572  & 512 \\
+  & Clang & 1080 & 560 & 560  & \textbf{548}  & \textbf{548} & \textbf{548}  & 2208 & 552  & 2232 & 2232 & \textbf{548} \\
 \addlinespace
 \multirow{2}{*}{splitradix}
-  & GCC   & 1444 & 580 & 528  & 528  & 532 & 528  & 540  & 532  & 544  & 544  & 528 \\
-  & Clang & \textbf{1392} & \textbf{464} & \textbf{464}  & \textbf{464}  & \textbf{448} & \textbf{464}  & \textbf{464}  & \textbf{476}  & \textbf{476}  & \textbf{476}  & \textbf{464} \\
+  & GCC   & 1444 & 580 & \textbf{528}  & \textbf{528}  & 532 & \textbf{528}  & 540  & 532  & 544  & 544  & \textbf{528} \\
+  & Clang & 1392 & 464 & 464  & 464  & \textbf{448} & 464  & 464  & 476  & 476  & 476  & 464 \\
 \addlinespace
 \multirow{2}{*}{stockham}
-  & GCC   & 764  & 320 & \textbf{320}  & \textbf{684}  & \textbf{208} & 1544 & \textbf{620}  & \textbf{668}  & \textbf{668}  & \textbf{668}  & \textbf{684} \\
-  & Clang & \textbf{716}  & \textbf{268} & 1080 & 852  & 216 & \textbf{852}  & 840  & 1092 & 868  & 868  & 852 \\
+  & GCC   & 764  & 320 & 320  & 684  & \textbf{208} & 1544 & 620  & 668  & 668  & 668  & 684 \\
+  & Clang & 716  & 268 & 1080 & 852  & \textbf{216} & 852  & 840  & 1092 & 868  & 868  & 852 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 
 
-\subsection{Wpływ kompilatora na błędy numeryczny wybranych algorytmów}\label{sec:WplywBledyNumeryczne}
-%absolutnie odnies sie do tabeli 5,1 (albo 1.15)
-Tutaj implementacja v0 ma blad numeryczny w wyliczaniu motylka, bylo pokazane w rozdziale wczesniej, trzeba zrobic cref tutaj. Warty do zauwazenia jest wniosek ze 
-kompilator to narzedzie, a nie poprawiacz kodu - jak napiszemy cos po prostu zle to on nie poprawi magicznie dokladnosci, tylko ten blad bedzie. Ten blad numeryczny
-jest tym bardziej widoczny im wieksze sa dane wejsciowe.
+\subsection{Wpływ kompilatora na błędy numeryczne wybranych algorytmów}\label{sec:WplywBledyNumeryczne}
+Dokładność wyników dla 16384 próbek zestawiono w~\cref{tab:dokl-gcc-16k}. Zakres,
+w~jakim kompilator wpływa na wynik, jest wąski - pomijając zestawy
+z~\texttt{-ffast-math}, rozpiętość SNR w~obrębie wiersza nie przekracza 1,31~dB,
+a~same te zestawy zmieniają go najwyżej o~0,45~dB, przy czym dla
+\texttt{splitradix} i~\texttt{radix4\_naive} nieznacznie go podnoszą.
+
+Wyjątkiem jest \texttt{radix2\_v0}, który osiąga 91,52~dB wobec 134,89-138,48~dB
+dla pozostałych wariantów. Różnica wynika ze sposobu wyznaczania współczynników
+obrotu w~tej implementacji, opisanego
+w~\cref{subsection:WersjeJednowatkowe}. Kolejne
+współczynniki powstają przez mnożenie poprzedniej wartości przez stały czynnik,
+więc błąd zaokrąglenia każdego kroku wchodzi do kroku następnego i~narasta wraz
+z~liczbą etapów. Potwierdza to porównanie rozmiarów - SNR spada ze 113,41~dB
+przy 1024~próbkach do 75,14~dB przy 1048576, podczas gdy pozostałe warianty tracą
+w~tym zakresie najwyżej 4~dB.
+
+Wynik ten pokazuje, że kompilator jest narzędziem tłumaczącym kod, a~nie
+mechanizmem korygującym jego wady. Żaden poziom optymalizacji ani zestaw flag nie
+zmniejszył błędu wynikającego z~konstrukcji algorytmu; skuteczna okazała się
+dopiero zmiana implementacji - \texttt{radix2\_v1} przy tym samym schemacie
+obliczeń osiąga 136,71~dB. Obserwacja ta jest istotna dla codziennej praktyki w pracy z oprogramowaniem. 
+Kompilator nie poprawi błędów merytorycznych w kodzie programu komputerowego i nie zwiększy jego jakości.
 %============================================================================
 % Tabela 1.44   (etykieta: tab:dokl-gcc-1M)
 % Błąd średniokwadratowy i stosunek sygnału do szumu dla GCC i 1048576 próbek, wersja sekwencyjna.
@@ -277,96 +391,124 @@ stockham & 137,25 & 137,25 & 136,96 & 136,96 & 136,96 & 136,96 & 136,70 & 136,96
 % Tabela 1.47   (etykieta: tab:dokl-clang-1M)
 % Błąd średniokwadratowy i stosunek sygnału do szumu dla Clang i 16384 próbek, wersja sekwencyjna.
 %============================================================================
-\subsection{Wpływ wybranych flag na wektoryzację}
-TO DO 
-!!!!!!!!!!!Ta tabela jest straszna, trzeba wymyślić jakis sensowniejszy sposób prezentacji tych wyników!!!!!
+\subsection{Wpływ wybranych flag na wektoryzację}\label{sec:WplywFlagWektoryzacja}
+Liczbę instrukcji zmiennoprzecinkowych w~kodzie wynikowym zestawiono
+w~\cref{tab:simd-skal-gcc}; są to statyczne wystąpienia instrukcji, a~nie liczba
+ich wykonań. Automatyczna wektoryzacja przez kompilator nie okazała się zjawiskiem powszechnym -
+pomijając \texttt{-O0}, wystąpiła tylko  w~30 z~80 konfiguracji pod GCC i~w~38 pod
+Clang, a~poziomy \texttt{-O1} oraz \texttt{-Os} nie włączają jej w~ogóle.
+
+Decyduje o~niej nie poziom optymalizacji, lecz pojedyncza flaga. Pod GCC
+\texttt{radix2\_v2\_soa} zostaje zwektoryzowany wyłącznie w~zestawie
+\texttt{+alias}, znoszącym założenie o~możliwym nakładaniu się buforów, i~właśnie
+tam osiąga najlepszy czas - 0,7111~ms wobec 0,8427~ms przy \texttt{-O2}
+(\cref{tab:med-merged-16k}). Zależność działa też odwrotnie: dla
+\texttt{radix2\_v1} pod GCC dodanie \texttt{-ffast-math} lub \texttt{-mcpu}
+usuwa wektoryzację obecną przy \texttt{-O2}, wydłużając czas z~0,7562 do
+0,8442~ms.
+
+Tłumaczy to znikomy zysk z~użycia flagi \texttt{-O3}. W~użytej wersji GCC
+wektoryzacja działa już przy \texttt{-O2}, a~\texttt{-O3} zmienia jedynie model
+kosztu na mniej zachowawczy, więc skutek widać tylko tam, gdzie decyzja
+o~opłacalności była graniczna, na przykład dla algorytmu dla \texttt{stockham} liczba instrukcji SIMD
+rośnie wtedy z~zera do siedmiu, a~w~pozostałych ich liczba pozostaje bez zmian.
 %============================================================================
 % Tabela 1.51 i 1,52  (etykieta: tab:simd-skal-gcc)
 % Liczba instrukcji wektorowych i skalarnych dla GCC i clang, wersja sekwencyjna. Liczba statycznych instrukcji zmiennoprzecinkowych w~kodzie wynikowym.
 %============================================================================
 \begin{table}[H]
 \centering
-\caption{Liczba instrukcji wektorowych i skalarnych dla GCC i Clang, wersja sekwencyjna. Liczba statycznych instrukcji zmiennoprzecinkowych w~kodzie wynikowym. W~sekcji wektorowej pogrubiono wyższą wartość (więcej wektoryzacji), w~sekcji skalarnej -- niższą.}
-\label{tab:simd-skal-merged}
+\caption{Liczba statycznych instrukcji zmiennoprzecinkowych w~kodzie wynikowym
+         dla GCC i~Clang, wersja sekwencyjna. Format komórki: liczba instrukcji
+         wektorowych (SIMD), w~nawiasie liczba instrukcji skalarnych.
+         Pogrubiono komórki, w~których wystąpiła wektoryzacja.}
+\label{tab:simd-skal-gcc}
 \scriptsize
-\setlength{\tabcolsep}{3.0pt}
+\setlength{\tabcolsep}{2.0pt}
 \begin{tabular}{llrrrrrrrrrrr}
 \toprule
-Algorytm & Kompilator & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
+Algorytm & Komp. & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
 \midrule
-\multicolumn{13}{l}{\textit{Instrukcje wektorowe (SIMD)}} \\[2pt]
 \multirow{2}{*}{radix2\_v0}
-  & GCC   & 0 & 0 & 0          & 0          & 0 & 0          & 0          & 0          & 0          & 0          & 0 \\
-  & Clang & 0 & 0 & 0          & 0          & 0 & 0          & 0          & 0          & 0          & 0          & 0 \\
+  & GCC   & 0 (11) & 0 (17) & 0 (13) & 0 (13) & 0 (13) & 0 (36) & 0 (13) & 0 (13) & 0 (13) & 0 (13) & 0 (13) \\
+  & Clang & 0 (9)  & 0 (13) & 0 (13) & 0 (13) & 0 (13) & 0 (13) & 0 (13) & 0 (13) & 0 (13) & 0 (13) & 0 (13) \\
 \addlinespace
 \multirow{2}{*}{radix2\_v1}
-  & GCC   & 0 & 0 & 5          & 5          & 0 & \textbf{15}& 0          & 0          & 0          & 0          & 5 \\
-  & Clang & 0 & 0 & \textbf{9} & \textbf{9} & 0 & 9          & \textbf{8} & \textbf{9} & \textbf{8} & \textbf{8} & \textbf{9} \\
+  & GCC   & 0 (10) & 0 (10) & \textbf{5 (1)} & \textbf{5 (1)} & 0 (8) & \textbf{15 (3)} & 0 (8) & 0 (8) & 0 (8) & 0 (8) & \textbf{5 (1)} \\
+  & Clang & 0 (8)  & 0 (8)  & \textbf{9 (8)} & \textbf{9 (8)} & 0 (8) & \textbf{9 (8)}  & \textbf{8 (8)} & \textbf{9 (8)} & \textbf{8 (8)} & \textbf{8 (8)} & \textbf{9 (8)} \\
 \addlinespace
 \multirow{2}{*}{radix2\_v2\_soa}
-  & GCC   & 0 & 0 & 0          & 0          & 0 & 0          & 0          & 0          & 0          & \textbf{16}& 0 \\
-  & Clang & 0 & 0 & \textbf{9} & \textbf{9} & 0 & \textbf{9} & \textbf{8} & \textbf{9} & \textbf{8} & 8          & \textbf{9} \\
+  & GCC   & 0 (10) & 0 (10) & 0 (8) & 0 (8) & 0 (8) & 0 (24) & 0 (8) & 0 (8) & 0 (8) & \textbf{16 (16)} & 0 (8) \\
+  & Clang & 0 (8)  & 0 (8)  & \textbf{9 (8)} & \textbf{9 (8)} & 0 (8) & \textbf{9 (8)} & \textbf{8 (8)} & \textbf{9 (8)} & \textbf{8 (8)} & \textbf{8 (8)} & \textbf{9 (8)} \\
 \addlinespace
 \multirow{2}{*}{radix2\_v3\_neon}
-  & GCC   & \textbf{9} & 8 & 8          & 8          & 8 & \textbf{32}& 8          & 8          & 8          & 16         & 8 \\
-  & Clang & \textbf{9} & 8 & \textbf{17}& \textbf{17}& 8 & 17         & \textbf{16}& \textbf{17}& \textbf{16}& \textbf{16}& \textbf{17} \\
+  & GCC   & \textbf{9 (10)} & \textbf{8 (10)} & \textbf{8 (8)} & \textbf{8 (24)} & \textbf{8 (8)} & \textbf{32 (24)} & \textbf{8 (24)} & \textbf{8 (24)} & \textbf{8 (24)} & \textbf{16 (32)} & \textbf{8 (24)} \\
+  & Clang & \textbf{9 (8)}  & \textbf{8 (8)}  & \textbf{17 (8)} & \textbf{17 (32)} & \textbf{8 (8)} & \textbf{17 (32)} & \textbf{16 (32)} & \textbf{17 (32)} & \textbf{16 (32)} & \textbf{16 (32)} & \textbf{17 (32)} \\
 \addlinespace
 \multirow{2}{*}{radix4}
-  & GCC   & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-  & Clang & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+  & GCC   & 0 (22) & 0 (34) & 0 (28) & 0 (28) & 0 (28) & 0 (28) & 0 (28) & 0 (28) & 0 (28) & 0 (28) & 0 (28) \\
+  & Clang & 0 (20) & 0 (28) & 0 (28) & 0 (28) & 0 (28) & 0 (28) & 0 (28) & 0 (28) & 0 (28) & 0 (28) & 0 (28) \\
 \addlinespace
 \multirow{2}{*}{radix4\_naive}
-  & GCC   & 0 & 0 & 0 & 0 & 0 & 0 & 0          & 0 & 0          & 0          & 0 \\
-  & Clang & 0 & 0 & 0 & 0 & 0 & 0 & \textbf{31}& 0 & \textbf{31}& \textbf{31}& 0 \\
+  & GCC   & 0 (33) & 0 (40) & 0 (34) & 0 (34) & 0 (34) & 0 (34) & 0 (34) & 0 (34) & 0 (34) & 0 (34) & 0 (34) \\
+  & Clang & 0 (31) & 0 (34) & 0 (34) & 0 (34) & 0 (34) & 0 (34) & \textbf{31 (34)} & 0 (34) & \textbf{31 (34)} & \textbf{31 (34)} & 0 (34) \\
 \addlinespace
 \multirow{2}{*}{splitradix}
-  & GCC   & 0 & 0 & \textbf{2} & \textbf{2} & 0 & \textbf{2} & \textbf{2} & \textbf{2} & \textbf{2} & \textbf{2} & \textbf{2} \\
-  & Clang & 0 & 0 & 0          & 0          & 0 & 0          & 0          & 0          & 0          & 0          & 0 \\
+  & GCC   & 0 (29) & 0 (28) & \textbf{2 (20)} & \textbf{2 (20)} & 0 (24) & \textbf{2 (20)} & \textbf{2 (23)} & \textbf{2 (20)} & \textbf{2 (23)} & \textbf{2 (23)} & \textbf{2 (20)} \\
+  & Clang & 0 (25) & 0 (24) & 0 (24) & 0 (24) & 0 (24) & 0 (24) & 0 (24) & 0 (24) & 0 (24) & 0 (24) & 0 (24) \\
 \addlinespace
 \multirow{2}{*}{stockham}
-  & GCC   & 0 & 0 & 0          & 7          & 0 & \textbf{49}& 9          & 7          & 7          & 7          & 7 \\
-  & Clang & 0 & 0 & \textbf{14}& \textbf{14}& \textbf{5} & 14         & \textbf{14}& \textbf{24}& \textbf{14}& \textbf{14}& \textbf{14} \\
-\addlinespace
-\multicolumn{13}{l}{\textit{Instrukcje skalarne}} \\[2pt]
-\multirow{2}{*}{radix2\_v0}
-  & GCC   & 11         & 17 & 13 & 13 & 13 & 36 & 13 & 13 & 13 & 13 & 13 \\
-  & Clang & \textbf{9} & \textbf{13} & \textbf{13} & \textbf{13} & \textbf{13} & \textbf{13} & \textbf{13} & \textbf{13} & \textbf{13} & \textbf{13} & \textbf{13} \\
-\addlinespace
-\multirow{2}{*}{radix2\_v1}
-  & GCC   & 10 & 10 & \textbf{1} & \textbf{1} & \textbf{8} & \textbf{3} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{1} \\
-  & Clang & \textbf{8} & \textbf{8} & 8 & 8 & \textbf{8} & 8 & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & 8 \\
-\addlinespace
-\multirow{2}{*}{radix2\_v2\_soa}
-  & GCC   & 10 & 10 & 8 & 8 & 8 & 24 & 8 & 8 & 8 & 16 & 8 \\
-  & Clang & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} \\
-\addlinespace
-\multirow{2}{*}{radix2\_v3\_neon}
-  & GCC   & 10 & 10 & \textbf{8} & \textbf{24} & \textbf{8} & \textbf{24} & \textbf{24} & \textbf{24} & \textbf{24} & \textbf{32} & \textbf{24} \\
-  & Clang & \textbf{8} & \textbf{8} & \textbf{8} & 32 & \textbf{8} & 32 & 32 & 32 & 32 & 32 & 32 \\
-\addlinespace
-\multirow{2}{*}{radix4}
-  & GCC   & \textbf{22} & \textbf{34} & 28 & 28 & 28 & 28 & 28 & 28 & 28 & 28 & 28 \\
-  & Clang & 20          & 28          & \textbf{28} & \textbf{28} & \textbf{28} & \textbf{28} & \textbf{28} & \textbf{28} & \textbf{28} & \textbf{28} & \textbf{28} \\
-\addlinespace
-\multirow{2}{*}{radix4\_naive}
-  & GCC   & \textbf{33} & \textbf{40} & \textbf{34} & \textbf{34} & \textbf{34} & \textbf{34} & \textbf{34} & \textbf{34} & \textbf{34} & \textbf{34} & \textbf{34} \\
-  & Clang & 31          & 34          & 34 & 34 & 34 & 34 & 34 & 34 & 34 & 34 & 34 \\
-\addlinespace
-\multirow{2}{*}{splitradix}
-  & GCC   & \textbf{29} & \textbf{28} & \textbf{20} & \textbf{20} & \textbf{24} & \textbf{20} & \textbf{23} & \textbf{20} & \textbf{23} & \textbf{23} & \textbf{20} \\
-  & Clang & 25          & 24          & 24          & 24          & 24          & 24          & 24          & 24          & 24          & 24          & 24 \\
-\addlinespace
-\multirow{2}{*}{stockham}
-  & GCC   & \textbf{10} & \textbf{10} & 8 & 16 & 8 & 64 & 12 & 16 & 16 & 16 & 16 \\
-  & Clang & 8           & 8           & \textbf{0} & \textbf{0} & \textbf{0} & \textbf{0} & \textbf{0} & \textbf{0} & \textbf{0} & \textbf{0} & \textbf{0} \\
+  & GCC   & 0 (10) & 0 (10) & 0 (8) & \textbf{7 (16)} & 0 (8) & \textbf{49 (64)} & \textbf{9 (12)} & \textbf{7 (16)} & \textbf{7 (16)} & \textbf{7 (16)} & \textbf{7 (16)} \\
+  & Clang & 0 (8)  & 0 (8)  & \textbf{14 (0)} & \textbf{14 (0)} & \textbf{5 (0)} & \textbf{14 (0)} & \textbf{14 (0)} & \textbf{24 (0)} & \textbf{14 (0)} & \textbf{14 (0)} & \textbf{14 (0)} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \subsection{Wpływ rozmiaru danych wejściowych}
-Tutaj bedziemy mówić o chybieniach cache i o tym,że przy danych, które wychodza za cache duzo czasu zajmuje kopiowanie. 
-Mozna jeszcze wsadzic tabelki 28 i 29, do zastanowienia. Jesli chce to sprawdzic to trzeba zobaczyc w jakim poziomie pamieci sa umieszczane dane,
-bo czasy dostepu sa inne. Podobno mozna to sprawdzic z binarki dosc prosto, temat do przemyslenia.
+
+Rozmiary danych wejściowych dobrano tak, aby ich wielkość pozwoliła na sprawdzenie dostępu do
+kolejnych poziomów pamięci podręcznej badanej platformy sprzętowej. Przy 1024~próbkach oba
+bufory zajmują 16~kB i~mieszczą się w~pamięci L1D o~pojemności 32~kB; przy
+16384~próbkach jest to 256~kB, a~więc powyżej L1D, lecz w~granicach 1~MB
+pamięci L2; przy 1048576~próbkach --- 16~MB, czyli szesnastokrotnie ponad
+pojemność L2.
+
+Skutek widać w~\cref{tab:cache-gcc-16k} i~\cref{tab:cache-gcc-1M}. Współczynnik
+chybień L2 rośnie z~wartości nieprzekraczających 0,7\% przy 16384~próbkach do
+23--35\% przy 1048576, co oznacza, że co trzecie odwołanie kończy się sięgnięciem
+do pamięci operacyjnej. Przekłada się to bezpośrednio na stosunek czasu wykonania do wielkości danych wejsciowych.
+Miara ta uwzględnia już wzrost liczby etapów z~14 do 20,
+zatem pojedyncza operacja motylkowa kosztuje przy większym rozmiarze danych
+ponad dwukrotnie więcej czasu, mimo że wykonuje dokładnie tyle samo działań
+arytmetycznych. Obserwowane wydłużenie wynika więc z~czasu dostępu do
+danych.
+
+Skala chybień w pamięci podręcznej zależy od wzorca dostępu do danych. Najgorzej wypada
+\texttt{splitradix}: 19,10\% chybień L1D i~koszt jednostkowy 28,50~ns wobec
+4,71~ns przy 16384~próbkach. Dla porównania \texttt{stockham}, przechodzący
+przez tablicę liniowo, notuje 1,47\% chybień i~8,13~ns.
+
+Zachowanie \texttt{splitradix} pokazuje, że o~czasie wykonania decyduje nie liczba chybień,
+lecz ich koszt. Wariant ten notuje wysokie chybienia L1D niezależnie od rozmiaru
+danych - 15,52\% przy 16384~próbkach i~19,10\% przy 1048576, wobec 1,42\%
+i~1,08\% dla \texttt{radix2\_v0}. Wynikać to może,  z~samego schematu obliczeń,
+opartego na podciągach o~indeksach $4k+1$ i~$4k+3$, a~więc na odwołaniach
+z~krokiem co cztery. Przy 16384~próbkach obsługuje je jednak pamięć L2 i~strata
+wobec \texttt{radix2\_v0} wynosi 17\%; przy 1048576, gdy chybienia L2 sięgają
+26,75\%, te same odwołania kierowane są do pamięci operacyjnej, a~strata zdecydowanie rośnie.
+
+Jednocześnie zanikają różnice między wariantami tego samego schematu. Cztery
+implementacje radix-2 dzieli 65\% przy 16384~próbkach i~zaledwie 2,1\% przy
+1048576 (\cref{tab:med-merged-16k}, \cref{tab:med-gcc-1M}). Powyżej pojemności
+L2 o~wydajności decyduje zatem organizacja dostępu do pamięci, a~nie jakość
+wygenerowanego kodu. Wniosek ten może być niezwykle istotny przy organizjacji systemów, których zadaniem jest przetwarzanie
+bardzo dużych zbiorów danych.
+
+Odczytując \cref{tab:cache-gcc-1M}, należy zachować ostrożność wobec kolumny
+\texttt{-O0}. Chybienia L1D wynoszą tam 0,14--2,69\%, czyli kilkukrotnie mniej
+niż na wyższych poziomach optymalizacji, co nie świadczy o~lepszej organizacji dostępu do pamięci.
+Kod programu bez optymalizacji wykonuje wiele nadmiarowych odwołań do pamięci trafiających
+do L1D, które powiększają mianownik współczynnika badanego stosunku.
 
 %============================================================================
 % Tabela 1.3   (etykieta: tab:med-gcc-1M)
@@ -475,9 +617,6 @@ stockham & 0,39 & 0,14 & 0,41 & 0,45 & 0,43 & 0,32 & 0,32 & 0,46 & 0,48 & 0,34 &
 
 
 \section{Analiza wpływu optymalizacji programu wielowątkowego}
-
-Ta sekcje trzeba przeprowadzic w bardzo analogiczny sposob jak te co jest wyzej, jak zrobisz sekcje sekwencyjna to to pojdzie w jeden wieczór
-
 
 %============================================================================
 % Tabela 1.68   (etykieta: tab:par-skal-gcc-64k)

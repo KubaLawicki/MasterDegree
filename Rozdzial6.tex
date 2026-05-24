@@ -50,5 +50,13 @@ NA RAZIE ROBOCZE
     \item Nie istnieje uniwersalnie najlepszy zestaw flag. Pewne jest jedynie, że
           \texttt{-O0} daje najgorszy wynik, powyżej tego poziomu wybór zależy od
           algorytmu, rozmiaru przetwarzanych danych 
+
+      \item Linux jest niedeterministyczny jesli chodzi o czasy wykonania, sa przerwania itp itd, nie daje
+            gwarancji dotrzymania terminu. To sie zgadza z założeniami tego systemu, jednakże w tych badaniach 
+            To potwierdzono.
+
+      \item Kompilator cudów nie zrobi, ale jest to realne narzędzie, którego warto używać, złaszcza ze bazowa konfiguracja to
+      O0. Najpierw napisz dobry kod potem optymalizuj, pamietajac, ze program komputerowy nie jest ograniczony tylko przez czas wykonywania obliczen,
+      ale w wielu przypadkach też o dostep do pamieci.
 \end{enumerate}
 \section{Kierunek dalszych badan}

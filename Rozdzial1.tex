@@ -1,14 +1,64 @@
 \chapter{Wstęp i cel pracy}
-% Sztuczne sieci neuronowe są narzędziem niezwykle popularnym, wykorzystywanym do rozwiązywania różnorodnych problemów, zarówno w środowisku akademickim, jak i w przemyśle. Możliwości ich zastosowania są praktycznie nieograniczone i zależą przede wszystkim od wyobraźni projektanta oraz dostępnych zasobów obliczeniowych. 
-% \\Jednym z podstawowych problemów, rozwiązywanych z pomocą  sztucznych sieci neuronowych, jest klasyfikacja danych wejściowych. Jest to zadanie praktyczne i powszechnie spotykane, polegające na przykład na  przypisywaniu danych liczbowych, takich jak wyniki badań medycznych czy sprawozdań finansowych do zdefiniowanych kategorii. Innym przykładem zastosowania jest klasyfikacja obrazów, spotykana często w diagnostyce medycznej lub w rozpoznawaniu obiektów w systemach wizyjnych w automatyce przemysłowej.
 
-% Przy rozwiązywaniu zadania klasyfikacji danych użyteczne mogą okazać się samoorganizujące się sieci neuronowe, nazywane również sieciami Kohonena. Są one przykładem sieci uczonych bez nadzoru, co oznacza, że przetwarzają dane bez konieczności posiadania informacji o wartości oczekiwanej (tj. przynależności danych uczących do konkretnych klas). Pomimo tej istotnej zalety nie są one jednak tak popularne jak inne sieci neuronowe, ze względu na ich potencjalne ograniczenia przy rozwiązywaniu bardzo złożonych problemów. 
-% W prezentowanej pracy zdecydowano się na sprawdzenie możliwości wykorzystania sieci SOM przy rozwiązywaniu problemu klasyfikacji. 
+Kompilator jest narzędziem, z~którego inżynier oprogramowania korzysta przy
+każdym uruchomieniu procesu budowania, a~mimo to rzadko bywa przedmiotem jego
+uwagi. W~praktyce traktuje się go jak czarną skrzynkę: na wejściu znajduje się
+kod źródłowy, na wyjściu plik wykonywalny, a~to, co dzieje się pomiędzy,
+pozostaje poza zainteresowaniem programisty. Poziom optymalizacji ustawia się
+zwykle raz, przy konfigurowaniu projektu, i~nie wraca się do niego przez cały
+cykl życia oprogramowania. Gdy pojawia się potrzeba przyspieszenia programu,
+modyfikowana jest przede wszystkim logika algorytmu, znacznie rzadziej rozważa się
+wpływ, jaki na wynik końcowy ma sam proces translacji kodu na instrukcje maszynowe.
+
+Pominięcie to jest o~tyle zaskakujące, że znaczna część oprogramowania
+działającego bezpośrednio na sprzęcie powstaje w~językach kompilowanych, takich jak język C
+\cite{Tanenbaum}.
+Sposób, w~jaki kompilator tłumaczy słowa kluczowe tego języka na instrukcje
+konkretnej architektury, decyduje o~liczbie wykonanych operacji, o~wykorzystaniu
+rejestrów oraz o~tym, czy program skorzysta z~jednostek wektorowych procesora.
+Każdy z~tych czynników wpływa bezpośrednio na czas wykonania, a~jednak żaden
+z~nich nie wymaga zmiany choćby jednej linii kodu źródłowego.
+
+Znaczenie tego zagadnienia rośnie w~systemach wbudowanych, ponieważ dysponują one 
+ ograniczoną mocą obliczeniową, niewielką pamięcią operacyjną
+i~pracują często w rozwiązaniach wymagających oszczędzania energii. W~ich przypadku
+poprawa wydajności uzyskana bez wymiany sprzętu przekłada się wprost na niższy
+koszt systemu, mniejszy pobór energii oraz większy zapas mocy obliczeniowej
+na pozostałe zadania. Jeżeli zmiana ustawień kompilacji pozwala skrócić
+czas wykonania krytycznej procedury, jest to korzyść osiągnięta bez żadnych
+nakładów.
+
+Wpływu ustawień kompilacji na czas wykonania nie da się jednak oszacować bez
+pomiaru. Kompilator podejmuje decyzje na podstawie struktury konkretnego kodu,
+zestawu dostępnych instrukcji procesora oraz przyjętego modelu kosztu. Dodatkowo część flag się wyklucza.
+Do udzielenia odpowiedzi potrzebne jest
+zatem stanowisko pomiarowe, na którym można uruchomić ten sam kod w~wielu
+wariantach kompilacji i~porównać określone metryki optymalizajci.
+
+
 \section{Cel pracy}
-% Celem pracy jest zbadanie wpływu różnych funkcji sąsiedztwa (Gaussa, trójkątnej, progowej i eksponencjalnej) na  możliwości wykorzystania sieci SOM we wstępnym etapie procesu klasyfikacji danych, czyli klasteryzacji. Klasteryzację można przedstawić jako proces grupowania danych w zbiory, w których elementy są do siebie podobne względem obranego kryterium, a różnią się od elementów innych grup. W pracy zostanie zbadany dodatkowo wpływ wybranej topologii sieci.
+Celem niniejszej pracy jest projekt systemu wbudowanego przeznaczonego do
+badania możliwości optymalizacyjnych kompilatora oraz do porównania różnych
+metod poprawy wydajności programu. Jako algorytm przetwarzania danych wybrano  szybką
+transformatę Fouriera,  algorytm o~ustalonej i~dobrze opisanej strukturze,
+szeroko wykorzystywany w~cyfrowym przetwarzaniu sygnałów, a~zarazem na tyle
+wymagający obliczeniowo, że różnice w~jakości wygenerowanego kodu są w~jego
+przypadku mierzalne.
 
-% Jakość przypisania do klas oceniona będzie za pomocą dwóch powszechnie stosowanych miar w sieciach Kohonena: błędu kwantyzacji i błędu topograficznego. Dodatkowo wykorzystane zostaną mapy zwycięzców, do wizualnej weryfikacji jakości grupowania danych. Będą one jednak traktowane jako narzędzia pomocnicze.
+Na system składają się dwie części. Część sprzętową stanowi
+Raspberry Pi 4B, pracująca pod
+kontrolą systemu operacyjnego Linux. Część programowa obejmuje jedenaście
+wariantów implementacji transformaty Fouriera, różniących się od siebie podejściem do realizacji 
+Dyskretnej transformaty Fouriera oraz program
+pomiarowy, który uruchamia je w~kontrolowanych warunkach i~rejestruje czas
+wykonania wraz z~odczytami niezbędnych informacji o innych metrykach optymalizacji.
 
-% W celu realizacji postawionych założeń zostaną przeprowadzone badania implementujące sieci SOM w różnych kombinacjach funkcji sąsiedztwa, topologii sieci oraz sposobu określania wartości promienia sąsiedztwa. Sieci te zostaną poddane uczeniu na trzech zbiorach danych, różniących się między sobą wielkością, liczbą wymiarów oraz złożonością i strukturą klas.
+Zakres pracy obejmuje trzy grupy zagadnień. Pierwszą z nich jest zbadanie, jaki wpływ
+na wydajność ma sama zmiana flag optymalizacji, przy niezmienionym kodzie źródłowym. 
+Drugą stanowi porównanie tego efektu z~korzyściami wynikającymi z~celowych modyfikacji programu, takich jak
+zmiana układu danych wejściowych, jawne użycie instrukcji wektorowych czy wybór
+odmiennego schematu obliczeń. Trzecią jest sprawdzenie, w~jakim stopniu wnioski
+te zachowują ważność przy zmianie rozmiaru przetwarzanych danych oraz po
+zrównolegleniu obliczeń na wiele rdzeni procesora.
 \section{Zawartość rozdziałów}
 Ogólną strukturę niniejszej pracy można przedstawić w następujący sposób:
