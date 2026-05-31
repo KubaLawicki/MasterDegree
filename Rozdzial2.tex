@@ -5,40 +5,186 @@ Współczesna inżynieria systemów wbudowanych znajduje się w punkcie zwrotnym
 System operacyjny, zgodnie z klasyczną definicją A. Tanenbauma, pełni w tym układzie rolę zarządcy zasobów, którego zadaniem jest sprawiedliwy i bezpieczny arbitraż dostępu do fizycznych komponentów platformy. Jednakże, w przypadku algorytmów o wysokiej intensywności obliczeniowej, takich jak Szybka Transformata Fouriera (FFT), ta warstwa abstrakcji staje się źródłem specyficznych wyzwań inżynierskich. Mechanizmy jądra, takie jak szeregowanie zadań czy obsługa przerwń, wprowadzają do systemu niedeterminizm, objawiający się fluktuacjami czasu wykonania kodu (jitterem) oraz narzutem administracyjnym (overhead).
 
 Zrozumienie architektury systemu operacyjnego w zastosowaniach wbudowanych jest zatem kluczowe dla procesu optymalizacji. Niniejszy rozdział stanowi fundament teoretyczny dla dalszych badań, analizując drogę danych od fizycznego sygnału, przez mechanizmy izolacji przestrzeni jądra i użytkownika, aż po polityki planisty systemowego. Celem poniższych rozważań jest wskazanie wąskich gardeł systemowych, które mogą ograniczać teoretyczną wydajność algorytmów cyfrowego przetwarzania sygnałów na platformach o ograniczonych zasobach
-%Koniec gemini generated
+%Koniec gemini generated to jest do wywalenia
+
 \cite{Tanenbaum}
 
-%System operacyjny jest posrednikiem miedzy uzytkownikiem i jego oprogramowanie a sprzetem
-\section{Rola systemów operacyjnych w systemach wbudowanych}
-Systemem wbudowanym możemy nazwać taki system komputerowy, którego rola jest ściśle określona. Cecha ta jest wyrózniajaca je od systemów komputerowych ogólnego przeznacznia.
-Wąska specjalizacja takich systemów pozwala na zagwarantowanie poprawnosci systemu. 
+\section{Systemy wbudowane czasu rzeczywistego wraz z ich podziałem}
+Systemem wbudowanym nazywamy dedykowany system komputerowy, który stanowi integralną część większego urządzenia lub maszyny i jest zaprojektowany do wykonywania 
+ściśle określonego zadania \cite{Tanenbaum}. W przeciwieństwie do komputerów ogólnego przeznaczenia (takich jak komputery osobiste czy smartfony), 
+na których użytkownik może uruchamiać dowolne aplikacje, system wbudowany ma z góry zdefiniowaną funkcję i nie jest przeznaczony do późniejszych, swobodnych modyfikacji przez użytkownika końcowego.
 
+Szczególną grupą w obrębie systemów wbudowanych są \textbf{systemy wbudowane czasu rzeczywistego}. Są to takie systemy, których poprawność wyniku prztwarzania nie zależy tylko od poprawności logicznej odpowiedzi, ale też od czasu przetwarzania, poprzedzającego odpowiedź systemu \cite{WangK}.
+W przypadku niewypracowania odpowiedzi w zadanym czasie zdarzenie to jest traktowane jako błąd systemu, co w skrajnych przypadkach może prowadzić do awarii lub uszkodzenia fizycznego sprzętu. 
+
+Systemy czasu rzeczywistego są powszechnie stosowane w zastosowaniach krytycznych, takich jak przemysł zbrojeniowy, aparatura medyczna czy branża motoryzacyjna, co wymusza wprowadzenie ścisłych kryteriów oceny ich niezawodności. W celu jednoznacznego zdefiniowania wymagań dotyczących determinizmu czasowego,
+ w literaturze wprowadza się klasyfikacje systemów ze względu na rygor zachowania narzuconych terminów.
+W literaturze \cite{Tanenbaum} systemy czasu rzeczywistego dzieli się na:
+\begin{itemize}
+    \item \textbf{Systemy twarde (Hard real-time systems )} 
+    \item \textbf{Systemy miękkie (Soft real-time systems )}
+    \item \textbf{Systemy stabilne (Firm real-time systems )} 
+\end{itemize}
+W celu lepszego zobrazowania podzialu systmów czasu rzeczywistego, na rysunku \cref{fig:wykresy RTOS} przedstawiono wykresy funkcji przydatności odpowiedzi $y(t)$ od czasu jej wypracowania przez system \cite{Tanenbaum}. 
+\begin{figure}[htbp]
+\centering
+\definecolor{userblue}{RGB}{225, 243, 254}
+
+% --- RZĄD GÓRNY: RYSUNKI A ORAZ B (ZBLIŻONE DO SIEBIE) ---
+\begin{subfigure}[b]{0.42\textwidth}
+\centering
+\begin{tikzpicture}[>=stealth, scale=0.6, every node/.style={transform shape}]
+\fill[userblue] (-1,-1) rectangle (7.5,4.2);
+\draw[->, thick] (-0.5,0) -- (7,0) node[right=3pt, font=\large] {$t$};
+\draw[->, thick] (0,-0.8) -- (0,4) node[right=3pt, font=\large] {$y(t)$};
+\draw[ultra thick] (1,2.8) -- (3,2.8) -- (5,0) -- (6.8,0); 
+\draw[dotted, thick] (0,2.8) -- (1,2.8);   
+\draw[dotted, thick] (1,0) -- (1,2.8); 
+\draw[dotted, thick] (3,0) -- (3,2.8); 
+\node[below, font=\large] at (1,0) {$t_0$};
+\node[below, font=\large] at (3,0) {$t_1$};
+\node[below, font=\large] at (5,0) {$t_T$};
+\node[left=3pt, font=\large] at (0,2.8) {$u$};
+\node[left=3pt, font=\large] at (0,0) {$0$};
+\node[draw=black, thin, fill=white, inner sep=1pt, anchor=north east, font=\scriptsize] at (6.8, 3.9) {
+    $\displaystyle y(t) = 
+    \begin{cases}
+    u & t_0 < t < t_1 \\
+    u \frac{t_T - t}{t_T - t_1} & t_1 < t < t_T \\
+    0 & t \ge t_T
+    \end{cases}$
+};
+\end{tikzpicture}
+\caption{Miękki system czasu rzeczywistego}
+\label{fig:softRTOS wykres}
+\end{subfigure}
+\quad 
+\begin{subfigure}[b]{0.42\textwidth}
+\centering
+\begin{tikzpicture}[>=stealth, scale=0.6, every node/.style={transform shape}]
+\fill[userblue] (-1,-1) rectangle (7.5,4.2);
+\draw[->, thick] (-0.5,0) -- (7,0) node[right=3pt, font=\large] {$t$};
+\draw[->, thick] (0,-0.8) -- (0,4) node[right=3pt, font=\large] {$y(t)$};
+\draw[ultra thick] (1,2.8) -- (4.5,2.8); 
+\draw[ultra thick, dashed] (4.5,2.8) -- (4.5,0); 
+\draw[ultra thick] (4.5,0) -- (6.8,0);
+\draw[dotted, thick] (0,2.8) -- (1,2.8);   
+\draw[dotted, thick] (1,0) -- (1,2.8); 
+\node[below, font=\large] at (1,0) {$t_0$};
+\node[below, font=\large] at (4.5,0) {$t_T$};
+\node[left=3pt, font=\large] at (0,2.8) {$u$};
+\node[left=3pt, font=\large] at (0,0) {$0$};
+\node[draw=black, thin, fill=white, inner sep=1pt, anchor=north east, font=\scriptsize] at (6.8, 3.9) {
+    $\displaystyle y(t) = 
+    \begin{cases}
+    u & t_0 < t < t_T \\
+    0 & t \ge t_T
+    \end{cases}$
+};
+\end{tikzpicture}
+\caption{Solidny system czasu rzeczywistego}
+\label{fig:firm RTOS wykres}
+\end{subfigure}
+
+\vspace{6ex} % Zdecydowanie większy odstęp pionowy
+
+% --- RZĄD DOLNY: RYSUNEK C NA PEŁNĄ SZEROKOŚĆ (CENTROWANY DO STRONY) ---
+\begin{subfigure}[b]{\textwidth}
+\centering
+\begin{tikzpicture}[>=stealth, scale=0.6, every node/.style={transform shape}]
+% 1. Kolor tła
+\fill[userblue] (-1,-3.5) rectangle (7.5,4.2);
+% 2. Osie
+\draw[->, thick] (-0.5,0) -- (7,0) node[right=3pt, font=\large] {$t$};
+\draw[->, thick] (0,-3.2) -- (0,4) node[right=3pt, font=\large] {$y(t)$};
+% 3. Główna linia wykresu
+\draw[ultra thick] (1,2.8) -- (4.5,2.8); 
+\draw[ultra thick, ->, dashed] (4.5,2.8) -- (4.5,-2.8); 
+% 4. Linie pomocnicze
+\draw[dotted, thick] (0,2.8) -- (1,2.8);   
+\draw[dotted, thick] (1,0) -- (1,2.8); 
+% 5. Etykiety
+\node[below, font=\large] at (1,0) {$t_0$};
+\node[below, font=\large] at (4.5,0) {$t_T$};
+\node[left=3pt, font=\large] at (0,2.8) {$u$};
+\node[left=3pt, font=\large] at (0,-2.8) {$-\infty$};
+% 6. Wzór
+\node[draw=black, thin, fill=white, inner sep=1pt, anchor=north east, font=\scriptsize] at (6.8, 3.9) {
+    $\displaystyle y(t) = 
+    \begin{cases}
+    u       & t_0 < t < t_T \\
+    -\infty & t \ge t_T
+    \end{cases}$
+};
+\end{tikzpicture}
+\caption{Twardy system czasu rzeczywistego}
+\label{fig:Hard RTOS wykres}
+\end{subfigure}
+
+\caption{Zestawienie przebiegów funkcji przydatności odpowiedzi $y(t)$ w dziedzinie czasu \cite{Tanenbaum}.}
+\label{fig:wykresy RTOS}
+\end{figure}
+
+Przed przystąpieniem do analizy poszczególnych wykresów, konieczne jest zdefiniowanie parametrów oraz skrótów stanowiących zmienne opisujące te funkcje:
+\begin{itemize}
+    \item $t$ -- oś czasu, reprezentująca moment dostarczenia odpowiedzi przez system,
+    \item $y(t)$ -- funkcja przydatności (wartości) odpowiedzi dla obsługiwanego procesu,
+    \item $u$ -- maksymalna, nominalna przydatność prawidłowo wypracowanego wyniku,
+    \item $t_0$ -- moment pojawienia się zdarzenia lub żądania wypracowania odpowiedzi przez system,
+    \item $t_1$ -- czas graniczny, do którego odpowiedź zachowuje pełną wartość (w systemach miękkich),
+    \item $t_T$ -- ostateczny limit czasowy (ang. \textit{deadline}), po przekroczeniu którego odpowiedź nie ma już pełnej wartości.
+\end{itemize}
+Analizując przebiegi funkcji przydatności dla poszczególnych klas systemów, można precyzyjnie scharakteryzować ich zachowanie.
+
+Najbardziej restrykcyjne kryteria czasowe są charkerystyczne dla twardych systemy czasu rzeczywistego, co zobrazowano na rysunku \ref{fig:Hard RTOS wykres}.
+Ich stosowanie gwarantuje bezwzględnie terminowe wypełnienie zadań krytycznych przed upływem limitu $t_T$. Przekroczenie czasu przetwarzania powoduje natychmiastowy spadek funkcji przydatności do wartości $-\infty$.
+W przypadku rozwiązań spóźniona odpowiedź jest nie tylko całkowicie bezużyteczna, ale jej pojawienie się po wyznaczonym terminie jest najczęściej równoznaczne z wystąpieniem krytycznego błędu, który może doprowadzić do poważnej awarii lub fizycznego uszkodzenia całego systemu.
+
+Kolejną z omawianych grup stanowią miękkie systemy czasu rzeczywistego, których zachowanie zilustrowano na rysunku \ref{fig:softRTOS wykres}. Systemy te cechują się mniejszym rygorem w kwestii terminowości, co oznacza, że zadania są wykonywane tak szybko, 
+jak to możliwe, a ewentualne opóźnienia nie niosą za sobą skutków katastrofalnych. Jeśli odpowiedź zostanie dostarczona po czasie $t_1$, ale przed ostatecznym limitem $t_T$, jej przydatność maleje, powodując jedynie spadek jej jakości.
+Przy przetwarzaniu przekracającym czas $t_T$ przydatność odpowiedzi wynosi zero. 
+
+Solidne systemy czasu rzeczywistego stanowią pewnego rodzaju kompromis pomięczy twardymi, a miękkimi systemamu czasu rzeczywistego. Zachowanie funkcji przydatności systemów solidnych przedstawiono na rysunku \ref{fig:firm RTOS wykres}. 
+Każda odpowiedź dostarczona w przedziale od $t_0$ do $t_T$ zachowuje stałą, pełną wartość $u$. W momencie przekroczenia terminu granicznego $t_T$ przydatność wyniku natychmiastowo i skokowo spada do zera.
+Choć fakt spóźnienia powoduje całkowitą nieprzydatność rozwiązania, to sytuacja ta wciąż nie generuje bezpośredniego zagrożenia dla stabilności czy integralności samego systemu. 
+
+Zdefiniowane powyżej rygory czasowe określają, teoretyczny oczekiwania wobec systemu czasu rzeczywistego. W praktyce realizacja tych założeń sprowadza się do oceny zasadności stosowania \textbf{systemu operacyjnego czasu rzeczywistego} 
+w zderzeniu z bezpośrednim programowaniem sprzętu. Decyzja ta bezpośrednio determinuje strukturę i elastyczność budowanego środowiska.
+
+\section{Rola systemów operacyjnych w systemach wbudowanych}
+
+%Tutaj dajemy zdanie wprowadzające, ze przy projektowaniu systemow wbudowanych mozna podejsc roznie do tematu
+Podczas projektowania systemu wbudowanego, włączając w to system wbudowany czasu rzeczywistego, projektant staje przed wyborem jednego z dwóch podstawowych podejść do organizacji i kontroli całego środowiska. 
+Pierwszym z nich jest \textbf{podejście bezsystemowe}  (ang. \textit{bare-metal}), w którym całe oprogramowanie funkcjonuje bez żadnej warstwy pośredniej, 
+mając bezpośredni i wyłączny dostęp do fizycznych układów procesora oraz peryferiów. 
+Choć pozwala to na pełną kontrolę nad sprzętem i minimalne narzuty czasowe, to drastycznie ogranicza skalowalność każda zmiana komponentu 
+lub rozbudowa funkcji wymusza wówczas głęboką modyfikację struktury całego kodu.
+
+Alternatywą jest zastosowanie \textbf{systemu operacyjnego}, który możemy zdefiniować jako podstawowe oprogramowanie pośredniczące między sprzętem komputerowym a użytkownikiem, 
+którego głównym zadaniem jest zarządzanie i przydzielanie zasobów sprzętowych oraz tworzenie środowiska pozwalającego na wykonywanie programów zaimplementowanych przez jego użytkownika \cite{Abraham_Silberschatz}.
+
+Jak wynika z przytoczonej definicji, stosowanie systemu operacyjnego pomaga rozwiązywać niektóre problemy napotykane przy stosowaniu podejścia bezsystemowego. 
+Dzieje się tak poprzez całościowe odizolowanie warstwy programowej od fizycznych struktur sprzętu.
+System operacyjny działa jako nadrzędny pośrednik, przejmując na siebie zadanie nadzorowania środowiska wykonawczego i separując logikę działania
+od konkretnej platformy sprzętowej. 
+
+Aby w pełni zrozumieć, jak system operacyjny realizuje te zadania w środowisku wbudowanym, konieczne jest przyjrzenie się jego wewnętrznej architekturze.
+ W dalszych sekcjach zostaną szczegółowo omówione kluczowe mechanizmy oraz podstawowa struktura ogólnych systemów operacyjnych.
 
 \subsection{Model warstwowy systemów operacyjnych}
 
 
 W inżynieri oprogramowania istotną rolę odgrywa koncepcja \textbf{abstrakcji}, polegająca na  celowym ukryciu szczegółów implementacji danej funkcjonalności oprogramowania, przed jej potencjalnym użytkownikiem \cite{Tanenbaum}.
 Podejście to opiera się na założeniu, że należy dostarczyć gotowe funkcjonalność  wraz z odpowiednią dokumentacją opisującą sposób jej wykorzystania, zamiast wymagać od użytkownika zrozumienia wewnętrznych mechanizmów działania wytworzonego modułu.
+
 Taka praktyka w sposób znaczący podnosi wygodę wytwarzania nowych elementów systemu, umożliwia zrównoleglenie wytwarzania oprogramowania oraz pozwala na większą specjalizacje jej producentów. 
 W celu realizacji komunikacji między kolejnymi modułami systemu stosuj się takie narzędzia jak \textbf{interfejsy programistyczne} (ang. \textit{Application Programming Interface}, skrót \textbf{API}), czyli zbiór ściśle określonych reguł i sposobów komunikacji, które umożliwają komunikację między różnymi warstwami oprogramowania.
-Narzędzie to jest niezbędne, aby w sposób przewidywalny i bezpieczny przekazywać danę lub sterowanie, między różnymi elemenetami systemu, bez konieczności znajmości szczegółów implementacji elementu systemy, który jest odbiorcą API.    
+Narzędzie to jest niezbędne, aby w sposób przewidywalny i bezpieczny przekazywać danę lub sterowanie, między różnymi elemenetami systemu.
 
-Użycie abstrakcji jest również standardem w projektowaniu systemów operacyjnych. 
-Wynika to z wielu przyczyn, z których bardzo istotne to:
-\begin{enumerate}
-    \item \textbf{Konieczność zapewnienia bezpieczeństwa systemu} -  Systemy operacyjnego są w rzeczywistości rozwiązaniami o niezwykłej złożoności, których kod źródłowy sięga kilkudziesięciu milionów linii \cite{Tanenbaum}. Użycie abstrakcji, w tym wypadku, wprowadza wyraźną hierarchię uprawnień, która oddziela ogólne operacje użytkownika od krytycznych zadań całego systemu. 
-    Dzięki temu mechanizmowi, błąd powstały w jednej części oprogramowania pozostaje odizolowany i nie wpływa na poprawne funkcjonowanie pozostałych elementów systemu, zarówno sprzętowych jak i programowych.  
-    \item \textbf{Zapewnienie przenoszalności oprogramowania} - System wbudowany, jak każdy system komputerowy, składa się z fizycznego sprzętu i oprogramowania, które jest na nim uruchamiane. Te dwa elementy działają wspólnie, jednakże dąży się do tego,
-    aby nie były one od siebie w pełni zależne, jeśli chodzi o swoją architekturę. Dzięki zastosowaniu pewnych abstrakcji, możliwe jest tworzenie oprogramowania, które będzie możliwe do uruchomienia na różnym sprzęcie fizycznym. Rozwiązanie to jest niezwykle korzystne, ponieważ pozwala na niezależny rozwój systemu zarówno pod kątem sprzętowym, jak i programowym.
-    \item \textbf{Umożliwienie korzystania z języków i narzędzi wysokiego poziomu} - Ukrycie technicznych detali działania sprzętu pozwala na wytwarzanie oprogramowania w językach wysokiego poziomu, 
-    w których większy nacisk kładzię się na tworzenie programów, które są spójne ze sposobem myślenia człowieka, zamiast skupiać się na bezpośredniej obsłudze fizycznych komponentów urządzenia elektornicznego, które wykonuje program. 
-\end{enumerate} 
-
-Pojęcię abstrakcji jest kluczowe, aby zrozumieć architekture systemów operacyjnych. W literaturze spotyka się różne podziału na warstwy systemu komputerowego \cite{Tanenbaum,Abraham_Silberschatz}. Cechą wspólną dla propozycji podziału systemów komputerowych jest to, że wyodrębnia się w nich zasoby sprzętowe od programów na nich wykonywanych, tworząc odpowiednio \textbf{warstwę sprzętową i warstwę oprogramowania}. 
-Do warstwy sprzętowej zaliczamy wszystkie urządzenia fizyczne, występujące w systemie takie jak na przykład \textbf{jeednostka centralna} (ang. \textbf{Central Processing Unit}, \textbf{CPU}), \textbf{pamięć operacyjna} (ang. \textbf{Random Access Memory}, \textbf{RAM}), oraz \textbf{urządzenia wejścia-wyjścia} (ang. \textbf{Input/Output Devices}, \textbf{I/O}).
-Do warstwy programowej zaliczamy zestaw programów aplikacyjnych, które definiują sposoby wykorzystania zasobów sprzętowych systemu w celu rozwiązywania konkretnych problemów użytkownika \cite{Abraham_Silberschatz}.
-
-Na potrzebę niniejszej pracy przytoczona zostanie propozycja podziału systemu komputerowego zaprezentowana w książce \cite{Abraham_Silberschatz}, zaprezentowana na rysunku \ref{fig:rysunek1}.
+Pojęcie abstrakcji jest kluczowe dla zrozumienia architektury współczesnych systemów operacyjnych. 
+W literaturze spotyka się różne podejścia do klasyfikacji poziomów systemu komputerowego \cite{Tanenbaum, Abraham_Silberschatz}, jednak ich cechą 
+wspólną jest wyraźne odseparowanie zasobów fizycznych od uruchamianego na nich oprogramowania. 
+Na potrzeby niniejszej pracy przyjęto strukturę opartą na propozycji przedstawionej w \cite{Abraham_Silberschatz}, którą w graficzny sposób zaprezentowano na rysunku \ref{fig:rysunek1}.
 
 \begin{figure}[h]
     \centering
@@ -46,19 +192,57 @@ Na potrzebę niniejszej pracy przytoczona zostanie propozycja podziału systemu 
     \caption{Warstwowy model systemu komputerowego}
     \label{fig:rysunek1}
 \end{figure}
-% Tutaj piszemy o abstrakcji, o relacji konsument - software, dostawca to hardware
-% Ta sekcja ma byc o tym ze jest systemy wbudowane skladaja sie z warstwy sprzetowej i programowej
-% Tutaj można też napisać coś o metodologi przetwarzania danych w systemie wbudowanym, jak projektuje sie system, aby
-% w sposob odpowiedzialny przetwarzal dane, czyli dana z zewnatrz -> ADC -> przerwanie (kernelSpace)-> driver -> dane uzyte w przestrzeni 
-% uzytkownika 
-\subsection{Systemy wbudowane czasu rzeczywistego wraz z ich podziałem}
-% tutaj masz pisac o systemach hard, firm, soft
-\subsection{Z czego wynika koniecznosc stosowania systemow operacyjnych a nie bare metal}
-\section{Budowa i architektura systemu Linux}
-\subsection{Jądro systemu}
-% Tutaj nalezy wspomniec o przestrzeni uzytkownika i przestrzeni jadra systemu
-\subsection{Mechanizm stronnicowania pamięci i wykorzystanie pamieci cache}
-\subsection{wykorzystanie systemu Linux w systemach wbudowanych}
-\section{Procesy i wątki w systemie Linux}
-\section{Szeregowani zadań i determinizm czasowy w systemach wbudowanych opartych na Linuxie}
+
+Jak pokazano na schemacie, najniższy poziom stanowi warstwa sprzętowa, do której zalicza się wszystkie fizyczne komponenty urządzenia,
+takie jak \textbf{jednostka centralna} (ang. \textit{Central Processing Unit}, CPU), \textbf{pamięć} oraz \textbf{urządzenia wejścia-wyjścia} (ang. \textit{Input/Output Devices}, I/O). 
+Ponad nią znajduje się warstwa oprogramowania, na którą składa się zarówno system operacyjny, jak i programy użytkownika. 
+Choć oba te elementy należą do tej samej warstwy, funkcjonują one na innych zasadach. Odróżnia je praca w różnych trybach procesora, różniących się poziomem uprawnień oraz zakresem dostępu do fizycznych urządzeń.
+Tryby te nazywają się odpowiednio \textbf{trybem jądra} (ang. \textit{kernel mode}), dla systemu operacyjnego, oraz \textbf{trybem użytkownika} (ang. \textit{user mode}), dla aplikacji użytkownika. 
+Szczegółowa omównienie przytoczonych trybów oraz mechanizmów ich przełączania zostanie omówiona w dalszych częściach tego rozdziału.
+
+Warto przy tym podkreślić, że w przytoczonej pozycji literatury \cite{Abraham_Silberschatz} jako integralny komponent struktury systemu komputegowego uwzględnia się jego użytkownika. 
+Zabieg ten ma na celu jednoznaczne wskazanie, że przy projektowaniu dowolnego systemu komputerowego należy zawsze pamiętać o jego ostatecznym przeznaczeniu oraz o użytkowniku końcowym.
+
+W modelu warstwowym architektury komputerowej system operacyjny pełni szczególną rolę, zarządzając granicą między aplikacjami a warstwą fizyczną. W celu zapewnienia poprawnego i przewidywalnego działania systemu wprowadza poziomy abstrakcji, które są niezbędne z kilku istotnych powodów:
+
+\begin{enumerate}
+\item \textbf{Konieczność zapewnienia bezpieczeństwa } - Współczesne systemy operacyjne charakteryzują się ogromną złożonością, a ich kod źródłowy sięga kilkudziesięciu milionów linii \cite{Tanenbaum}.
+ Izolacja poszczególnych poziomów wprowadza wyraźną hierarchię uprawnień. Dzięki temu błąd powstały w kodzie aplikacyjnym pozostaje odizolowany i nie wpływa bezpośrednio na stabilność pozostałych funkcjonalności systemowych ani na pracę samego sprzętu.
+\item \textbf{Zapewnienie przenoszalności oprogramowania} - Zastosowanie warstw pośrednich sprawia, że oprogramowanie nie jest bezpośrednio uzależnione od konkretnych urządzeń fizycznych. Pozwala to na uruchamianie tych samych programów na różnorodnych platformach sprzętowych,
+ umożliwiając przy tym niezależny rozwój warstwy aplikacyjnej i sprzętowej.
+\item \textbf{Umożliwienie korzystania z narzędzi wysokiego poziomu} - Ukrycie technicznych szczegółów pracy ze sterownikami lub rejestrami pozwala na tworzenie kodu w językach wysokiego poziomu. Programista może skupić się na logice i strukturze zgodnej ze sposobem myślenia człowieka, zamiast na bezpośredniej, niskopoziomowej obsłudze układów elektronicznych.
+\end{enumerate}
+
+\subsection{Podział systemów operacyjnych ze względu na strukture systemu}
+
+Systemy operacyjne można klasyfikować według wielu kryteriów, z których jednym z najczęsciej spotykanym jest podział, ze względu na ich docelowe przeznaczenie. Przy takim podziale możemy wyróżnić systemy operacyjne generalnego przeznaczenia, systemy operacyjne rozproszone, systemy operacyjne komputerów nmainframe, systemy operacyjne serwerów oraz wiele innych \cite{Tanenbaum}.
+
+Jednakże, w kontekście analizy wydajności kluczowy jest podział ze względu na strukturę systemu, która określa architekturę jego jądra.  Na tym etapie jądro systemu możemy zdefiniować jedyny program, który działa w pamięci komputera nieprzerwanie przez cały czas od jego uruchomienia, pełniąc funkcję pomostu komunikacyjnego między uruchomionymi aplikacjami,
+a fizycznym sprzętem \cite{Abraham_Silberschatz}.
+
+Konstrukcja jądra decyduje o sposobie komunikacji między usługami systemowymi, a warstwą aplikacyjną, co bezpośrednio wpływa na narzuty czasowe oraz efektywność optymalizacji kodu programów. 
+Z uwagi na to, że przedmiotem badań w niniejszej pracy jest system Linux, analiza skupi się głównie na architekturze monolitycznej. Dla celów porównawczych zostanie ona zestawiona z inną szeroko spotykaną architekturą w systemach wbudowanych - strukturą mikrojądra.
+
+W \textbf{architekturze monolitycznej} (ang. \textit{monolithic kernel}) wszystkie główne zadania systemu operacyjnego są połączone w jeden rozbudowany program komputerowy \cite{Tanenbaum}. Zarządzanie pamięcią, programami oraz wszystkimi sterownikami urządzeń odbywa się we wspólnej przestrzeni.
+Takie podejście sprawia, że jądro zawiera w sobie ogromną liczbę elementów, co mocno komplikuje proces jego tworzenia oraz późniejszego szukania błędów. Największą zaletą architektury monolitycznej jest jednak wysoka prędkość przetwarzania informacji -- z uwagi na to, że 
+jądro jest w całości kompilowane do jednego programu, poszczególne funkcjonalności mogą z siebie nawzajem korzystać, co znacząco przyśpiesza działanie systemu. 
+Przy architekturze monolitycznej aplikacje użytkownika są uruchamiane jako osobne procesy w chronionej pamięci. Dzięki temu jądro nie jest narażone na błędy w programach użytkownika, a różne aplikacje nie mogą nawzajem bezpośrednio mieć dostępu zasobów im nie przydzielonych.
+Główną wadą systemów monolitycznych pozostaje jednak słaba odporność na awarie samego jądra; jeśli błąd pojawi się w jego obrębie niego, na przykład w jednym ze sterowników, może dojść do awarii całego systemu.
+
+\textbf{Architektura mikrojądra} (ang. \textit{microkernel}) opiera się na zasadzie minimalizacji kodu wykonywanego z najwyższymi uprawnieniami procesora \cite{Abraham_Silberschatz}. Kompletny system operacyjny składa się w tym przypadku z uproszczonego jądra
+oraz zestawu współpracujących ze sobą procesów systemowych. Samo mikrojądro realizuje jedynie fundamentalne zadania, takie jak zarządzanie wątkami oraz obsługa komunikacji międzyprocesowej \cite{Tanenbaum}. Wszystkie pozostałe usługi, wliczając w to sterowniki urządzeń i systemy plików, są odseparowane od jądra i funkcjonują jako niezależne programy w przestrzeni użytkownika.
+
+Główną zaletą takiego podejścia jest wysoka stabilność środowiska -- awaria oprogramowania lub sterownika nie narusza integralności samego jądra. System potrafi zrestartować uszkodzony proces bez zaburzania pracy całego systemu. 
+Wadą tego rozwiązania jest jednak niższa wydajność, wynikająca z narzutu czasowego na ciągłą konieczność komunikacji międzyprocesowej oraz częste przełączanie kontekstu procesora.
+\subsection{Korzyści i niedogoności płynące z stosowania systemów operacyjnych}
+\section{Studium przypadku systemu Linux}
+\subsection{Architektura systemu i jego jądro }
+% Tutaj nalezy wspomniec o przestrzeni uzytkownika i przestrzeni jadra systemu, podstawowe założenia systemu Linux, ze to monolit, ze wszystko jest plikiem itp
+\subsection{Zarządzanie pamiecią}
+\subsubsection{Mechanizm stronnicowania pamięci}
+\subsubsection{Wykorzystanie pamięci podręcznej procesora }
+\subsection{Procesy i wątki w systemie Linux}
+\subsection{Szeregowani zadań i determinizm czasowy w systemie Linux}
 % Planista, priotytety wątków, algorytmy szeregowania zadań, po co szeregujemy zadania, etc.
+\subsection{Wykorzystanie systemu Linux w systemach wbudowanych}
+% Jocto project, włąsne dystrybucje, ubuntu Core, itp
