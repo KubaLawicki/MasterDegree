@@ -8,6 +8,122 @@ Zrozumienie architektury systemu operacyjnego w zastosowaniach wbudowanych jest 
 %Koniec gemini generated to jest do wywalenia
 
 \cite{Tanenbaum}
+\section{Rola systemów operacyjnych w systemach wbudowanych}
+
+%Tutaj dajemy zdanie wprowadzające, ze przy projektowaniu systemow wbudowanych mozna podejsc roznie do tematu
+Podczas projektowania systemu wbudowanego, włączając w to system wbudowany czasu rzeczywistego, projektant staje przed wyborem jednego z dwóch podstawowych podejść do organizacji i kontroli całego środowiska. 
+Pierwszym z nich jest \textbf{podejście bezsystemowe}  (ang. \textit{bare-metal}), w którym całe oprogramowanie funkcjonuje bez żadnej warstwy pośredniej, 
+mając bezpośredni i wyłączny dostęp do fizycznych układów procesora oraz peryferiów. 
+Choć pozwala to na pełną kontrolę nad sprzętem i minimalne narzuty czasowe, to drastycznie ogranicza skalowalność każda zmiana komponentu 
+lub rozbudowa funkcji wymusza wówczas głęboką modyfikację struktury całego kodu.
+
+Alternatywą jest zastosowanie \textbf{systemu operacyjnego}, który możemy zdefiniować jako podstawowe oprogramowanie pośredniczące między sprzętem komputerowym a użytkownikiem, 
+którego głównym zadaniem jest zarządzanie i przydzielanie zasobów sprzętowych oraz tworzenie środowiska pozwalającego na wykonywanie programów zaimplementowanych przez jego użytkownika \cite{Abraham_Silberschatz}.
+
+Jak wynika z przytoczonej definicji, stosowanie systemu operacyjnego pomaga rozwiązywać niektóre problemy napotykane przy stosowaniu podejścia bezsystemowego. 
+Dzieje się tak poprzez całościowe odizolowanie warstwy programowej od fizycznych struktur sprzętu.
+System operacyjny działa jako nadrzędny pośrednik, przejmując na siebie zadanie nadzorowania środowiska wykonawczego i separując logikę działania
+od konkretnej platformy sprzętowej. 
+
+Aby w pełni zrozumieć, jak system operacyjny realizuje te zadania w środowisku wbudowanym, konieczne jest przyjrzenie się jego wewnętrznej architekturze.
+ W dalszych sekcjach zostaną szczegółowo omówione kluczowe mechanizmy oraz podstawowa struktura ogólnych systemów operacyjnych.
+
+\subsection{Model warstwowy systemów operacyjnych}
+
+
+W inżynieri oprogramowania istotną rolę odgrywa koncepcja \textbf{abstrakcji}, polegająca na  celowym ukryciu szczegółów implementacji danej funkcjonalności oprogramowania, przed jej potencjalnym użytkownikiem \cite{Tanenbaum}.
+Podejście to opiera się na założeniu, że należy dostarczyć gotowe funkcjonalność  wraz z odpowiednią dokumentacją opisującą sposób jej wykorzystania, zamiast wymagać od użytkownika zrozumienia wewnętrznych mechanizmów działania wytworzonego modułu.
+
+Taka praktyka w sposób znaczący podnosi wygodę wytwarzania nowych elementów systemu, umożliwia zrównoleglenie wytwarzania oprogramowania oraz pozwala na większą specjalizacje jej producentów. 
+W celu realizacji komunikacji między kolejnymi modułami systemu stosuj się takie narzędzia jak \textbf{interfejsy programistyczne} (ang. \textit{Application Programming Interface}, skrót \textbf{API}), czyli zbiór ściśle określonych reguł i sposobów komunikacji, które umożliwają komunikację między różnymi warstwami oprogramowania.
+Narzędzie to jest niezbędne, aby w sposób przewidywalny i bezpieczny przekazywać danę lub sterowanie, między różnymi elemenetami systemu.
+
+Pojęcie abstrakcji jest kluczowe dla zrozumienia architektury współczesnych systemów operacyjnych. 
+W literaturze spotyka się różne podejścia do klasyfikacji poziomów systemu komputerowego \cite{Tanenbaum, Abraham_Silberschatz}, jednak ich cechą 
+wspólną jest wyraźne odseparowanie zasobów fizycznych od uruchamianego na nich oprogramowania. 
+Na potrzeby niniejszej pracy przyjęto strukturę opartą na propozycji przedstawionej w \cite{Abraham_Silberschatz}, którą w graficzny sposób zaprezentowano na rysunku \ref{fig:rysunek1}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/Rysunek1.pdf}
+    \caption{Warstwowy model systemu komputerowego}
+    \label{fig:rysunek1}
+\end{figure}
+
+Jak pokazano na schemacie, najniższy poziom stanowi warstwa sprzętowa, do której zalicza się wszystkie fizyczne komponenty urządzenia,
+takie jak \textbf{jednostka centralna} (ang. \textit{Central Processing Unit}, CPU), \textbf{pamięć} oraz \textbf{urządzenia wejścia-wyjścia} (ang. \textit{Input/Output Devices}, I/O). 
+Ponad nią znajduje się warstwa oprogramowania, na którą składa się zarówno system operacyjny, jak i programy użytkownika. 
+Choć oba te elementy należą do tej samej warstwy, funkcjonują one na innych zasadach. Odróżnia je praca w różnych trybach procesora, różniących się poziomem uprawnień oraz zakresem dostępu do fizycznych urządzeń.
+Tryby te nazywają się odpowiednio \textbf{trybem jądra} (ang. \textit{kernel mode}), dla systemu operacyjnego, oraz \textbf{trybem użytkownika} (ang. \textit{user mode}), dla aplikacji użytkownika. 
+Szczegółowa omównienie przytoczonych trybów oraz mechanizmów ich przełączania zostanie omówiona w dalszych częściach tego rozdziału.
+
+Warto przy tym podkreślić, że w przytoczonej pozycji literatury \cite{Abraham_Silberschatz} jako integralny komponent struktury systemu komputegowego uwzględnia się jego użytkownika. 
+Zabieg ten ma na celu jednoznaczne wskazanie, że przy projektowaniu dowolnego systemu komputerowego należy zawsze pamiętać o jego ostatecznym przeznaczeniu oraz o użytkowniku końcowym.
+
+W modelu warstwowym architektury komputerowej system operacyjny pełni szczególną rolę, zarządzając granicą między aplikacjami a warstwą fizyczną. W celu zapewnienia poprawnego i przewidywalnego działania systemu wprowadza poziomy abstrakcji, które są niezbędne z kilku istotnych powodów:
+
+\begin{enumerate}
+\item \textbf{Konieczność zapewnienia bezpieczeństwa } - Współczesne systemy operacyjne charakteryzują się ogromną złożonością, a ich kod źródłowy sięga kilkudziesięciu milionów linii \cite{Tanenbaum}.
+ Izolacja poszczególnych poziomów wprowadza wyraźną hierarchię uprawnień. Dzięki temu błąd powstały w kodzie aplikacyjnym pozostaje odizolowany i nie wpływa bezpośrednio na stabilność pozostałych funkcjonalności systemowych ani na pracę samego sprzętu.
+\item \textbf{Zapewnienie przenoszalności oprogramowania} - Zastosowanie warstw pośrednich sprawia, że oprogramowanie nie jest bezpośrednio uzależnione od konkretnych urządzeń fizycznych. Pozwala to na uruchamianie tych samych programów na różnorodnych platformach sprzętowych,
+ umożliwiając przy tym niezależny rozwój warstwy aplikacyjnej i sprzętowej.
+\item \textbf{Umożliwienie korzystania z narzędzi wysokiego poziomu} - Ukrycie technicznych szczegółów pracy ze sterownikami lub rejestrami pozwala na tworzenie kodu w językach wysokiego poziomu. Programista może skupić się na logice i strukturze zgodnej ze sposobem myślenia człowieka, zamiast na bezpośredniej, niskopoziomowej obsłudze układów elektronicznych.
+\end{enumerate}
+\section{Kluczowe abstrakcje i mechanizmy stosowane w systemach operacyjnych}
+Pomimo dużej różnorodności współczesnych systemów operacyjnych, ich architektura opiera się na spójnym zestawie uniwersalnych abstrakcji i mechanizmów. Od strony koncepcyjnej rozwiązania te wprowadzają ład w złożonym środowisku sprzętowym, przybliżając sposób funkcjonowania komputera do logiki myślenia i pracy człowieka. 
+
+Koncepcje opisane w prezentowanej sekcji pozwalają na stworzenie przejrzystego i uporządkowanego modelu zarządzania zasobami w systemie operacyjnym. 
+Zrozumienie tych bazowych koncepcji jest kluczowe dla analizy wydajności, ponieważ to one determinują sposób, w jaki program aplikacji, stworznej przez użytkownika, jest uruchamiany i wykonywany na fizycznym sprzęcie.
+
+Na potrzeby niniejszej pracy konieczne jest przedstawienie następujących pojęć i mechanimów:
+\begin{itemize}
+    \item  \textbf{Tryby pracy procesora}
+    \item \textbf{Proces}
+    \item  \textbf{Wątek}
+    \item \textbf{Szeregowanie zadań}
+    \item \textbf{Pamięć wirtualna}
+    \item \textbf{Mechanizmy synchronizacji i współbieżności}
+\end{itemize}
+\subsection{Tryby pracy procesora}
+Współczesne komputery realizują ochronę zasobów poprzez tryby pracy procesora \cite{Abraham_Silberschatz}, z których kluczowe to \textbf{tryb użytkownika} (ang. user mode) oraz \textbf{tryb jądra} (ang. kernel mode). Aplikacje użytkownika funkcjonują w trybie użytkownika, nieuprzywilejowanym, co uniemożliwia im między innymi, bezpośredni dostęp do urządzeń peryferyjnych oraz fizycznej pamięci.
+
+Wszelkie operacje wymagające kontroli nad sprzętem realizowane są za pośrednictwem \textbf{wywołań systemowych} \cite{Abraham_Silberschatz} (ang. system calls), które przełączają procesor w uprzywilejowany tryb jądra.
+
+\subsection{Procesy}
+\textbf{Proces} (ang. \textit{process}) można rozumieć jako wykonujący się program komputerowy \cite{Abraham_Silberschatz}.Jego kluczową cechą jest przydzielona, odizolowana od innych procesów wirtualna \textbf{przestrzeń adresowa}
+Jej wprowadzenie ma zagwarantować bezpieczeństwo – błąd w obrębie jednego procesu nie wpływa bezpośrednio na stabilność procesów systemowych i innych procesów użytkownika.  
+
+Współczesne systemy komputerowe składają się z licznych komponentów i aplikacji, co sprawia, że na wspólnych, fizycznych zasobach sprzętowych funkcjonuje jednocześnie wiele procesów. 
+Ze względu na to, że pojedynczy rdzeń procesora może w danej chwili realizować tylko jedno zadanie, system operacyjny stosuje przełączanie kontekstu, cyklicznie przydzielając czas procesora poszczególnym procesom.
+Ponieważ każdy proces operuje w odrębnej przestrzeni adresowej, zmiana ta wymaga przeładowania pamięci operacyjnej. 
+W efekcie przełączanie kontekstu między procesami jest operacją stosunkowo czasochłonną i wiąże się z zauważalnym opóźnieniem, które można nazywać też \textbf{narzutem systemu operacyjnego} \cite{Tanenbaum}.
+
+\subsection{Wątki}
+\textbf{Wątek} (ang. \textit{thread}) stanowi wyodrębnioną jednostkę wykonawczą (ciąg instrukcji) uruchamianą na procesorze, funkcjonującą w obrębie konkretnego procesie \cite{Tanenbaum}. 
+
+W ramach jednego procesu może działać wiele wątków wykonujących się we wspólnej przestrzeni adresowej. Wątki należące do tego samego procesu współdzielą ze sobą zasoby systemowe (m.in. przestrzeń adresową, zmienne globalne czy otwarte pliki), jednak każdy z nich posiada własny, prywatny kontekst wykonania \cite{Tanenbaum}, na który składają się:
+\begin{itemize}
+    \item \textbf{Licznik instrukcji} (ang. \textit{Program Counter}),
+    \item \textbf{Zestaw rejestrów procesora},
+    \item \textbf{Prywatny stos} (przechowujący zmienne lokalne oraz historię wywołań funkcji),
+    \item \textbf{Stan wątku} (np. uruchomiony, zablokowany, gotowy).
+\end{itemize}
+Dzięki współdzieleniu przestrzeni adresowej wątki generują znacznie mniejszy narzut czasowy niż procesy, przy przełączaniu, wymagając jednak stosowania odpowiednich mechanizmów synchronizacji.
+
+Zarządzanie wątkami może być realizowane w przestrzeni użytkownika lub bezpośrednio w jądrze systemu.
+W celu zapewnienia przenoszalności oprogramowania wielowątkowego między różnymi środowiskami operacyjnymi stworzony został standard \textbf{POSIX Threads} (znany jako \textbf{Pthreads}, zdefiniowany w normie IEEE 1003.1c) \cite{Tanenbaum}. Definiuje on uniwersalne interfejsy programistyczne przeznaczone m.in. do tworzenia, kończenia oraz synchronizacji pracy wątków.
+
+\subsection{Szeregowanie zadań}
+\textbf{Szeregowanie zadań} odpowiada za zarządzanie przydziałem czasu procesora. Ponieważ pojedynczy rdzeń CPU nie może wykonywać wielu zadań jednocześnie, \textbf{planista} (ang. \textit{scheduler}) decyduje o kolejności i czasie uruchamiania wątków i procesów na podstawie określonych algorytmów \cite{Abraham_Silberschatz}.
+Mechanizm ten zapewnia sprawiedliwy dostęp do zasobów i płynność działania systemu, jednak częsta zmiana wykonywanych zadań generuje bezpośredni narzut czasowy związany z przełączaniem kontekstu. 
+\subsection{Pamięć wirtualna}
+\textbf{Pamięć wirtualna} sprawia, że procesy nie operują bezpośrednio na fizycznej pamięci operacyjnej, lecz na wirtualnej przestrzeni adresowej przydzielanej i mapowanej na sprzęt przez \textbf{jednostkę zarzadzania pamiecia (MMU (ang. \textit{Memory Management Unit}) )}\cite{Tanenbaum}.
+
+W kontekście pamięci wirtualnej kluczowym mechanizmem jest \textbf{stronnicowanie} \cite{Tanenbaum}. Polega ono na podziale wirtualnej przestrzeni adresowej programu na bloki o stałym rozmiarze, zwane stronami (ang. \textit{pages}), które są dynamicznie odwzorowywane na fizyczną pamięć operacyjną. Operacje tę wykonuje jednostka MMU.
+Mechanmizm zarządzania pamięcią wirtualną zostało opisane, na przykładzie systemu Linux w sekcji \ref{Linux_wykorzystaniePamieci}
+
+\subsection{Mechanizmy synchronizacji i współbieżności}
+
 
 \section{Systemy wbudowane czasu rzeczywistego wraz z ich podziałem}
 Systemem wbudowanym nazywamy dedykowany system komputerowy, który stanowi integralną część większego urządzenia lub maszyny i jest zaprojektowany do wykonywania 
@@ -151,69 +267,69 @@ Choć fakt spóźnienia powoduje całkowitą nieprzydatność rozwiązania, to s
 Zdefiniowane powyżej rygory czasowe określają, teoretyczny oczekiwania wobec systemu czasu rzeczywistego. W praktyce realizacja tych założeń sprowadza się do oceny zasadności stosowania \textbf{systemu operacyjnego czasu rzeczywistego} 
 w zderzeniu z bezpośrednim programowaniem sprzętu. Decyzja ta bezpośrednio determinuje strukturę i elastyczność budowanego środowiska.
 
-\section{Rola systemów operacyjnych w systemach wbudowanych}
+% \section{Rola systemów operacyjnych w systemach wbudowanych}
 
-%Tutaj dajemy zdanie wprowadzające, ze przy projektowaniu systemow wbudowanych mozna podejsc roznie do tematu
-Podczas projektowania systemu wbudowanego, włączając w to system wbudowany czasu rzeczywistego, projektant staje przed wyborem jednego z dwóch podstawowych podejść do organizacji i kontroli całego środowiska. 
-Pierwszym z nich jest \textbf{podejście bezsystemowe}  (ang. \textit{bare-metal}), w którym całe oprogramowanie funkcjonuje bez żadnej warstwy pośredniej, 
-mając bezpośredni i wyłączny dostęp do fizycznych układów procesora oraz peryferiów. 
-Choć pozwala to na pełną kontrolę nad sprzętem i minimalne narzuty czasowe, to drastycznie ogranicza skalowalność każda zmiana komponentu 
-lub rozbudowa funkcji wymusza wówczas głęboką modyfikację struktury całego kodu.
+% %Tutaj dajemy zdanie wprowadzające, ze przy projektowaniu systemow wbudowanych mozna podejsc roznie do tematu
+% Podczas projektowania systemu wbudowanego, włączając w to system wbudowany czasu rzeczywistego, projektant staje przed wyborem jednego z dwóch podstawowych podejść do organizacji i kontroli całego środowiska. 
+% Pierwszym z nich jest \textbf{podejście bezsystemowe}  (ang. \textit{bare-metal}), w którym całe oprogramowanie funkcjonuje bez żadnej warstwy pośredniej, 
+% mając bezpośredni i wyłączny dostęp do fizycznych układów procesora oraz peryferiów. 
+% Choć pozwala to na pełną kontrolę nad sprzętem i minimalne narzuty czasowe, to drastycznie ogranicza skalowalność każda zmiana komponentu 
+% lub rozbudowa funkcji wymusza wówczas głęboką modyfikację struktury całego kodu.
 
-Alternatywą jest zastosowanie \textbf{systemu operacyjnego}, który możemy zdefiniować jako podstawowe oprogramowanie pośredniczące między sprzętem komputerowym a użytkownikiem, 
-którego głównym zadaniem jest zarządzanie i przydzielanie zasobów sprzętowych oraz tworzenie środowiska pozwalającego na wykonywanie programów zaimplementowanych przez jego użytkownika \cite{Abraham_Silberschatz}.
+% Alternatywą jest zastosowanie \textbf{systemu operacyjnego}, który możemy zdefiniować jako podstawowe oprogramowanie pośredniczące między sprzętem komputerowym a użytkownikiem, 
+% którego głównym zadaniem jest zarządzanie i przydzielanie zasobów sprzętowych oraz tworzenie środowiska pozwalającego na wykonywanie programów zaimplementowanych przez jego użytkownika \cite{Abraham_Silberschatz}.
 
-Jak wynika z przytoczonej definicji, stosowanie systemu operacyjnego pomaga rozwiązywać niektóre problemy napotykane przy stosowaniu podejścia bezsystemowego. 
-Dzieje się tak poprzez całościowe odizolowanie warstwy programowej od fizycznych struktur sprzętu.
-System operacyjny działa jako nadrzędny pośrednik, przejmując na siebie zadanie nadzorowania środowiska wykonawczego i separując logikę działania
-od konkretnej platformy sprzętowej. 
+% Jak wynika z przytoczonej definicji, stosowanie systemu operacyjnego pomaga rozwiązywać niektóre problemy napotykane przy stosowaniu podejścia bezsystemowego. 
+% Dzieje się tak poprzez całościowe odizolowanie warstwy programowej od fizycznych struktur sprzętu.
+% System operacyjny działa jako nadrzędny pośrednik, przejmując na siebie zadanie nadzorowania środowiska wykonawczego i separując logikę działania
+% od konkretnej platformy sprzętowej. 
 
-Aby w pełni zrozumieć, jak system operacyjny realizuje te zadania w środowisku wbudowanym, konieczne jest przyjrzenie się jego wewnętrznej architekturze.
- W dalszych sekcjach zostaną szczegółowo omówione kluczowe mechanizmy oraz podstawowa struktura ogólnych systemów operacyjnych.
+% Aby w pełni zrozumieć, jak system operacyjny realizuje te zadania w środowisku wbudowanym, konieczne jest przyjrzenie się jego wewnętrznej architekturze.
+%  W dalszych sekcjach zostaną szczegółowo omówione kluczowe mechanizmy oraz podstawowa struktura ogólnych systemów operacyjnych.
 
-\subsection{Model warstwowy systemów operacyjnych}
+% \subsection{Model warstwowy systemów operacyjnych}
 
 
-W inżynieri oprogramowania istotną rolę odgrywa koncepcja \textbf{abstrakcji}, polegająca na  celowym ukryciu szczegółów implementacji danej funkcjonalności oprogramowania, przed jej potencjalnym użytkownikiem \cite{Tanenbaum}.
-Podejście to opiera się na założeniu, że należy dostarczyć gotowe funkcjonalność  wraz z odpowiednią dokumentacją opisującą sposób jej wykorzystania, zamiast wymagać od użytkownika zrozumienia wewnętrznych mechanizmów działania wytworzonego modułu.
+% W inżynieri oprogramowania istotną rolę odgrywa koncepcja \textbf{abstrakcji}, polegająca na  celowym ukryciu szczegółów implementacji danej funkcjonalności oprogramowania, przed jej potencjalnym użytkownikiem \cite{Tanenbaum}.
+% Podejście to opiera się na założeniu, że należy dostarczyć gotowe funkcjonalność  wraz z odpowiednią dokumentacją opisującą sposób jej wykorzystania, zamiast wymagać od użytkownika zrozumienia wewnętrznych mechanizmów działania wytworzonego modułu.
 
-Taka praktyka w sposób znaczący podnosi wygodę wytwarzania nowych elementów systemu, umożliwia zrównoleglenie wytwarzania oprogramowania oraz pozwala na większą specjalizacje jej producentów. 
-W celu realizacji komunikacji między kolejnymi modułami systemu stosuj się takie narzędzia jak \textbf{interfejsy programistyczne} (ang. \textit{Application Programming Interface}, skrót \textbf{API}), czyli zbiór ściśle określonych reguł i sposobów komunikacji, które umożliwają komunikację między różnymi warstwami oprogramowania.
-Narzędzie to jest niezbędne, aby w sposób przewidywalny i bezpieczny przekazywać danę lub sterowanie, między różnymi elemenetami systemu.
+% Taka praktyka w sposób znaczący podnosi wygodę wytwarzania nowych elementów systemu, umożliwia zrównoleglenie wytwarzania oprogramowania oraz pozwala na większą specjalizacje jej producentów. 
+% W celu realizacji komunikacji między kolejnymi modułami systemu stosuj się takie narzędzia jak \textbf{interfejsy programistyczne} (ang. \textit{Application Programming Interface}, skrót \textbf{API}), czyli zbiór ściśle określonych reguł i sposobów komunikacji, które umożliwają komunikację między różnymi warstwami oprogramowania.
+% Narzędzie to jest niezbędne, aby w sposób przewidywalny i bezpieczny przekazywać danę lub sterowanie, między różnymi elemenetami systemu.
 
-Pojęcie abstrakcji jest kluczowe dla zrozumienia architektury współczesnych systemów operacyjnych. 
-W literaturze spotyka się różne podejścia do klasyfikacji poziomów systemu komputerowego \cite{Tanenbaum, Abraham_Silberschatz}, jednak ich cechą 
-wspólną jest wyraźne odseparowanie zasobów fizycznych od uruchamianego na nich oprogramowania. 
-Na potrzeby niniejszej pracy przyjęto strukturę opartą na propozycji przedstawionej w \cite{Abraham_Silberschatz}, którą w graficzny sposób zaprezentowano na rysunku \ref{fig:rysunek1}.
+% Pojęcie abstrakcji jest kluczowe dla zrozumienia architektury współczesnych systemów operacyjnych. 
+% W literaturze spotyka się różne podejścia do klasyfikacji poziomów systemu komputerowego \cite{Tanenbaum, Abraham_Silberschatz}, jednak ich cechą 
+% wspólną jest wyraźne odseparowanie zasobów fizycznych od uruchamianego na nich oprogramowania. 
+% Na potrzeby niniejszej pracy przyjęto strukturę opartą na propozycji przedstawionej w \cite{Abraham_Silberschatz}, którą w graficzny sposób zaprezentowano na rysunku \ref{fig:rysunek1}.
 
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.8\textwidth]{img/Rysunek1.pdf}
-    \caption{Warstwowy model systemu komputerowego}
-    \label{fig:rysunek1}
-\end{figure}
+% \begin{figure}[h]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{img/Rysunek1.pdf}
+%     \caption{Warstwowy model systemu komputerowego}
+%     \label{fig:rysunek1}
+% \end{figure}
 
-Jak pokazano na schemacie, najniższy poziom stanowi warstwa sprzętowa, do której zalicza się wszystkie fizyczne komponenty urządzenia,
-takie jak \textbf{jednostka centralna} (ang. \textit{Central Processing Unit}, CPU), \textbf{pamięć} oraz \textbf{urządzenia wejścia-wyjścia} (ang. \textit{Input/Output Devices}, I/O). 
-Ponad nią znajduje się warstwa oprogramowania, na którą składa się zarówno system operacyjny, jak i programy użytkownika. 
-Choć oba te elementy należą do tej samej warstwy, funkcjonują one na innych zasadach. Odróżnia je praca w różnych trybach procesora, różniących się poziomem uprawnień oraz zakresem dostępu do fizycznych urządzeń.
-Tryby te nazywają się odpowiednio \textbf{trybem jądra} (ang. \textit{kernel mode}), dla systemu operacyjnego, oraz \textbf{trybem użytkownika} (ang. \textit{user mode}), dla aplikacji użytkownika. 
-Szczegółowa omównienie przytoczonych trybów oraz mechanizmów ich przełączania zostanie omówiona w dalszych częściach tego rozdziału.
+% Jak pokazano na schemacie, najniższy poziom stanowi warstwa sprzętowa, do której zalicza się wszystkie fizyczne komponenty urządzenia,
+% takie jak \textbf{jednostka centralna} (ang. \textit{Central Processing Unit}, CPU), \textbf{pamięć} oraz \textbf{urządzenia wejścia-wyjścia} (ang. \textit{Input/Output Devices}, I/O). 
+% Ponad nią znajduje się warstwa oprogramowania, na którą składa się zarówno system operacyjny, jak i programy użytkownika. 
+% Choć oba te elementy należą do tej samej warstwy, funkcjonują one na innych zasadach. Odróżnia je praca w różnych trybach procesora, różniących się poziomem uprawnień oraz zakresem dostępu do fizycznych urządzeń.
+% Tryby te nazywają się odpowiednio \textbf{trybem jądra} (ang. \textit{kernel mode}), dla systemu operacyjnego, oraz \textbf{trybem użytkownika} (ang. \textit{user mode}), dla aplikacji użytkownika. 
+% Szczegółowa omównienie przytoczonych trybów oraz mechanizmów ich przełączania zostanie omówiona w dalszych częściach tego rozdziału.
 
-Warto przy tym podkreślić, że w przytoczonej pozycji literatury \cite{Abraham_Silberschatz} jako integralny komponent struktury systemu komputegowego uwzględnia się jego użytkownika. 
-Zabieg ten ma na celu jednoznaczne wskazanie, że przy projektowaniu dowolnego systemu komputerowego należy zawsze pamiętać o jego ostatecznym przeznaczeniu oraz o użytkowniku końcowym.
+% Warto przy tym podkreślić, że w przytoczonej pozycji literatury \cite{Abraham_Silberschatz} jako integralny komponent struktury systemu komputegowego uwzględnia się jego użytkownika. 
+% Zabieg ten ma na celu jednoznaczne wskazanie, że przy projektowaniu dowolnego systemu komputerowego należy zawsze pamiętać o jego ostatecznym przeznaczeniu oraz o użytkowniku końcowym.
 
-W modelu warstwowym architektury komputerowej system operacyjny pełni szczególną rolę, zarządzając granicą między aplikacjami a warstwą fizyczną. W celu zapewnienia poprawnego i przewidywalnego działania systemu wprowadza poziomy abstrakcji, które są niezbędne z kilku istotnych powodów:
+% W modelu warstwowym architektury komputerowej system operacyjny pełni szczególną rolę, zarządzając granicą między aplikacjami a warstwą fizyczną. W celu zapewnienia poprawnego i przewidywalnego działania systemu wprowadza poziomy abstrakcji, które są niezbędne z kilku istotnych powodów:
 
-\begin{enumerate}
-\item \textbf{Konieczność zapewnienia bezpieczeństwa } - Współczesne systemy operacyjne charakteryzują się ogromną złożonością, a ich kod źródłowy sięga kilkudziesięciu milionów linii \cite{Tanenbaum}.
- Izolacja poszczególnych poziomów wprowadza wyraźną hierarchię uprawnień. Dzięki temu błąd powstały w kodzie aplikacyjnym pozostaje odizolowany i nie wpływa bezpośrednio na stabilność pozostałych funkcjonalności systemowych ani na pracę samego sprzętu.
-\item \textbf{Zapewnienie przenoszalności oprogramowania} - Zastosowanie warstw pośrednich sprawia, że oprogramowanie nie jest bezpośrednio uzależnione od konkretnych urządzeń fizycznych. Pozwala to na uruchamianie tych samych programów na różnorodnych platformach sprzętowych,
- umożliwiając przy tym niezależny rozwój warstwy aplikacyjnej i sprzętowej.
-\item \textbf{Umożliwienie korzystania z narzędzi wysokiego poziomu} - Ukrycie technicznych szczegółów pracy ze sterownikami lub rejestrami pozwala na tworzenie kodu w językach wysokiego poziomu. Programista może skupić się na logice i strukturze zgodnej ze sposobem myślenia człowieka, zamiast na bezpośredniej, niskopoziomowej obsłudze układów elektronicznych.
-\end{enumerate}
+% \begin{enumerate}
+% \item \textbf{Konieczność zapewnienia bezpieczeństwa } - Współczesne systemy operacyjne charakteryzują się ogromną złożonością, a ich kod źródłowy sięga kilkudziesięciu milionów linii \cite{Tanenbaum}.
+%  Izolacja poszczególnych poziomów wprowadza wyraźną hierarchię uprawnień. Dzięki temu błąd powstały w kodzie aplikacyjnym pozostaje odizolowany i nie wpływa bezpośrednio na stabilność pozostałych funkcjonalności systemowych ani na pracę samego sprzętu.
+% \item \textbf{Zapewnienie przenoszalności oprogramowania} - Zastosowanie warstw pośrednich sprawia, że oprogramowanie nie jest bezpośrednio uzależnione od konkretnych urządzeń fizycznych. Pozwala to na uruchamianie tych samych programów na różnorodnych platformach sprzętowych,
+%  umożliwiając przy tym niezależny rozwój warstwy aplikacyjnej i sprzętowej.
+% \item \textbf{Umożliwienie korzystania z narzędzi wysokiego poziomu} - Ukrycie technicznych szczegółów pracy ze sterownikami lub rejestrami pozwala na tworzenie kodu w językach wysokiego poziomu. Programista może skupić się na logice i strukturze zgodnej ze sposobem myślenia człowieka, zamiast na bezpośredniej, niskopoziomowej obsłudze układów elektronicznych.
+% \end{enumerate}
 
-\subsection{Podział systemów operacyjnych ze względu na strukture systemu}
+\section{Architektura struktur jądra systemów operacyjnych}
 
 Systemy operacyjne można klasyfikować według wielu kryteriów, z których jednym z najczęsciej spotykanym jest podział, ze względu na ich docelowe przeznaczenie. Przy takim podziale możemy wyróżnić systemy operacyjne generalnego przeznaczenia, systemy operacyjne rozproszone, systemy operacyjne komputerów nmainframe, systemy operacyjne serwerów oraz wiele innych \cite{Tanenbaum}.
 
@@ -234,15 +350,15 @@ oraz zestawu współpracujących ze sobą procesów systemowych. Samo mikrojądr
 
 Główną zaletą takiego podejścia jest wysoka stabilność środowiska -- awaria oprogramowania lub sterownika nie narusza integralności samego jądra. System potrafi zrestartować uszkodzony proces bez zaburzania pracy całego systemu. 
 Wadą tego rozwiązania jest jednak niższa wydajność, wynikająca z narzutu czasowego na ciągłą konieczność komunikacji międzyprocesowej oraz częste przełączanie kontekstu procesora.
-\subsection{Korzyści i niedogoności płynące z stosowania systemów operacyjnych}
-\section{Studium przypadku systemu Linux}
-\subsection{Architektura systemu i jego jądro }
-% Tutaj nalezy wspomniec o przestrzeni uzytkownika i przestrzeni jadra systemu, podstawowe założenia systemu Linux, ze to monolit, ze wszystko jest plikiem itp
-\subsection{Zarządzanie pamiecią}
-\subsubsection{Mechanizm stronnicowania pamięci}
-\subsubsection{Wykorzystanie pamięci podręcznej procesora }
-\subsection{Procesy i wątki w systemie Linux}
-\subsection{Szeregowani zadań i determinizm czasowy w systemie Linux}
-% Planista, priotytety wątków, algorytmy szeregowania zadań, po co szeregujemy zadania, etc.
-\subsection{Wykorzystanie systemu Linux w systemach wbudowanych}
+
+\section{Studium przypadku systemu operacyjnego Linux}
+% \subsection{Architektura systemu i jego jądro }
+% % Tutaj nalezy wspomniec o przestrzeni uzytkownika i przestrzeni jadra systemu, podstawowe założenia systemu Linux, ze to monolit, ze wszystko jest plikiem itp
+\subsection{Zarządzanie pamiecią}\label{Linux_wykorzystaniePamieci}
+% \subsubsection{Mechanizm stronnicowania pamięci}
+% \subsubsection{Wykorzystanie pamięci podręcznej procesora }
+% \subsection{Procesy i wątki w systemie Linux}
+% \subsection{Szeregowani zadań i determinizm czasowy w systemie Linux}
+% % Planista, priotytety wątków, algorytmy szeregowania zadań, po co szeregujemy zadania, etc.
+% \subsection{Wykorzystanie systemu Linux w systemach wbudowanych}
 % Jocto project, włąsne dystrybucje, ubuntu Core, itp
