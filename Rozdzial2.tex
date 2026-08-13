@@ -1,13 +1,11 @@
 \chapter{Architektura systemów operacyjnych w zastosowaniach wbudowanych}\label{}
-%Gemini generated, raczej do wypierdolenia
-Współczesna inżynieria systemów wbudowanych znajduje się w punkcie zwrotnym, w którym tradycyjne podejście oparte na bezpośrednim sterowaniu sprzętem (Bare-Metal) ustępuje miejsca zaawansowanym platformom zintegrowanym z systemami operacyjnymi klasy Linux. Ta ewolucja jest podyktowana rosnącą złożonością realizowanych zadań, wymagających nie tylko wysokiej mocy obliczeniowej, ale również sprawnego zarządzania współbieżnością, pamięcią wirtualną oraz interfejsami komunikacyjnymi.
+Projektowanie złożonych systemów komputerowych, zwłaszcza takich jak rozwiązania bazujące na implementacji algorytmów przetwarzania sygnałów w rygorze czasu rzeczywistego przy jednocześnie ograniczonych zasobach sprzętowych, jest zadaniem, które wymaga wielu przemyślanych decyzji przy doborze architektury tworzonego systemu.
 
-System operacyjny, zgodnie z klasyczną definicją A. Tanenbauma, pełni w tym układzie rolę zarządcy zasobów, którego zadaniem jest sprawiedliwy i bezpieczny arbitraż dostępu do fizycznych komponentów platformy. Jednakże, w przypadku algorytmów o wysokiej intensywności obliczeniowej, takich jak Szybka Transformata Fouriera (FFT), ta warstwa abstrakcji staje się źródłem specyficznych wyzwań inżynierskich. Mechanizmy jądra, takie jak szeregowanie zadań czy obsługa przerwń, wprowadzają do systemu niedeterminizm, objawiający się fluktuacjami czasu wykonania kodu (jitterem) oraz narzutem administracyjnym (overhead).
+Wybór odpowiedniej platformy programowej jest jedną z kluczowych decyzji projektowych. Projektant systemu wbudowanego staje wówczas często przed wyborem między podejściem bezsystemowym, zapewniającym pełną kontrolę nad sprzętem, a zastosowaniem systemu operacyjnego, który wprowadza warstwę abstrakcji kosztem częściowej utraty determinizmu czasowego oraz zwiększenia zużycia fizycznych zasobów systemu \cite{Tanenbaum}. Decyzja ta ma bezpośredni wpływ na poprawność systemu, nie tylko z uwagi na osiąganą wydajność obliczeniową, ale również poprzez bezpieczeństwo i stabilność systemu.
+W celu zwiększenia jakości projektowanego systemu inżynier oprogramowania powinien posiadać niezbędną wiedzę teoretyczną z zakresu działania systemów operacyjnych, aby zagwarantować tworzenie możliwie wydajnych i niezawodnych systemów komputerowych.
 
-Zrozumienie architektury systemu operacyjnego w zastosowaniach wbudowanych jest zatem kluczowe dla procesu optymalizacji. Niniejszy rozdział stanowi fundament teoretyczny dla dalszych badań, analizując drogę danych od fizycznego sygnału, przez mechanizmy izolacji przestrzeni jądra i użytkownika, aż po polityki planisty systemowego. Celem poniższych rozważań jest wskazanie wąskich gardeł systemowych, które mogą ograniczać teoretyczną wydajność algorytmów cyfrowego przetwarzania sygnałów na platformach o ograniczonych zasobach
-%Koniec gemini generated to jest do wywalenia
+Celem prezentowanego rozdziału jest usystematyzowanie wiedzy niezbędnej do zrozumienia, w jaki sposób architektura stosowanego systemu operacyjnego wpływa na wydajność uruchamianych na nim programów. Rozważania rozpoczynają się od przedstawienia warstwowego modelu systemów operacyjnych oraz kluczowych mechanizmów jądra, takich jak tryby pracy procesora, procesy, wątki, szeregowanie zadań, pamięć wirtualna oraz synchronizacja współbieżnych operacji. Na tej podstawie omówiony zostaje podział systemów wbudowanych czasu rzeczywistego, a także dwa podstawowe modele budowy jądra: architektura monolityczna oraz mikrojądrowa. Ostatnia część rozdziału zawiera studium przypadku systemu operacyjnego Linux, w którym w skrócony sposób starano się przedstawić niezbędne szczegóły implementacji mechanizmów systemowych.
 
-\cite{Tanenbaum}
 \section{Rola systemów operacyjnych w systemach wbudowanych}
 
 %Tutaj dajemy zdanie wprowadzające, ze przy projektowaniu systemow wbudowanych mozna podejsc roznie do tematu
@@ -267,67 +265,6 @@ Choć fakt spóźnienia powoduje całkowitą nieprzydatność rozwiązania, to s
 Zdefiniowane powyżej rygory czasowe określają, teoretyczny oczekiwania wobec systemu czasu rzeczywistego. W praktyce realizacja tych założeń sprowadza się do oceny zasadności stosowania \textbf{systemu operacyjnego czasu rzeczywistego} 
 w zderzeniu z bezpośrednim programowaniem sprzętu. Decyzja ta bezpośrednio determinuje strukturę i elastyczność budowanego środowiska.
 
-% \section{Rola systemów operacyjnych w systemach wbudowanych}
-
-% %Tutaj dajemy zdanie wprowadzające, ze przy projektowaniu systemow wbudowanych mozna podejsc roznie do tematu
-% Podczas projektowania systemu wbudowanego, włączając w to system wbudowany czasu rzeczywistego, projektant staje przed wyborem jednego z dwóch podstawowych podejść do organizacji i kontroli całego środowiska. 
-% Pierwszym z nich jest \textbf{podejście bezsystemowe}  (ang. \textit{bare-metal}), w którym całe oprogramowanie funkcjonuje bez żadnej warstwy pośredniej, 
-% mając bezpośredni i wyłączny dostęp do fizycznych układów procesora oraz peryferiów. 
-% Choć pozwala to na pełną kontrolę nad sprzętem i minimalne narzuty czasowe, to drastycznie ogranicza skalowalność każda zmiana komponentu 
-% lub rozbudowa funkcji wymusza wówczas głęboką modyfikację struktury całego kodu.
-
-% Alternatywą jest zastosowanie \textbf{systemu operacyjnego}, który możemy zdefiniować jako podstawowe oprogramowanie pośredniczące między sprzętem komputerowym a użytkownikiem, 
-% którego głównym zadaniem jest zarządzanie i przydzielanie zasobów sprzętowych oraz tworzenie środowiska pozwalającego na wykonywanie programów zaimplementowanych przez jego użytkownika \cite{Abraham_Silberschatz}.
-
-% Jak wynika z przytoczonej definicji, stosowanie systemu operacyjnego pomaga rozwiązywać niektóre problemy napotykane przy stosowaniu podejścia bezsystemowego. 
-% Dzieje się tak poprzez całościowe odizolowanie warstwy programowej od fizycznych struktur sprzętu.
-% System operacyjny działa jako nadrzędny pośrednik, przejmując na siebie zadanie nadzorowania środowiska wykonawczego i separując logikę działania
-% od konkretnej platformy sprzętowej. 
-
-% Aby w pełni zrozumieć, jak system operacyjny realizuje te zadania w środowisku wbudowanym, konieczne jest przyjrzenie się jego wewnętrznej architekturze.
-%  W dalszych sekcjach zostaną szczegółowo omówione kluczowe mechanizmy oraz podstawowa struktura ogólnych systemów operacyjnych.
-
-% \subsection{Model warstwowy systemów operacyjnych}
-
-
-% W inżynieri oprogramowania istotną rolę odgrywa koncepcja \textbf{abstrakcji}, polegająca na  celowym ukryciu szczegółów implementacji danej funkcjonalności oprogramowania, przed jej potencjalnym użytkownikiem \cite{Tanenbaum}.
-% Podejście to opiera się na założeniu, że należy dostarczyć gotowe funkcjonalność  wraz z odpowiednią dokumentacją opisującą sposób jej wykorzystania, zamiast wymagać od użytkownika zrozumienia wewnętrznych mechanizmów działania wytworzonego modułu.
-
-% Taka praktyka w sposób znaczący podnosi wygodę wytwarzania nowych elementów systemu, umożliwia zrównoleglenie wytwarzania oprogramowania oraz pozwala na większą specjalizacje jej producentów. 
-% W celu realizacji komunikacji między kolejnymi modułami systemu stosuj się takie narzędzia jak \textbf{interfejsy programistyczne} (ang. \textit{Application Programming Interface}, skrót \textbf{API}), czyli zbiór ściśle określonych reguł i sposobów komunikacji, które umożliwają komunikację między różnymi warstwami oprogramowania.
-% Narzędzie to jest niezbędne, aby w sposób przewidywalny i bezpieczny przekazywać danę lub sterowanie, między różnymi elemenetami systemu.
-
-% Pojęcie abstrakcji jest kluczowe dla zrozumienia architektury współczesnych systemów operacyjnych. 
-% W literaturze spotyka się różne podejścia do klasyfikacji poziomów systemu komputerowego \cite{Tanenbaum, Abraham_Silberschatz}, jednak ich cechą 
-% wspólną jest wyraźne odseparowanie zasobów fizycznych od uruchamianego na nich oprogramowania. 
-% Na potrzeby niniejszej pracy przyjęto strukturę opartą na propozycji przedstawionej w \cite{Abraham_Silberschatz}, którą w graficzny sposób zaprezentowano na rysunku \ref{fig:rysunek1}.
-
-% \begin{figure}[h]
-%     \centering
-%     \includegraphics[width=0.8\textwidth]{img/Rysunek1.pdf}
-%     \caption{Warstwowy model systemu komputerowego}
-%     \label{fig:rysunek1}
-% \end{figure}
-
-% Jak pokazano na schemacie, najniższy poziom stanowi warstwa sprzętowa, do której zalicza się wszystkie fizyczne komponenty urządzenia,
-% takie jak \textbf{jednostka centralna} (ang. \textit{Central Processing Unit}, CPU), \textbf{pamięć} oraz \textbf{urządzenia wejścia-wyjścia} (ang. \textit{Input/Output Devices}, I/O). 
-% Ponad nią znajduje się warstwa oprogramowania, na którą składa się zarówno system operacyjny, jak i programy użytkownika. 
-% Choć oba te elementy należą do tej samej warstwy, funkcjonują one na innych zasadach. Odróżnia je praca w różnych trybach procesora, różniących się poziomem uprawnień oraz zakresem dostępu do fizycznych urządzeń.
-% Tryby te nazywają się odpowiednio \textbf{trybem jądra} (ang. \textit{kernel mode}), dla systemu operacyjnego, oraz \textbf{trybem użytkownika} (ang. \textit{user mode}), dla aplikacji użytkownika. 
-% Szczegółowa omównienie przytoczonych trybów oraz mechanizmów ich przełączania zostanie omówiona w dalszych częściach tego rozdziału.
-
-% Warto przy tym podkreślić, że w przytoczonej pozycji literatury \cite{Abraham_Silberschatz} jako integralny komponent struktury systemu komputegowego uwzględnia się jego użytkownika. 
-% Zabieg ten ma na celu jednoznaczne wskazanie, że przy projektowaniu dowolnego systemu komputerowego należy zawsze pamiętać o jego ostatecznym przeznaczeniu oraz o użytkowniku końcowym.
-
-% W modelu warstwowym architektury komputerowej system operacyjny pełni szczególną rolę, zarządzając granicą między aplikacjami a warstwą fizyczną. W celu zapewnienia poprawnego i przewidywalnego działania systemu wprowadza poziomy abstrakcji, które są niezbędne z kilku istotnych powodów:
-
-% \begin{enumerate}
-% \item \textbf{Konieczność zapewnienia bezpieczeństwa } - Współczesne systemy operacyjne charakteryzują się ogromną złożonością, a ich kod źródłowy sięga kilkudziesięciu milionów linii \cite{Tanenbaum}.
-%  Izolacja poszczególnych poziomów wprowadza wyraźną hierarchię uprawnień. Dzięki temu błąd powstały w kodzie aplikacyjnym pozostaje odizolowany i nie wpływa bezpośrednio na stabilność pozostałych funkcjonalności systemowych ani na pracę samego sprzętu.
-% \item \textbf{Zapewnienie przenoszalności oprogramowania} - Zastosowanie warstw pośrednich sprawia, że oprogramowanie nie jest bezpośrednio uzależnione od konkretnych urządzeń fizycznych. Pozwala to na uruchamianie tych samych programów na różnorodnych platformach sprzętowych,
-%  umożliwiając przy tym niezależny rozwój warstwy aplikacyjnej i sprzętowej.
-% \item \textbf{Umożliwienie korzystania z narzędzi wysokiego poziomu} - Ukrycie technicznych szczegółów pracy ze sterownikami lub rejestrami pozwala na tworzenie kodu w językach wysokiego poziomu. Programista może skupić się na logice i strukturze zgodnej ze sposobem myślenia człowieka, zamiast na bezpośredniej, niskopoziomowej obsłudze układów elektronicznych.
-% \end{enumerate}
 
 \section{Architektura struktur jądra systemów operacyjnych}
 
@@ -352,13 +289,39 @@ Główną zaletą takiego podejścia jest wysoka stabilność środowiska -- awa
 Wadą tego rozwiązania jest jednak niższa wydajność, wynikająca z narzutu czasowego na ciągłą konieczność komunikacji międzyprocesowej oraz częste przełączanie kontekstu procesora.
 
 \section{Studium przypadku systemu operacyjnego Linux}
-% \subsection{Architektura systemu i jego jądro }
-% % Tutaj nalezy wspomniec o przestrzeni uzytkownika i przestrzeni jadra systemu, podstawowe założenia systemu Linux, ze to monolit, ze wszystko jest plikiem itp
+System operacyjny Linux wywodzi się z  tradycji architektonicznej rodziny systemów "Unix", czerpiąc z niej kluczowe założenia projektowe, takie jak wielozadaniowość, wielodostępność oraz podział przestrzeni pamięci \cite{Tanenbaum}. Jego rozwój rozpoczął się w 1991 roku z inicjatywy Linusa Torvaldsa, a dziś stanowi on jeden z najważniejszych i najczęściej wykorzystywanych projektów tworzonych w modelu otwartego oprogramowania ( ang.\textit{open source}) \cite{Tanenbaum}.
+Dzięki wsparciu globalnej społeczności Linux stał się najczęściej wykorzystywanym systemem komputerowym w wielu zastosowaniach, począwszy od  infrastruktury serwerowej przez systemy wbudowane, aż po chmury obliczeniowe.
+
+Z perspektywy użytkownika klasycznym i wysoce elastycznym sposobem komunikacji z systemem Linux  jest powłoka (ang. \textit{shell}), w systemach Linux reprezentowana najczęściej przez program \textit{bash} \cite{Tanenbaum}. Z technicznego punktu widzenia jest to zwykły program działający w przestrzeni użytkownika, który pełni rolę interpretera poleceń \cite{Tanenbaum}. Powłoka pozwala na uruchamianie innych programów wraz z odpowiednimi parametrami.
+Do jej kluczowych funkcjonalności należy elastyczne przekierowywanie standardowych strumieni wejścia i wyjścia oraz łączenie pojedynczych programów w potoki (ang. \textit{pipelines}), co pozwala na przekazywanie wyników między różnymi procesami \cite{Tanenbaum}.
+Ponadto powłoka umożliwia asynchroniczne uruchamianie zadań w tle oraz tworzenie skryptów, które dzięki obsłudze zmiennych i instrukcji sterujących (np. pętli czy instrukcji warunkowych) pozwalają na automatyzację złożonych operacji systemowych \cite{Abraham_Silberschatz}.
+
+Kluczowym elementem systemu jest jądro o strukturze monolitycznej \cite{LinuxKernelDevelopment}, które odpowiada za bezpośrednią kontrolę nad najważniejszymi zasobami systemu.
+Z uwagi na tę architekturę oraz konieczność zapewnienia bezpieczeństwa, aplikacje działające w przestrzeni użytkownika nie mają bezpośredniego dostępu do krytycznych zasobów systemu. Wszelka interakcja z zasobami zarządzanymi przez system musi odbywać się za pośrednictwem zdefiniowanego interfejsu wywołań systemowych, który w systemie Linux jest zgodny ze standardem \textbf{POSIX} \cite{Tanenbaum}. Każde takie wywołanie wymusza sprzętowe przełączenie procesora do trybu jądra. Operacja ta wymaga zapisania  stanu rejestrów oraz zmiany kontekstu wykonania, co  wiąże się z dodatkowym narzutem czasowym.
+\subsection{Procesy, wątki w systemie Linux}
+
+W przeciwieństwie do wielu innych systemów operacyjnych, Linux nie wprowadza ścisłego, wewnętrznego rozróżnienia między procesami, a wątkami\cite{Tanenbaum}. Każdy kontekst wykonania, niezależnie od tego, czy jest to jednowątkowy proces, czy jeden z wielu wątków wewnątrz procesu, jest reprezentowany w jądrze jako zadanie (ang. \textit{task}) za pomocą struktury danych \texttt{task\_struct} \cite{LinuxKernelDevelopment}. 
+
+Klasyczne tworzenie nowego procesu odbywa się poprzez wywołanie systemowe \texttt{fork}. Aby uniknąć kosztownego i nieefektywnego kopiowania całej pamięci, Linux stosuje optymalizację kopiowania przy zapisie (ang. \textit{copy on write})\cite{LinuxKernelDevelopment}. Początkowo proces potomny otrzymuje własne tablice stron, jednak wskazują one na fizyczne strony pamięci procesu macierzystego z atrybutem tylko do odczytu. Nowa kopia strony jest alokowana w pamięci RAM dopiero w momencie, gdy któryś z procesów spróbuje dokonać na niej operacji zapisu \cite{Tanenbaum}.
+
+Z kolei fundamentalną różnicą w architekturze Linuksa, w porównaniu do klasycznych systemów UNIX, jest obsługa wątków. Wprowadzono w nim wywołanie systemowe \texttt{clone}, które zaciera tradycyjną różnicę między procesami a wątkami \cite{Tanenbaum}, umożliwiając tworzenie nowego wątku z bardzo podobnymi cechami do klasycznego procesu. 
+
+Pozwala ono zminimalizować narzut systemowy poprzez precyzyjne sterowanie tym, co jest kopiowane, a co współdzielone. Wywołanie to przyjmuje jako argument mapę bitową, w której poszczególne flagi (np. \texttt{CLONE\_FILES}, \texttt{CLONE\_SIGHAND}) decydują o współdzieleniu deskryptorów plików czy tablicy obsługi sygnałów \cite{Tanenbaum}.
+\subsection{Szeregowanie i synchronizacja w systemie Linux}
+System operacyjny Linux posiada przemyślany i wysoce elastyczny mechanizm szeregowania zadań oraz synchronizacji, który obsługuje zarówno standardowe programy użytkowe, jak i zadania czasu rzeczywistego \cite{Tanenbaum}. 
+
+W kontekście planowania czasu procesora, jądro wyróżnia trzy główne klasy wątków: zadania czasu rzeczywistego typu FIFO, zadania czasu rzeczywistego z rotacją (ang. \textit{round-robin}) oraz zadania standardowe \cite{Tanenbaum}. Wątki czasu rzeczywistego otrzymują zawsze najwyższe priorytety (w skali od 0 do 99). Mimo swojej nazwy nie dają one ścisłych gwarancji dotrzymania terminów (ang. \textit{deadlines}), a jedynie zapewniają bezwzględne pierwszeństwo wykonania przed zwykłymi aplikacjami, \cite{Tanenbaum}. Jest to bardzo istotna cecha systemu Linux, która pokazuje, że nie jest on odpowiedni (w klasycznej, nieprzerobionej wersji systemu) do bezpośredniego wykorzystania w twardych systemach czasu rzeczywistego \cite{LinuxKernelDevelopment}.
+Wątki typu FIFO działają aż do momentu dobrowolnego oddania procesora lub wywłaszczenia przez zadanie o wyższym priorytecie, podczas gdy wątkom szeregowanym cyklicznie przydzielane są dodatkowo określone kwanty czasu \cite{Tanenbaum}.
+
+Z kolei standardowe zadania o niższych priorytetach (od 100 do 139) są z reguły obsługiwane przez algorytm \textit{Completely Fair Scheduler} (CFS) \cite{Tanenbaum}, który optymalizuje i sprawiedliwie rozdziela czas procesora z wykorzystaniem struktury drzewa czerwono-czarnego \cite{Abraham_Silberschatz}.
+
+Uzupełnieniem efektywnego zarządzania zadaniami są zróżnicowane mechanizmy synchronizacji, które zastąpiły historyczną, nieefektywną globalną blokadę jądra. Aby zminimalizować ryzyko konfliktów o dostęp do zasobów, Linux udostępnia pełen przekrój rozwiązań: od operacji atomowych i barier pamięci, poprzez blokady wirujące (ang. \textit{spinlocks}) \cite{LinuxKernelDevelopment} – optymalne, gdy wątek nie powinien być usypiany – aż po wysokopoziomowe muteksy i semafory dla zadań mogących bezpiecznie przejść w stan oczekiwania \cite{Tanenbaum}.
 \subsection{Zarządzanie pamiecią}\label{Linux_wykorzystaniePamieci}
-% \subsubsection{Mechanizm stronnicowania pamięci}
-% \subsubsection{Wykorzystanie pamięci podręcznej procesora }
-% \subsection{Procesy i wątki w systemie Linux}
-% \subsection{Szeregowani zadań i determinizm czasowy w systemie Linux}
-% % Planista, priotytety wątków, algorytmy szeregowania zadań, po co szeregujemy zadania, etc.
-% \subsection{Wykorzystanie systemu Linux w systemach wbudowanych}
-% Jocto project, włąsne dystrybucje, ubuntu Core, itp
+
+W systemie Linux pamięć jest stronnicowana. W związku z tym, podstawową jednostką do zarządzania pamięcią fizyczną jest struktura o nazwie \textit{page} \cite{LinuxKernelDevelopment}. Z uwagi na ograniczenia sprzętowe niektórych architektur, pamięć fizyczna została logicznie podzielona na strefy (ang. \textit{zones}). Należą do nich między innymi \texttt{ZONE\_DMA}, przeznaczona na operacje bezpośredniego dostępu do pamięci, \texttt{ZONE\_NORMAL}, zawierająca standardowe strony, oraz \texttt{ZONE\_HIGHMEM} \cite{Tanenbaum}. 
+
+Każdy proces uruchomiony w systemie operuje na własnej wirtualnej przestrzeni adresowej, która logicznie dzieli się na trzy główne segmenty: kod, dane oraz stos \cite{Tanenbaum}. Segment kodu przechowuje instrukcje programu i domyślnie posiada atrybut umożliwiający jedynie jego odczyt, co pozwala na bezpieczne współdzielenie go między wieloma jednoczesnymi uruchomieniami tego samego programu \cite{Abraham_Silberschatz}. Segment danych przechowuje zmienne globalne i statyczne, przy czym dla zmiennych niezainicjowanych  Linux stosuje optymalizację: mapuje je na jedną fizyczną, wyzerowaną stronę, dopóki proces nie spróbuje dokonać modyfikacji, co wyzwala mechanizm kopiowania przy zapisie (ang. \textit{copy-on-write}) \cite{Tanenbaum}. Ponadto jądro oferuje mechanizm mapowania plików w pamięci, co umożliwia procesom bezpośredni dostęp do danych plikowych lub współdzielonych bibliotek z pominięciem standardowych wywołań systemowych \cite{Tanenbaum}.
+
+Do zarządzania przydziałem fizycznych stron pamięci Linux wykorzystuje \textbf{algorytm bliźniaków} (ang. \textit{buddy algorithm}) \cite{Tanenbaum}. Choć mechanizm ten jest w większości przypadków wysoce wydajny, może prowadzić do zjawiska fragmentacji wewnętrznej w przypadku konieczności alokacji struktur o rozmiarach znacznie mniejszych niż domyślne wielkości strony. Aby zminimalizować ten problem i zredukować narzut systemowy, system wdraża mechanizm dyspozytora płytowego (ang. \textit{slab allocator}) \cite{LinuxKernelDevelopment}, który działa dysponuje pamiecia poprzez algorytm blizniakow, aby pozniej podzieli strone na mniejsze fragmenty i umozliwic jej zarzadzanie \cite{Tanenbaum}. 
+
+Na poziomie interfejsu programistycznego jądra alokacja pamięci odbywa się za pomocą kilku wyspecjalizowanych funkcji do zarządzania pamięcią.Warto tutaj wspominieć o tych najpowszechniejszych, czyli \texttt{kmalloc}, gwarantująca przydział obszaru ciągłego zarówno w przestrzeni wirtualnej, jak i fizycznej \cite{LinuxKernelDevelopment} oraz \texttt{vmalloc} wykorzystywana do alokacji większych struktur, niewymagających ciągłości fizycznej. Ta druga jednak wiąże się  z  większym narzutem wydajnościowym wynikającym z konieczności modyfikacji tablic stron \cite{LinuxKernelDevelopment}.
