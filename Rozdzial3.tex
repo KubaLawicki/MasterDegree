@@ -1,9 +1,121 @@
-\chapter{Wybrany algorytm przetwarzania danych i techniki optymalizacji programów komputerowych}\label{}
+\chapter{Wybrany algorytm przetwarzania danych i techniki optymalizacji programów komputerowych}
 \section{Opis i analiza Szybkiej Transformaty Fouriera}
 \section{Warianty algorytmu Szybkiej Transformaty Fouriera}
 \section{Opis procesu kompilacji programu komputerowego}
+\subsection{Procesory języka programowania}
+W najnowszych rozwiązaniach dotyczących systemów komputerowych użytkownicy mają szeroki wybór języków programowania, które służą do opisywania idei projektowych człowieka w taki sposób, aby były one możliwe do wykonania przez maszynę. Sprzęt komputerowy nie jest jednak w stanie operować tak wysokopoziomowymi abstrakcjami, jak zmienne, pętle, instrukcje warunkowe itd., które są dostępne w językach programowania. W ich miejsce musi on mieć przygotowane binarne instrukcje maszynowe, które pozbawione są wysokopoziomowej logiki, tak łatwej do zrozumienia dla człowieka. Można zatem powiedzieć, że zanim jakikolwiek program będzie mógł zostać uruchomiony, musi najpierw zostać przetłumaczony na formę, w której będzie mógł być wykonany przez jednostkę centralną komputera. 
+Oprogramowanie systemowe realizujące ten proces translacji określa się ogólnie mianem \textbf{ procesorów języka} (ang. \textit{language processors}) \cite{Kompilatory_Aho}.
+
+Jednym z najpopularniejszych procesorów języka jest \textbf{kompilator}, który można w ogólności zdefiniować jako program komputerowy, którego zadaniem jest przetłumaczenie kodu napisanego w jednym języku (języku źródłowym) na równoważny program w innym języku (języku docelowym). Najczęściej sprowadza się to do translacji z wysokopoziomowego języka programowania na język maszynowy, który może być bezpośrednio wykonany przez procesor. Podejście to jest powszechnie stosowane dla języków takich jak \textbf{C, C++ czy Java.} Wymagają one uprzedniej kompilacji, ale w zamian oferują programiście ogromną kontrolę nad zarządzaniem pamięcią oraz zasobami sprzętowymi. Dzięki wysokiej wydajności wygenerowanego kodu języki te stanowią standard w wytwarzaniu systemów wbudowanych.
+
+Zupełnie odmiennym mechanizmem charakteryzuje się inny program procesora jezykow, nazywany \textbf{interpreterem}. Rozwiazanie to zamiast generować docelowy plik wykonywalny, analizuje i realizuje instrukcje kodu źródłowego na bieżąco, biorąc pod uwagę aktualnie dostarczone dane wejściowe. 
+Narzut obliczeniowy oraz pamięciowy związany z ciągłą przetwarzaniem instrukcji sprawia, że rozwiązania tego typu rzadko znajdują zastosowanie w systemach wbudowanych. Z tego względu dalsza część niniejszej pracy skupia się wyłącznie na architekturze i mechanizmach działania kompilatorów. 
+
+Dalsza analiza teoretyczna w niniejszej pracy zostanie oparta na kompilatorach języka C,ze względu na szerokie zastosowanie tego języka w systemach wbudowanych.
+\subsection{Szczegółowy opis procesu kompilacji}
+W zastosowaniach niezwiązanych z systemami wbudowanymi wielu użytkowników traktuje kompilator jako wysoką abstrakcję, stosując prosty model „czarnej skrzynki”, co obrazuje \cref{fig:rysunek3}. Zgodnie z tym podejściem narzędzie to zajmuje się wyłącznie tłumaczeniem, a programistę interesuje jedynie to, aby z dostarczonego kodu źródłowego otrzymać działający program docelowy. Przy takim zastosowaniu twórca oprogramowania nie musi poświęcać szczególnej uwagi sposobowi działania kompilatora, traktując go jedynie jako niezbędne narzędzie, pozwalające uruchomić jego program na konkretnym sprzęcie.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{img/Rysunek3.pdf}
+    \caption{Model "czarnej skrzynki"~kompilatora}
+    \label{fig:rysunek3}
+\end{figure}
+
+W systemach wbudowanych takie uproszczone podejście jest jednak często niewystarczające, ponieważ w takich zastosowaniach powszechnym zjawiskiem są silnie ograniczone zasoby sprzętowe, a nierzadko również ścisły rygor czasowy. Z tego względu programy tworzone przez inżyniera muszą być nie tylko poprawne pod kątem logicznym, ale również niezwykle rozsądnie gospodarować dostępnymi zasobami. Aby świadomie polepszać osiągi i kontrolować ten proces, konieczne jest porzucenie modelu czarnej skrzynki i zejście kilka poziomów abstrakcji niżej – począwszy od zrozumienia, jaki zestaw narzędzi jest w ogóle potrzebny do przetworzenia języka. 
+
+Na potrzeby niniejszej pracy zostanie przytoczony sposób postępowania opisany w książce \cite{Kompilatory_Aho}, przedstawiony na schemacie \cref{fig:rysunek2}. Należy zaznaczyć, że zaprezentowany na rysunku pakiet oprogramowania, powszechnie określany jest przez użytkowników mianem kompilatora, choć w rzeczywistości zawiera w sobie zestaw wielu współpracujących programów komputerowych, w tym ten właściwy kompilator.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/Rysunek2.pdf}
+    \caption{Klasyczny przebieg systemu przetwarzania języka programowania  \cite{Kompilatory_Aho}}
+    \label{fig:rysunek2}
+\end{figure}
+Jak się okazuje, do utworzenia wykonywalnego programu docelowego wymagane jest najczęściej użycie kilku dodatkowych narzędzi, ułożonych w taki sposób, że wynik przetwarzania jednego jest wejściem dla kolejnego.
+W klasycznym podejściu proces tworzenia pliku wykonywalnego składa się z następujących faz \cite{CinNutshell}:
+
+\textbf{Preprocesor} odpowiada za przygotowanie kodu źródłowego przed jego właściwą analizą. Jego początkowym zadaniem jest zebranie programu, który nierzadko bywa podzielony na oddzielne moduły plikowe. Następnie program ten wykonuje odpowiednie dyrektywy oraz rozwija zdefiniowane przez programistę skróty (makra) do postaci pełnoprawnych instrukcji języka źródłowego.
+
+\textbf{Kompilator} przyjmuje zmodyfikowany przez preprocesor kod i dokonuje jego tłumaczenia. Zazwyczaj wynikiem jego pracy nie jest bezpośredni kod maszynowy, lecz program zapisany w języku asemblera, powiązanym z docelową architekturą, na której uruchamiany ma zostać przygotowany program. Generowanie na tym etapie kodu asemblerowego wynika z faktu, iż jako język czytelny dla człowieka jest on znacznie łatwiejszy do wyprodukowania oraz ewentualnego debugowania.
+
+\textbf{Asembler} zajmuje się przetworzeniem kodu asemblerowego na postać zrozumiałą dla maszyny. Wynikiem jego działania jest relokowalny kod maszynowy, zapisany w postaci tak zwanych plików obiektowych. Dodatkowo na tym etapie dla każdego z plików generowana jest tablica symboli, opisująca obiekty posiadające powiązania zewnętrzne \cite{CinNutshell}.
+
+\textbf{Linker} łączy wygenerowane pliki obiektowe oraz niezbędne biblioteki w jeden spójny plik wykonywalny. Jego kluczowym zadaniem jest rozwiązanie adresów pamięci dla odwołań zewnętrznych pomiędzy poszczególnymi modułami programu, do czego wykorzystuje wspomniane wcześniej tablice symboli. W procesie tym linker dołącza również kod niezbędnych funkcji pochodzących ze standardowych lub zewnętrznych bibliotek \cite{CinNutshell}.
+
+\subsection{Wewnętrzna struktura kompilatora}
+
+Kompilator wewnętrznie dzieli się na dwie części: analizę (front end), która rozkłada program źródłowy na składowe elementy i na ich podstawie buduje reprezentację pośrednią oraz tablicę symboli, oraz syntezę (back end), która na tej podstawie konstruuje program docelowy \cite{Kompilatory_Aho}.
+
+Proces ten przebiega jako sekwencja faz, z których każda przekształca jedną reprezentację programu w inną, a tablica symboli jest wykorzystywana przez wszystkie z nich \cite{Kompilatory_Aho}:
+
+\begin{itemize}
+    \item \textbf{Analiza leksykalna} - grupuje znaki programu źródłowego w leksemy i zamienia je na tokeny.
+    \item \textbf{Analiza składniowa} - na podstawie tokenów buduje drzewo składniowe odzwierciedlające strukturę gramatyczną programu.
+    \item \textbf{Analiza semantyczna} - sprawdza zgodność programu z definicją języka, w tym poprawność typów.
+    \item \textbf{Generowanie kodu pośredniego} - tworzy niskopoziomową reprezentację programu, np. w postaci kodu trójadresowego.
+    \item \textbf{Optymalizacja kodu} - opcjonalnie usprawnia kod pośredni, tak aby wynikowy kod docelowy był lepszy (np.\ szybszy lub mniejszy).
+    \item \textbf{Generowanie kodu} - tłumaczy reprezentację pośrednią na kod maszyny docelowej, przydzielając m.in.\ rejestry zmiennym.
+\end{itemize}
+
+W praktycznych implementacjach kilka faz bywa łączonych w jeden przebieg (ang. \textit{pass}) \cite{Kompilatory_Aho}.
+
 \section{Przegląd najpopularniejszych kompilatorów języka C}
 \section{Poziomy optymalizacji dostępne w kompilatorach Clang i Gcc}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Poziomy optymalizacji w kompilatorach GCC i Clang, na podstawie oficjalnych dokumentacji\cite{gcc_optlevels,clang_cmdguide}}
+    \label{tab:poziomy_optymalizacji}
+    \begin{tabularx}{\textwidth}{@{} l X X @{}}
+        \toprule
+        \textbf{Flaga} & \textbf{GCC} & \textbf{Clang} \\
+        \midrule
+
+        \texttt{-O0} &
+            Brak optymalizacji (ustawienie domyślne). Generuje nieoptymalny kod, lecz zapewnia najkrótszy czas kompilacji i najlepsze warunki do debugowania. &
+            Oznacza brak optymalizacji -- najszybsza kompilacja i najlepiej debugowalny kod wynikowy. \\
+        \addlinespace
+
+        \texttt{-O1} &
+            Umiarkowana optymalizacja (odpowiednik samego \texttt{-O}). Rozsądnie optymalizuje kod bez istotnego wydłużenia czasu kompilacji, choć część zmiennych może być niedostępna w debuggerze. &
+            Poziom pośredni między \texttt{-O0} a \texttt{-O2}. \\
+        \addlinespace
+
+        \texttt{-O2} &
+            Rozszerzona optymalizacja generująca silnie zoptymalizowany kod kosztem wydłużonego czasu kompilacji; istotnie utrudnia pracę z debuggerem. &
+            Umiarkowany poziom optymalizacji włączający większość dostępnych optymalizacji. \\
+        \addlinespace
+
+        \texttt{-O3} &
+            Pełna optymalizacja obejmująca bardziej zaawansowane przekształcenia, zwłaszcza pętli, potencjalnie kosztem większego rozmiaru kodu wynikowego. Praca z debuggerem jest w praktyce bardzo utrudniona. &
+            Odpowiednik \texttt{-O2} rozszerzony o optymalizacje wymagające dłuższego czasu kompilacji lub zwiększające rozmiar kodu, w celu poprawy szybkości wykonania. \\
+        \addlinespace
+
+        \texttt{-Os} &
+            Optymalizacja pod kątem rozmiaru kodu i danych zamiast szybkości; bazuje na \texttt{-O2} z wyłączeniem przekształceń zwiększających rozmiar binarki oraz dodatkowymi optymalizacjami redukującymi rozmiar. &
+            Odpowiednik \texttt{-O2} z dodatkowymi optymalizacjami zmniejszającymi rozmiar kodu wynikowego. \\
+        \addlinespace
+
+        \texttt{-Oz} &
+            Agresywna optymalizacja rozmiaru kodu i danych; może zwiększyć liczbę wykonywanych instrukcji, jeśli wymagają one mniejszej liczby bajtów do zakodowania. &
+            Odpowiednik \texttt{-Os}, lecz z jeszcze dalszą redukcją rozmiaru kodu wynikowego. \\
+        \addlinespace
+
+        \texttt{-Og} &
+            Optymalizacja zorientowana na komfort debugowania zamiast szybkości; bazuje na \texttt{-O1}, dążąc do wyeliminowania negatywnego wpływu optymalizacji na proces debugowania. &
+            Zbliżony do \texttt{-O1}, lecz z nieco ograniczoną optymalizacją i lepszą widocznością zmiennych; dodatkowo ustawia flagę \texttt{-fextend-variable-liveness}, poprawiającą dostępność zmiennych podczas debugowania. \\
+        \addlinespace
+
+        \texttt{-Ofast} &
+            Poziom nieuwzględniony w cytowanym dokumencie GNAT jako osobna flaga GCC (w praktyce GCC obsługuje \texttt{-Ofast} analogicznie do Clang -- zob.\ kolumna obok). &
+            Włącza wszystkie optymalizacje z \texttt{-O3} wraz z dodatkowymi agresywnymi optymalizacjami mogącymi naruszać ścisłą zgodność ze standardem języka (m.in.\ \texttt{-ffast-math}). Flaga oznaczona jako przestarzała od Clang 19. \\
+
+        \bottomrule
+    \end{tabularx}
+
+    \vspace{0.5em}
+\end{table}
+
+
 \section{Zaawansowane techniki optymalizacji kodu}
 
 
