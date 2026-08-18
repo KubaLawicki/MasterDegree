@@ -41,8 +41,8 @@ W klasycznym podejściu proces tworzenia pliku wykonywalnego składa się z nast
 
 \textbf{Linker} łączy wygenerowane pliki obiektowe oraz niezbędne biblioteki w jeden spójny plik wykonywalny. Jego kluczowym zadaniem jest rozwiązanie adresów pamięci dla odwołań zewnętrznych pomiędzy poszczególnymi modułami programu, do czego wykorzystuje wspomniane wcześniej tablice symboli. W procesie tym linker dołącza również kod niezbędnych funkcji pochodzących ze standardowych lub zewnętrznych bibliotek \cite{CinNutshell}.
 
-\subsection{Wewnętrzna struktura kompilatora}
-
+\subsection{Wewnętrzna struktura kompilatora}\label{subsection:WewStrukturaKompilatora}
+%ta sekcja jest do poprawy, mamy 2 ksiazki compilter i dragon book z ktorych mozna sobie pokorzystac. 
 Kompilator wewnętrznie dzieli się na dwie części: analizę (front end), która rozkłada program źródłowy na składowe elementy i na ich podstawie buduje reprezentację pośrednią oraz tablicę symboli, oraz syntezę (back end), która na tej podstawie konstruuje program docelowy \cite{Kompilatory_Aho}.
 
 Proces ten przebiega jako sekwencja faz, z których każda przekształca jedną reprezentację programu w inną, a tablica symboli jest wykorzystywana przez wszystkie z nich \cite{Kompilatory_Aho}:
@@ -58,8 +58,23 @@ Proces ten przebiega jako sekwencja faz, z których każda przekształca jedną 
 
 W praktycznych implementacjach kilka faz bywa łączonych w jeden przebieg (ang. \textit{pass}) \cite{Kompilatory_Aho}.
 
+
 \section{Przegląd najpopularniejszych kompilatorów języka C}
-\section{Poziomy optymalizacji dostępne w kompilatorach Clang i Gcc}
+
+Na rynku dostępnych jest wiele implementacji kompilatorów języka C, zarówno komercyjnych, jak i rozwijanych w modelu otwartoźródłowym. W praktyce jednak w środowisku systemów opartych na jądrze Linux najczęściej spotyka się dwa rozwiązania: \textbf{GNU Compiler Collection (GCC)}, powstały w ramach projektu GNU \cite{StallmanGNU}, oraz \textbf{Clang}, będący częścią projektu \textbf{LLVM}.\
+Samo jądro systemu Linux przez długi okres było kompilowane było wyłącznie narzędziami GNU, jednak w ostanim czasie Clang i LLVM stały się dla nich dostepną alternatywą -- kompilowane z ich wykorzstaniem jądra systemu Linux wykorzystują między innymi systemy Android czy ChromeOS \cite{KernelLLVM}.
+
+Warto zaznaczyć, że również w systemach wbudowanych, niewykorzystujących systemów operacyjnych, narzędzia GNU czy Clang wraz z LLVM są często spotykane. Oferują one wsparcie dla wielu architektur procesorów, pozwalając na uruchomienie kompilatora na sprzęcie o jednej architekturze (nazywanej również terminem \textbf{maszyny hosta}) w celu wygenerowania kodu maszynowego przeznaczonego dla zupełnie innej, docelowej architektury (nazywanej \textbf{maszyną targetu}). Proces ten określany jest mianem \textbf{kompilacji skrośnej} (ang. \textit{cross-compilation}). Obydwa wspomniane kompilatory posiadają zestaw narzędzi przeznaczonych do różnych architektur spotykanych w systemach wbudowanych, takich jak \textbf{ARM, RISC-V, AVR}.
+\subsection{Kompilator GCC}
+
+\textbf{GCC} powstał jako część projektu GNU \cite{StallmanGNU} i jest tradycyjnym, domyślnym kompilatorem większości dystrybucji systemu Linux \cite{LinuxKernelDevelopment}. Jego architektura rozwiązań bazuje na klasycznym modelu kompilatora, który opisuje \cref{subsection:WewStrukturaKompilatora}. GCC dzieli proces tłumaczenia na część analizującą (front end) i część generującą kod wynikowy (back end). Część środkowa, odpowiedzialna za optymalizacje, przekształca program w dwóch własnych, uproszczonych reprezentacjach -- GENERIC oraz GIMPLE -- na których wykonywane są kolejne przekształcenia mające na celu poprawnienie kodu \cite{novillo2006gcc}. 
+\subsection{Kompilator Clang}
+
+\textbf{Clang} pełni rolę części analizującej (front end) dla  części syntezy obsługiwanej przez \textbf{LLVM}. LLVM zapewnia zestawu narzędzi kompilatorowych, zaprojektowanego tak, aby umożliwić analizę i poprawianie kodu na każdym etapie jego translacji i uruchomienia \cite{lattner2004llvm}. Podobnie jak GCC, LLVM przekształca program do własnej, uproszczonej reprezentacji pośredniej, jednak w odróżnieniu od GCC reprezentacja ta została zaprojektowana w taki sposób, aby nie musięć zależeć od konkretnego języka programowania \cite{lattner2004llvm}. Dzięki takiej budowie LLVM można podzielić na trzy niezależne części: część analizującą (Clang), wspólną dla wszystkich architektur warstwę optymalizacji oraz część generującą kod maszynowy dla konkretnego procesora. Kod projektu LLVM, w tym Clang, jest udostępniany na licencji Apache License \cite{LLVMDevPolicy}.
+
+Oba kompilatory, mimo różnic w budowie wewnętrznej, są ze sobą często porównywane w literaturze pod kątem jakości i wydajności generowanego kodu, w tym w zastosowaniach wbudowanych systemów wbudowanych \cite{poorhosseini2020compiler}.Oba rozwiązania dysponują bowiem wbudowanymi mechanizmami zaawansowanej optymalizacji kodu, o których traktuje \cref{section:TechnikiOptymalizacji}. Proces ten może być kontrolowany przez inżyniera oprogramowania poprzez stosowanie \textbf{flag kompilacji}, czyli poleceń określających pożądany stopień i cel optymalizacji programu docelowego. \cref{section:flagiKompilatora} przybliża dostępne flagi dla obywdu opisywanych kompilatorów.
+\section{Zaawansowane techniki optymalizacji kodu}\label{section:TechnikiOptymalizacji}
+\section{Flagi kompilacji dostępne w kompilatorach Clang i Gcc}\label{section:flagiKompilatora}
 
 \begin{table}[htbp]
     \centering
@@ -115,7 +130,5 @@ W praktycznych implementacjach kilka faz bywa łączonych w jeden przebieg (ang.
     \vspace{0.5em}
 \end{table}
 
-
-\section{Zaawansowane techniki optymalizacji kodu}
 
 
