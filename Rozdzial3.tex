@@ -1,7 +1,7 @@
 \chapter{Wybrany algorytm przetwarzania danych i techniki optymalizacji programów komputerowych}
 \section{Opis i analiza Szybkiej Transformaty Fouriera}
 \subsection{Podstawy matematyczne algorytmu FFT}
-Przekształcenie Fouriera dla sygnałów ciągłych służy do wyznaczania widma częstotliwościowego sygnału czasu ciągłego $x(t)$ $X(j\omega)$ \cite{ZielinskiDSP}. Wzory przekształcenia prostego i odwrotnego definiuje się następująco \cite{ZielinskiDSP}:
+\textbf{Przekształcenie Fouriera} (ang. \textit{Fourier Transform}) dla sygnałów ciągłych służy do wyznaczania widma częstotliwościowego sygnału czasu ciągłego $x(t)$ $X(j\omega)$ \cite{ZielinskiDSP}. Wzory przekształcenia prostego i odwrotnego definiuje się następująco \cite{ZielinskiDSP}:
 
 \begin{equation}
 X(j\omega) = \int_{-\infty}^{\infty} x(t)\, e^{-j\omega t}\, dt,
@@ -11,11 +11,11 @@ x(t) = \frac{1}{2\pi}\int_{-\infty}^{\infty} X(j\omega)\, e^{j\omega t}\, d\omeg
 
 gdzie $\omega = 2\pi f$ oznacza pulsację, a $f$ częstotliwość wyrażoną w hercach.
 
-Aby całka określająca $X(j\omega)$ była zbieżna, sygnał $x(t)$ musi spełniać tzw. warunki Dirichleta: być bezwzględnie całkowalny, mieć skończoną liczbę ekstremów oraz skończoną liczbę punktów nieciągłości w dowolnym skończonym przedziale \cite{ZielinskiDSP}.
+Aby całka określająca $X(j\omega)$ była zbieżna, sygnał $x(t)$ musi spełniać tzw. \textbf{warunki Dirichleta} (ang. \textit{Dirichlet conditions}): być bezwzględnie całkowalny, mieć skończoną liczbę ekstremów oraz skończoną liczbę punktów nieciągłości w dowolnym skończonym przedziale \cite{ZielinskiDSP}.
 
 Matematyczne podstawy ciągłej transformaty Fouriera są jednak nie do końca przydatne w świecie cyfrowego przetwarzania sygnałów, właśnie z uwagi na fakt, że sygnały, na których pracują maszyny cyfrowe, są dyskretne, a nie ciągłe. W tym celu definiuje się dyskretną transformatę Fouriera, która powstaje w wyniku dyskretyzacji szeregu Fouriera dla sygnału okresowego o okresie $N$ \cite{ZielinskiDSP}.
 
-W systemach cyfrowych przetwarzany sygnał dostępny jest w postaci skończonego ciągu próbek $x(n)$, $n = 0, 1, \dots, N-1$, pobranych z częstotliwością próbkowania $f_{pr}$. Powyższy wzór na ciągłą transformatę Fouriera nie da się więc bezpośrednio zastosować. Zamiast niego widmo sygnału wyznacza się za pomocą dyskretnej transformacji Fouriera (DFT). Matematyczne przekształcenia dla prostej i odwrotnej DFT definiuje się następująco \cite{ZielinskiDSP}:
+W systemach cyfrowych przetwarzany sygnał dostępny jest w postaci skończonego ciągu próbek $x(n)$, $n = 0, 1, \dots, N-1$, pobranych z częstotliwością próbkowania $f_{pr}$. Powyższy wzór na ciągłą transformatę Fouriera nie da się więc bezpośrednio zastosować. Zamiast niego widmo sygnału wyznacza się za pomocą \textbf{dyskretnej transformacji Fouriera} (DFT, ang. \textit{Discrete Fourier Transform}). Matematyczne przekształcenia dla prostej i odwrotnej DFT definiuje się następująco \cite{ZielinskiDSP}:
 
 \begin{equation}
 X(k) = \frac{1}{N}\sum_{n=0}^{N-1} x(n)\, e^{-j\frac{2\pi}{N}kn},
@@ -30,7 +30,7 @@ x(n) = \sum_{k=0}^{N-1} X(k)\, e^{j\frac{2\pi}{N}kn},
 
 gdzie $k$ oznacza numer składowej widma, dla której wyliczana jest aktualnie wartość transformaty. Kolejnym składowym odpowiada pulsacja $\Omega_k = 2\pi k/N$.
 
-Wygodnym uproszczeniem powyższych zapisów jest wprowadzenie tzw. czynnika obrotu (ang. \emph{twiddle factor})\cite{CormenIntroductionAlgorithms}:
+Wygodnym uproszczeniem powyższych zapisów jest wprowadzenie tzw. \textbf{czynnika obrotu} (ang. \textit{twiddle factor})\cite{CormenIntroductionAlgorithms}:
 
 \begin{equation}
 W_N = e^{-j\frac{2\pi}{N}}
@@ -52,11 +52,11 @@ x(n) = \sum_{k=0}^{N-1} X(k)\, W_N^{-kn},
 \end{equation}
 
 
-W inżynierii oprogramowania do porównywania wydajności algorytmów powszechnie wykorzystuje się notację dużego O, opisującą tempo wzrostu liczby wykonywanych operacji wraz ze długości wektora przetwarzanych danych wejściowych $N$. Zapis $O(g(N))$ oznacza, że liczba wykonywanych operacji rośnie nie szybciej niż funkcja $g(N)$ pomnożona przez pewną stałą, dla odpowiednio dużych $N$ \cite{CormenIntroductionAlgorithms}.
+W inżynierii oprogramowania do porównywania wydajności algorytmów powszechnie wykorzystuje się \textbf{notację dużego O} (ang. \textit{Big O notation}), opisującą tempo wzrostu liczby wykonywanych operacji wraz ze długości wektora przetwarzanych danych wejściowych $N$. Zapis $O(g(N))$ oznacza, że liczba wykonywanych operacji rośnie nie szybciej niż funkcja $g(N)$ pomnożona przez pewną stałą, dla odpowiednio dużych $N$ \cite{CormenIntroductionAlgorithms}.
 
 Innymi słowy, notacja ta pomija czynniki stałe i wyrazy niższego rzędu, skupiając się na tym, jak rośnie liczba operacji wraz ze wzrostem rozmiaru danych wejściowych \cite{CormenIntroductionAlgorithms}.
 
-Dla przykładu, bezpośrednie obliczenie wzoru \eqref{eq:dft_analiza} dla każdego z $N$ prążków widma wymaga $N$ mnożeń zespolonych, co dla całego wektora $X(k)$ wymaga wykonania zasadniczo $N^2$ mnożeń. W takim wypadku złożoność algorytmu DFT można określic jako $O(N^2)$. Przy ciągłym przetwarzaniu długich sygnałów złożoność ta stanowi istotne ograniczenie praktyczne. Jej redukcja jest możliwa dzięki zastosowaniu algorytmu szybkiej transformacji Fouriera (FFT), który pozwala znacznie obniżyć koszt obliczeniowy.
+Dla przykładu, bezpośrednie obliczenie wzoru \eqref{eq:dft_analiza} dla każdego z $N$ prążków widma wymaga $N$ mnożeń zespolonych, co dla całego wektora $X(k)$ wymaga wykonania zasadniczo $N^2$ mnożeń. W takim wypadku złożoność algorytmu DFT można określic jako $O(N^2)$. Przy ciągłym przetwarzaniu długich sygnałów złożoność ta stanowi istotne ograniczenie praktyczne. Jej redukcja jest możliwa dzięki zastosowaniu \textbf{algorytmu szybkiej transformacji Fouriera} (FFT, ang. \textit{Fast Fourier Transform}), który pozwala znacznie obniżyć koszt obliczeniowy.
 \subsection{Szybka transformata Fouriera}
 Redukcja złożoności obliczeniowej DFT jest możliwa dzięki zastosowaniu algorytmów określanych mianem szybkich transformacji Fouriera (FFT). Można w tym wypadku mówić o pewnym zbiorze rozwiązań, bazujących na tym samym koncepcie. Po raz pierwszy algorytm ten zaproponowano w latach sześćdziesiątych XX wieku w pracy \cite{CooleyTurkeyFFT}. Rodzina algorytmów FFT pozwala na znaczące obniżenie złożoności obliczeniowej, przy zachowaniu takiej samej poprawności obliczeń jak w przypadku klasycznego algorytmu DFT. FFT jest więc wydajnym sposobem na obliczenie DFT — jego złożoność obliczeniowa spada do rzędu $O(N\log_2 N)$ \cite{ZielinskiDSP}.
 
@@ -66,9 +66,9 @@ Dzięki temu jedno duże, kosztowne obliczenie DFT dla całego sygnału można z
 
 Autorzy zauważyli też, że wybór $N$ będącego potęgą liczby 2 lub 4 jest szczególnie wygodny dla komputerów działających na liczbach binarnych. Co więcej, cały algorytm można było wykonać na tej samej tablicy danych, bez potrzeby rezerwowania dodatkowej pamięci na wyniki pośrednie. Metoda ta stała się inspiracją dla tworzenia kolejnych wariantów tak zwanej szybkiej transformaty Fouriera. 
 
-Do dalszej analizy teoretycznej posłuży popularny wariant FFT oparty na podstawie 2, czyli podziale na dwa podzbiory, jako najprostszy do intuicyjnego wyjaśnienia.
+Do dalszej analizy teoretycznej posłuży popularny wariant FFT oparty na \textbf{podstawie 2} (ang. \textit{radix-2}), czyli podziale na dwa podzbiory, jako najprostszy do intuicyjnego wyjaśnienia.
 
-Podział wektora wejściowego może być przeprowadzony na dwa podstawowe sposoby. W wariancie z decymacją w czasie (DIT, ang. \emph{Decimation in Time}) dzieli się próbki sygnału wejściowego na te o indeksach parzystych i nieparzystych, wykonuje DFT osobno na każdym zbiorze, a następnie odtwarza widmo całego sygnału z widm cząstkowych \cite{ZielinskiDSP}. W wariancie z decymacją w częstotliwości (DIF, ang. \emph{Decimation in Frequency}) postępuje się odwrotnie — dzieli się nie próbki wejściowe, lecz prążki widma wyjściowego \cite{ZielinskiDSP}.
+Podział wektora wejściowego może być przeprowadzony na dwa podstawowe sposoby. W wariancie z \textbf{decymacją w czasie} (DIT, ang. \textit{Decimation in Time}) dzieli się próbki sygnału wejściowego na te o indeksach parzystych i nieparzystych, wykonuje DFT osobno na każdym zbiorze, a następnie odtwarza widmo całego sygnału z widm cząstkowych \cite{ZielinskiDSP}. W wariancie z \textbf{decymacją w częstotliwości} (DIF, ang. \textit{Decimation in Frequency}) postępuje się odwrotnie — dzieli się nie próbki wejściowe, lecz prążki widma wyjściowego \cite{ZielinskiDSP}.
 
 Konsekwencją podziału jest to, że dane trafiają do obliczeń w innej kolejności niż ta pierwotna w sygnale wejsciowym, więc na którymś etapie algorytmu należy je uporządkować. W algorytmach DIT robi się to na wejściu, przed właściwymi obliczeniami, i wynik otrzymuje się w kolejności naturalnej \cite{NumericalRecipesC}. W DIF jest odwrotnie — poprzestawiany jest dopiero wynik, na co zwrócono uwagę już w oryginalnej pracy \cite{CooleyTurkeyFFT}.
 
