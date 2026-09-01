@@ -1,7 +1,7 @@
 \chapter{Wybrany algorytm przetwarzania danych i techniki optymalizacji programów komputerowych}
 \section{Opis i analiza Szybkiej Transformaty Fouriera}
 \subsection{Podstawy matematyczne algorytmu FFT}
-\textbf{Przekształcenie Fouriera} (ang. \textit{Fourier Transform}) dla sygnałów ciągłych służy do wyznaczania widma częstotliwościowego sygnału czasu ciągłego $x(t)$ $X(j\omega)$ \cite{ZielinskiDSP}. Wzory przekształcenia prostego i odwrotnego definiuje się następująco \cite{ZielinskiDSP}:
+\textbf{Przekształcenie Fouriera} (ang. \textit{Fourier Transform}) dla sygnałów ciągłych służy do wyznaczania widma częstotliwościowego $X(j\omega)$ sygnału czasu ciągłego $x(t)$ \cite{ZielinskiDSP}. Wzory przekształcenia prostego i odwrotnego definiuje się następująco \cite{ZielinskiDSP}:
 
 \begin{equation}
 X(j\omega) = \int_{-\infty}^{\infty} x(t)\, e^{-j\omega t}\, dt,
@@ -11,7 +11,7 @@ x(t) = \frac{1}{2\pi}\int_{-\infty}^{\infty} X(j\omega)\, e^{j\omega t}\, d\omeg
 
 gdzie $\omega = 2\pi f$ oznacza pulsację, a $f$ częstotliwość wyrażoną w hercach.
 
-Aby całka określająca $X(j\omega)$ była zbieżna, sygnał $x(t)$ musi spełniać tzw. \textbf{warunki Dirichleta} (ang. \textit{Dirichlet conditions}): być bezwzględnie całkowalny, mieć skończoną liczbę ekstremów oraz skończoną liczbę punktów nieciągłości w dowolnym skończonym przedziale \cite{ZielinskiDSP}.
+Aby całka określająca $X(j\omega)$ była zbieżna, sygnał $x(t)$ musi spełniać tzw. \textbf{warunki Dirichleta}: być bezwzględnie całkowalny, mieć skończoną liczbę ekstremów oraz skończoną liczbę punktów nieciągłości w dowolnym skończonym przedziale \cite{ZielinskiDSP}.
 
 Matematyczne podstawy ciągłej transformaty Fouriera są jednak nie do końca przydatne w świecie cyfrowego przetwarzania sygnałów, właśnie z uwagi na fakt, że sygnały, na których pracują maszyny cyfrowe, są dyskretne, a nie ciągłe. W tym celu definiuje się dyskretną transformatę Fouriera, która powstaje w wyniku dyskretyzacji szeregu Fouriera dla sygnału okresowego o okresie $N$ \cite{ZielinskiDSP}.
 
@@ -60,47 +60,234 @@ Dla przykładu, bezpośrednie obliczenie wzoru \eqref{eq:dft_analiza} dla każde
 \subsection{Szybka transformata Fouriera}
 Redukcja złożoności obliczeniowej DFT jest możliwa dzięki zastosowaniu algorytmów określanych mianem szybkich transformacji Fouriera (FFT). Można w tym wypadku mówić o pewnym zbiorze rozwiązań, bazujących na tym samym koncepcie. Po raz pierwszy algorytm ten zaproponowano w latach sześćdziesiątych XX wieku w pracy \cite{CooleyTurkeyFFT}. Rodzina algorytmów FFT pozwala na znaczące obniżenie złożoności obliczeniowej, przy zachowaniu takiej samej poprawności obliczeń jak w przypadku klasycznego algorytmu DFT. FFT jest więc wydajnym sposobem na obliczenie DFT — jego złożoność obliczeniowa spada do rzędu $O(N\log_2 N)$ \cite{ZielinskiDSP}.
 
-W pracy Cooleya-Tukeya \cite{CooleyTurkeyFFT} zaproponowano nowe podejście do obliczania dyskretnej transformaty Fouriera, polegające na rozłożeniu długiego sygnału, o $N$ próbkach, no kilka mniejszych grupy. Następnie policzono transformatę osobno dla każdej z nich, by w ostatnim kroku połączyć wyniki w widmo całego sygnału.
+W pracy Cooleya-Tukeya \cite{CooleyTurkeyFFT} zaproponowano nowe podejście do obliczania dyskretnej transformaty Fouriera, polegające na rozłożeniu długiego sygnału, o $N$ próbkach, na kilka mniejszych grup. Następnie policzono transformatę osobno dla każdej z nich, by w ostatnim kroku połączyć wyniki w widmo całego sygnału.
 
-Dzięki temu jedno duże, kosztowne obliczenie DFT dla całego sygnału można zastąpić serią mniejszych obliczeń, wykonywanych etapami. Zamiast $N^2$ operacji, potrzebnych przy bezpośrednim liczeniu DFT, liczba operacji rośnie wtedy znacznie wolniej — w najlepszym przypadku mamy doczynienia ze złożonościa obliczeniową O($N\log N$). 
+Dzięki temu jedno duże, kosztowne obliczenie DFT dla całego sygnału można zastąpić serią mniejszych obliczeń, wykonywanych etapami. Zamiast $N^2$ operacji, potrzebnych przy bezpośrednim liczeniu DFT, liczba operacji rośnie wtedy znacznie wolniej — w najlepszym przypadku mamy do czynienia ze złożonością obliczeniową $O(N\log N)$ \cite{ZielinskiDSP}.
 
-Autorzy zauważyli też, że wybór $N$ będącego potęgą liczby 2 lub 4 jest szczególnie wygodny dla komputerów działających na liczbach binarnych. Co więcej, cały algorytm można było wykonać na tej samej tablicy danych, bez potrzeby rezerwowania dodatkowej pamięci na wyniki pośrednie. Metoda ta stała się inspiracją dla tworzenia kolejnych wariantów tak zwanej szybkiej transformaty Fouriera. 
+Autorzy zauważyli również, że wybór $N$ będącego potęgą liczby 2 lub 4 jest szczególnie wygodny dla komputerów działających na liczbach binarnych. Co więcej, cały algorytm można było wykonać na tej samej tablicy danych, bez potrzeby rezerwowania dodatkowej pamięci na wyniki pośrednie \cite{CooleyTurkeyFFT}.
+
+Zaproponowana metoda stała się inspiracją dla tworzenia kolejnych wariantów szybkiej transformaty Fouriera \cite{ZielinskiDSP}:
+
+\begin{itemize}
+    \item \textbf{Radix-2},
+    \item \textbf{radix-4},
+    \item \textbf{split-radix},
+    \item \textbf{algorytm Gooda-Thomasa},
+    \item \textbf{transformacja świergotowa (ang. \textit{chirp-Z})}.
+\end{itemize}
+Algorytm Cooleya-Tukeya był zaproponowany jako pierwszy, jednak z czasem powstały kolejne, tworzące dziś całą rodzinę algorytmów FFT. Wszystkie realizują to samo przekształcenie, czyli dyskretną transformatę Fouriera, różnią się natomiast wewnętrzymi mechanizmami, takimi jak podejście do podziału danych czy długości pojedyńczego bloku przetwarzanego sygnału \cite{ZielinskiDSP}.
+Szczegółowy opis wariantów wykorzystanych w niniejszej pracy, wraz z ich implementacjami, przedstawiono w \cref{section:WariantyFFTUzyteWPracy}.
 
 Do dalszej analizy teoretycznej posłuży popularny wariant FFT oparty na \textbf{podstawie 2} (ang. \textit{radix-2}), czyli podziale na dwa podzbiory, jako najprostszy do intuicyjnego wyjaśnienia.
+Na algorytm w tej postaci składa się kilka podstawowych zagadnienien, omówionych kolejno w dalszej części podrozdziału: sposób podziału danych, uporządkowanie próbek przed rozpoczęciem obliczeń oraz elementarna operacja arytmetyczna, powtarzana na każdym etapie.
 
 Podział wektora wejściowego może być przeprowadzony na dwa podstawowe sposoby. W wariancie z \textbf{decymacją w czasie} (DIT, ang. \textit{Decimation in Time}) dzieli się próbki sygnału wejściowego na te o indeksach parzystych i nieparzystych, wykonuje DFT osobno na każdym zbiorze, a następnie odtwarza widmo całego sygnału z widm cząstkowych \cite{ZielinskiDSP}. W wariancie z \textbf{decymacją w częstotliwości} (DIF, ang. \textit{Decimation in Frequency}) postępuje się odwrotnie — dzieli się nie próbki wejściowe, lecz prążki widma wyjściowego \cite{ZielinskiDSP}.
 
 Konsekwencją podziału jest to, że dane trafiają do obliczeń w innej kolejności niż ta pierwotna w sygnale wejsciowym, więc na którymś etapie algorytmu należy je uporządkować. W algorytmach DIT robi się to na wejściu, przed właściwymi obliczeniami, i wynik otrzymuje się w kolejności naturalnej \cite{NumericalRecipesC}. W DIF jest odwrotnie — poprzestawiany jest dopiero wynik, na co zwrócono uwagę już w oryginalnej pracy \cite{CooleyTurkeyFFT}.
 
+Samo przestawianie można wykonać na kilka różnych sposobów, z czego podstawowy polega na wielokrotnym dzieleniu próbek na parzyste i nieparzyste. Jest to jednak rozwiązanie nieefektywne, ponieważ dane sortowane są wielokrotnie \cite{ZielinskiDSP}. Okazuje się, że docelową pozycję każdej próbki da się wyznaczyć z użyciem operacji \textbf{permutacji bitowo-odwróconej} (ang. \textit{bit-reversal permutation}) \cite{CormenIntroductionAlgorithms}. Metoda ta ustawia w odwrotnej kolejności bity  indeksu próbki wektora wejściowe  \cite{ZielinskiDSP},co pozwala dość niskim kosztem obliczeniowym poukładać wektor wejściowy w kolejności wymaganej przez algorytm DIT. Warto dodać, że wiele procesorów sygnałowych udostępnia sprzętowy mechanizm adresowania z odwróceniem bitów, co dodatkowo przyspiesza ten etap \cite{ZielinskiDSP}.
+
+% ===== CLAUDE GENERATED START =====
+Wynik tej operacji dla sygnału o długości $N = 16$ zestawiono w \cref{tab:bit_reversal} \cite{ZielinskiDSP}. Warto zauważyć, że w celu ponownego ustawienia próbek w pierwotnej kolejności wystarczy raz jeszcze wykonać tę samą operacje. W prezentowanej tabeli jako $n$ oznaczono indeks początkowy, a jako  $n'$ indeks po operacji bit-reversal.
+\begin{table}[ht]
+    \centering
+    \caption{Permutacja bitowo-odwrócona indeksów próbek dla $N = 16$}
+    \label{tab:bit_reversal}
+    \begin{tabular}{@{}rccr@{\hspace{2.5em}}rccr@{}}
+        \toprule
+        $n$ & zapis dwójkowy & bity odwrócone & $n'$ &
+        $n$ & zapis dwójkowy & bity odwrócone & $n'$ \\
+        \midrule
+        0 & \texttt{0000} & \texttt{0000} & 0  &  8  & \texttt{1000} & \texttt{0001} & 1  \\
+        1 & \texttt{0001} & \texttt{1000} & 8  &  9  & \texttt{1001} & \texttt{1001} & 9  \\
+        2 & \texttt{0010} & \texttt{0100} & 4  &  10 & \texttt{1010} & \texttt{0101} & 5  \\
+        3 & \texttt{0011} & \texttt{1100} & 12 &  11 & \texttt{1011} & \texttt{1101} & 13 \\
+        4 & \texttt{0100} & \texttt{0010} & 2  &  12 & \texttt{1100} & \texttt{0011} & 3  \\
+        5 & \texttt{0101} & \texttt{1010} & 10 &  13 & \texttt{1101} & \texttt{1011} & 11 \\
+        6 & \texttt{0110} & \texttt{0110} & 6  &  14 & \texttt{1110} & \texttt{0111} & 7  \\
+        7 & \texttt{0111} & \texttt{1110} & 14 &  15 & \texttt{1111} & \texttt{1111} & 15 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+% ===== CLAUDE GENERATED STOP =====
+
+Operacja bit-reversal jest iteracyjnym sposobem na odpowiednie uporządkowanie tablicy wejściowej przed właściwym przetwarzaniem algorytmu FFT. Sam algorytm można jednak zapisać również z wykorzystaniem rekurencji. Oba warianty, zarówno iteracyjny jak i rekurencyjny są spotykane praktycznie \cite{NumericalRecipesC}. Rekurencja dobrze oddaje ideę podziału na coraz mniejsze podproblemy, natomiast w implementacjach nastawionych na wydajność (oraz w tych wykonywanych w systemach o ograniczonej pamięci) częściej stosuje się wariant iteracyjny, w którym wystarczy pętla po kolejnych etapach \cite{NumericalRecipesC}.
+
+Niezależnie od przyjętego wariantu uporzadkowania danych, kolejną elementarną operacją wykonywaną na każdym etapie algorytmu FFT, bazujących na założeniach zaprezentowanych w \cite{CooleyTurkeyFFT}, jest tak zwana \textbf{operacja motylkowa} (ang. \textit{butterfly}) \cite{ZielinskiDSP}. Operacja ta pobiera parę liczb zespolonych $x[p]$ oraz $x[q]$, mnoży drugą z nich przez odpowiedni czynnik obrotu \eqref{eq:twiddle}, a następnie wyznacza sumę i różnicę otrzymanych w ten sposób wartości \cite{CormenIntroductionAlgorithms}:
+
+\begin{equation}
+x'(p) = x(p) + W_N^{k}\,x(q),
+\qquad
+x'(q) = x(p) - W_N^{k}\,x(q)
+\label{eq:motylek}
+\end{equation}
+
+gdzie $p$ i $q$ oznaczają pozycje dwóch przetwarzanych elementów w tablicy danych, oddalone od siebie o połowę długości bieżącego etapu, a wykładnik $k$ — numer operacji motylkowej w obrębie tego etapu.
+
+Istotną cechą tak zapisanej operacji jest to, że obie wartości wynikowe mogą zostać zapisane w tych samych komórkach pamięci, z których pobrano argumenty. Dzięki temu cały algorytm można zrealizować bez rezerwowania dodatkowej tablicy na wyniki pośrednie, co pozwala na zaoszczędzenie zasobów sprzętowych \cite{CooleyTurkeyFFT}. Graficzną reprezentację przepływu sygnałów w operacji motylkowej przedstawiono na \cref{fig:motylek-radix2}.
+
+\begin{figure}[ht]
+    \centering
+    \definecolor{userblue}{RGB}{225, 243, 254}
+    \begin{tikzpicture}[>=stealth, thick, scale=1, every node/.style={transform shape},
+        sum/.style={circle, draw, thick, fill=white, inner sep=0pt, minimum size=6.5mm},
+        dot/.style={circle, fill, inner sep=1.6pt}]
+
+    \fill[userblue] (-1.5,-0.9) rectangle (10.6,2.8);
+
+    % --- węzły wejściowe ---
+    \node[anchor=east] (xp) at (-0.25,1.8) {$x[p]$};
+    \node[anchor=east] (xq) at (-0.25,0)   {$x[q]$};
+
+    % --- element mnożący przez czynnik obrotu ---
+    \node[draw, thick, fill=white, inner sep=4pt] (w) at (2.0,0) {$W_N^{k}$};
+
+    % --- punkty rozgałęzień ---
+    \node[dot] (s) at (3.6,1.8) {};
+    \node[dot] (t) at (3.6,0)   {};
+
+    % --- sumatory ---
+    \node[sum] (sp) at (5.5,1.8) {$+$};
+    \node[sum] (sq) at (5.5,0)   {$+$};
+
+    % --- gałąź górna ---
+    \draw (xp.east) -- (s);
+    \draw[->] (s) -- (sp);
+    \draw[->] (s) -- (sq);
+
+    % --- gałąź dolna ---
+    \draw (xq.east) -- (w);
+    \draw (w) -- node[above, font=\small, pos=0.55] {$t$} (t);
+    \draw[->] (t) -- (sp);
+    \draw[->] (t) -- node[below, font=\small, pos=0.75] {$-1$} (sq);
+
+    % --- wyjścia ---
+    \draw[->] (sp) -- (6.7,1.8);
+    \draw[->] (sq) -- (6.7,0);
+    \node[anchor=west] at (6.8,1.8) {$x'[p] = x[p] + W_N^{k}\,x[q]$};
+    \node[anchor=west] at (6.8,0)   {$x'[q] = x[p] - W_N^{k}\,x[q]$};
+
+    \end{tikzpicture}
+    \caption[Operacja motylkowa algorytmu FFT o podstawie 2]{Operacja motylkowa (ang. \textit{butterfly}) algorytmu FFT o podstawie~2, opracowanie własne na podstawie \cite{ZielinskiDSP}}
+    \label{fig:motylek-radix2}
+\end{figure}
+
 Sam algorytm można zapisać zarówno rekurencyjnie, jak i iteracyjnie — w praktyce spotyka się obie wersje \cite{NumericalRecipesC}.Rekurencyja dobrze oddaje ideę podziału na coraz mniejsze podproblemy, natomiast w implementacjach nastawionych na powtarzalność (oraz w tych wykonywanych w systemach, które mają ograniczoną pamięć) częściej stosuje się wariant iteracyjny, w którym zamiast rekurencyjnych wywołań wykonuje się pętlę po kolejnych etapach, łączącą coraz większe widma cząstkowe. Dla sygnału o długości $N$ takich etapów jest $\log_2 N$ \cite{NumericalRecipesC}.
 
-Zarys algorytmu szybkiej transformaty Fouriera, w wariancie , opisany w pozycji \cite{NumericalRecipesC} przedstawiono na  \cref{alg:fft-dit-iteracyjny}:
+Zależności pomiędzy kolejnymi etapami algorytmu wygodnie jest przedstawić w postaci grafu przepływu sygnałów. Na \cref{fig:graf-fft-8} zobrazowano pełny przebieg obliczeń dla sygnału o długości $N = 8$, a więc dla $\log_2 8 = 3$ etapów, z których każdy składa się z $N/2 = 4$ operacji motylkowych.
 
+\begin{figure}[H]
+    \centering
+    \definecolor{userblue}{RGB}{225, 243, 254}
+    \begin{tikzpicture}[>=stealth, line width=0.6pt, scale=1, every node/.style={transform shape},
+        tw/.style={fill=userblue, inner sep=1.6pt, font=\scriptsize}]
+
+    \fill[userblue] (-1.6,-1.15) rectangle (10.6,7.0);
+
+    % --- siatka węzłów: 4 kolumny (wejście + 3 etapy) x 8 wierszy ---
+    \foreach \s in {0,1,2,3} {
+        \foreach \r in {0,...,7} {
+            \coordinate (n\s-\r) at ({\s*3.0}, {(7-\r)*0.82});
+        }
+    }
+
+    % --- ETAP 1: pary wierszy (0,1), (2,3), (4,5), (6,7) ---
+    \foreach \a/\b/\k in {0/1/0, 2/3/0, 4/5/0, 6/7/0} {
+        \coordinate (m1-\b) at (1.0, {(7-\b)*0.82});
+        \draw[->] (n0-\a) -- (n1-\a);
+        \draw[->] (n0-\a) -- (n1-\b);
+        \draw (n0-\b) -- (m1-\b);
+        \draw[->] (m1-\b) -- (n1-\b);
+        \draw[->] (m1-\b) -- (n1-\a);
+    }
+
+    % --- ETAP 2: pary wierszy (0,2), (1,3), (4,6), (5,7) ---
+    \foreach \a/\b/\k in {0/2/0, 1/3/2, 4/6/0, 5/7/2} {
+        \coordinate (m2-\b) at (4.0, {(7-\b)*0.82});
+        \draw[->] (n1-\a) -- (n2-\a);
+        \draw[->] (n1-\a) -- (n2-\b);
+        \draw (n1-\b) -- (m2-\b);
+        \draw[->] (m2-\b) -- (n2-\b);
+        \draw[->] (m2-\b) -- (n2-\a);
+    }
+
+    % --- ETAP 3: pary wierszy (0,4), (1,5), (2,6), (3,7) ---
+    \foreach \a/\b/\k in {0/4/0, 1/5/1, 2/6/2, 3/7/3} {
+        \coordinate (m3-\b) at (7.0, {(7-\b)*0.82});
+        \draw[->] (n2-\a) -- (n3-\a);
+        \draw[->] (n2-\a) -- (n3-\b);
+        \draw (n2-\b) -- (m3-\b);
+        \draw[->] (m3-\b) -- (n3-\b);
+        \draw[->] (m3-\b) -- (n3-\a);
+    }
+
+    % --- oznaczenia węzłów ---
+    \foreach \s in {0,1,2,3} {
+        \foreach \r in {0,...,7} {
+            \fill (n\s-\r) circle (1.7pt);
+        }
+    }
+
+    % --- czynniki obrotu (rysowane na końcu, aby nie były przesłaniane) ---
+    \foreach \x/\r/\k in {%
+        0.5/1/0, 0.5/3/0, 0.5/5/0, 0.5/7/0,
+        3.5/2/0, 3.5/3/2, 3.5/6/0, 3.5/7/2,
+        6.5/4/0, 6.5/5/1, 6.5/6/2, 6.5/7/3} {
+        \node[tw] at ({\x}, {(7-\r)*0.82}) {$W_8^{\k}$};
+    }
+
+    % --- próbki wejściowe w kolejności bitowo-odwróconej ---
+    \foreach \r/\idx in {0/0, 1/4, 2/2, 3/6, 4/1, 5/5, 6/3, 7/7} {
+        \node[anchor=east, font=\small] at ({-0.25}, {(7-\r)*0.82}) {$x[\idx]$};
+    }
+
+    % --- prążki widma w kolejności naturalnej ---
+    \foreach \r in {0,...,7} {
+        \node[anchor=west, font=\small] at ({9.25}, {(7-\r)*0.82}) {$X[\r]$};
+    }
+
+    % --- opisy etapów i kolumn ---
+    \node[anchor=south, font=\small\bfseries] at (1.5,6.35) {Etap 1};
+    \node[anchor=south, font=\small\bfseries] at (4.5,6.35) {Etap 2};
+    \node[anchor=south, font=\small\bfseries] at (7.5,6.35) {Etap 3};
+
+    \node[anchor=north, font=\small] at (0.3,-0.35) {kolejność bitowo-odwrócona};
+    \node[anchor=north, font=\small] at (8.8,-0.35) {kolejność naturalna};
+
+    \end{tikzpicture}
+    \caption[Graf przepływu sygnałów algorytmu FFT z decymacją w czasie dla $N = 8$]{Graf przepływu sygnałów algorytmu FFT o podstawie~2 z decymacją w czasie dla $N = 8$; każde skrzyżowanie linii odpowiada operacji motylkowej przedstawionej na \cref{fig:motylek-radix2}, opracowanie własne na podstawie \cite{ZielinskiDSP, NumericalRecipesC}}
+    \label{fig:graf-fft-8}
+\end{figure}
+
+Graf ten dobrze ilustruje trzy własności algorytmu, istotne z punktu widzenia jego późniejszej implementacji. Po pierwsze, liczba etapów rośnie logarytmicznie wraz z długością przetwarzanego sygnału, a na każdym z nich wykonywanych jest $N/2$ operacji motylkowych, co daje łącznie $\frac{N}{2}\log_2 N$ mnożeń zespolonych i stanowi bezpośrednie źródło złożoności $O(N\log_2 N)$. Po drugie, próbki wejściowe podawane są w kolejności bitowo-odwróconej, dzięki czemu prążki widma otrzymuje się w kolejności naturalnej. Po trzecie, odległość w pamięci pomiędzy argumentami pojedynczej operacji motylkowej podwaja się z każdym kolejnym etapem — w pierwszym etapie łączone są próbki bezpośrednio sąsiadujące, natomiast w ostatnim oddalone od siebie o $N/2$ pozycji. Ta ostatnia cecha ma bezpośredni wpływ na skuteczność wykorzystania pamięci podręcznej procesora, co szerzej omówiono w \cref{section:TechnikiOptymalizacji}.
+
+Przedstawione powyżej koncepcje stosowane w algorytmie FFT składają się łącznie na kompletny algorytm. Jego minimalną postać, w wariancie radix-2 z decymacją w czasie, przedstawiono na \cref{alg:fft-dit-iteracyjny} \cite{CormenIntroductionAlgorithms}.
 \begin{algorithm}[h]
-\caption{Iteracyjny algorytm FFT radix-2 z decymacją w czasie (DIT)}
+\caption{Algorytm FFT o podstawie 2 z decymacją w czasie, na podstawie \cite{ZielinskiDSP, CormenIntroductionAlgorithms}}
 \label{alg:fft-dit-iteracyjny}
 \begin{algorithmic}[1]
+\Require wektor próbek $x$ o długości $N$, gdzie $N = 2^p$
+\Ensure wektor $x$ zawierający prążki widma w kolejności naturalnej
+\Statex
 \Function{FFT}{$x$, $N$}
-    \State $x \gets$ \Call{PrzestawBitowoOdwrocone}{$x$, $N$} \Comment{bit-reversal wejścia}
-    \State $etap \gets 2$
-    \While{$etap \leq N$}
-        \State $polowa \gets etap / 2$
-        \State $W_{etap} \gets e^{-j\frac{2\pi}{etap}}$ \Comment{czynnik obrotu dla danego etapu}
-        \For{$i = 0$ \textbf{do} $N - 1$ \textbf{krok} $etap$}
-            \For{$k = 0$ \textbf{do} $polowa - 1$}
-                \State $t \gets W_{etap}^k \cdot x[i + k + polowa]$
-                \State $x[i + k + polowa] \gets x[i + k] - t$
-                \State $x[i + k] \gets x[i + k] + t$
+    \State \Call{Operacja BitReversal}{$x$, $N$}
+    \For{$s = 1,\, 2,\, \dots,\, \log_2 N$} \Comment{kolejne etapy}
+        \State $m \gets 2^s$ \Comment{długość widma składanego w tym etapie}
+        \For{$i = 0,\, m,\, 2m,\, \dots,\, N - m$} \Comment{kolejne bloki}
+            \For{$j = 0,\, 1,\, \dots,\, m/2 - 1$} \Comment{kolejne motylki}
+                \State wykonaj operację motylkową \eqref{eq:motylek}
+                \Statex \hspace{\algorithmicindent}\hspace{\algorithmicindent}\hspace{\algorithmicindent}
+                        na próbkach $x(i+j)$ oraz $x(i+j+m/2)$
+                \Statex \hspace{\algorithmicindent}\hspace{\algorithmicindent}\hspace{\algorithmicindent}
+                        z czynnikiem obrotu $W_m^{\,j}$
             \EndFor
         \EndFor
-        \State $etap \gets etap \times 2$
-    \EndWhile
-    \State \Return $x$
+    \EndFor
 \EndFunction
 \end{algorithmic}
 \end{algorithm}
 
-\section{Warianty algorytmu Szybkiej Transformaty Fouriera}
+\newpage
 \section{Opis procesu kompilacji programu komputerowego}
 \subsection{Procesory języka programowania}
 W najnowszych rozwiązaniach dotyczących systemów komputerowych użytkownicy mają szeroki wybór języków programowania, które służą do opisywania idei projektowych człowieka w taki sposób, aby były one możliwe do wykonania przez maszynę. Sprzęt komputerowy nie jest jednak w stanie operować tak wysokopoziomowymi abstrakcjami, jak zmienne, pętle, instrukcje warunkowe itd., które są dostępne w językach programowania. W ich miejsce musi on mieć przygotowane binarne instrukcje maszynowe, które pozbawione są wysokopoziomowej logiki, tak łatwej do zrozumienia dla człowieka. Można zatem powiedzieć, że zanim jakikolwiek program będzie mógł zostać uruchomiony, musi najpierw zostać przetłumaczony na formę, w której będzie mógł być wykonany przez jednostkę centralną komputera. 
