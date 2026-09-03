@@ -29,12 +29,12 @@ Aby w pełni zrozumieć, jak system operacyjny realizuje te zadania w środowisk
 \subsection{Model warstwowy systemów operacyjnych}
 
 
-W inżynieri oprogramowania istotną rolę odgrywa koncepcja \textbf{abstrakcji}, polegająca na  celowym ukryciu szczegółów implementacji danej funkcjonalności oprogramowania, przed jej potencjalnym użytkownikiem \cite{Tanenbaum}.
-Podejście to opiera się na założeniu, że należy dostarczyć gotowe funkcjonalność  wraz z odpowiednią dokumentacją opisującą sposób jej wykorzystania, zamiast wymagać od użytkownika zrozumienia wewnętrznych mechanizmów działania wytworzonego modułu.
+W inżynierii oprogramowania istotną rolę odgrywa koncepcja \textbf{abstrakcji}, polegająca na  celowym ukryciu szczegółów implementacji danej funkcjonalności oprogramowania, przed jej potencjalnym użytkownikiem \cite{Tanenbaum}.
+Podejście to opiera się na założeniu, że należy dostarczyć gotową funkcjonalność  wraz z odpowiednią dokumentacją opisującą sposób jej wykorzystania, zamiast wymagać od użytkownika zrozumienia wewnętrznych mechanizmów działania wytworzonego modułu.
 
-Taka praktyka w sposób znaczący podnosi wygodę wytwarzania nowych elementów systemu, umożliwia zrównoleglenie wytwarzania oprogramowania oraz pozwala na większą specjalizacje jej producentów. 
-W celu realizacji komunikacji między kolejnymi modułami systemu stosuj się takie narzędzia jak \textbf{interfejsy programistyczne} (ang. \textit{Application Programming Interface}, skrót \textbf{API}), czyli zbiór ściśle określonych reguł i sposobów komunikacji, które umożliwają komunikację między różnymi warstwami oprogramowania.
-Narzędzie to jest niezbędne, aby w sposób przewidywalny i bezpieczny przekazywać danę lub sterowanie, między różnymi elemenetami systemu.
+Taka praktyka w sposób znaczący podnosi wygodę wytwarzania nowych elementów systemu, umożliwia zrównoleglenie wytwarzania oprogramowania oraz pozwala na większą specjalizację jej producentów. 
+W celu realizacji komunikacji między kolejnymi modułami systemu stosuje się takie narzędzia jak \textbf{interfejsy programistyczne} (ang. \textit{Application Programming Interface}, skrót \textbf{API}), czyli zbiór ściśle określonych reguł i sposobów komunikacji, które umożliwają komunikację między różnymi warstwami oprogramowania.
+Narzędzie to jest niezbędne, aby w sposób przewidywalny i bezpieczny przekazywać dane lub sterowanie, między różnymi elementami systemu.
 
 Pojęcie abstrakcji jest kluczowe dla zrozumienia architektury współczesnych systemów operacyjnych. 
 W literaturze spotyka się różne podejścia do klasyfikacji poziomów systemu komputerowego \cite{Tanenbaum, Abraham_Silberschatz}, jednak ich cechą 
@@ -53,9 +53,9 @@ takie jak \textbf{jednostka centralna} (ang. \textit{Central Processing Unit}, C
 Ponad nią znajduje się warstwa oprogramowania, na którą składa się zarówno system operacyjny, jak i programy użytkownika. 
 Choć oba te elementy należą do tej samej warstwy, funkcjonują one na innych zasadach. Odróżnia je praca w różnych trybach procesora, różniących się poziomem uprawnień oraz zakresem dostępu do fizycznych urządzeń.
 Tryby te nazywają się odpowiednio \textbf{trybem jądra} (ang. \textit{kernel mode}), dla systemu operacyjnego, oraz \textbf{trybem użytkownika} (ang. \textit{user mode}), dla aplikacji użytkownika. 
-Szczegółowa omównienie przytoczonych trybów oraz mechanizmów ich przełączania zostanie omówiona w dalszych częściach tego rozdziału.
+Szczegółowe omówienie przytoczonych trybów oraz mechanizmów ich przełączania zostanie przedstawione w dalszych częściach tego rozdziału.
 
-Warto przy tym podkreślić, że w przytoczonej pozycji literatury \cite{Abraham_Silberschatz} jako integralny komponent struktury systemu komputegowego uwzględnia się jego użytkownika. 
+Warto przy tym podkreślić, że w przytoczonej pozycji literatury \cite{Abraham_Silberschatz} jako integralny komponent struktury systemu komputerowego uwzględnia się jego użytkownika. 
 Zabieg ten ma na celu jednoznaczne wskazanie, że przy projektowaniu dowolnego systemu komputerowego należy zawsze pamiętać o jego ostatecznym przeznaczeniu oraz o użytkowniku końcowym.
 
 W modelu warstwowym architektury komputerowej system operacyjny pełni szczególną rolę, zarządzając granicą między aplikacjami a warstwą fizyczną. W celu zapewnienia poprawnego i przewidywalnego działania systemu wprowadza poziomy abstrakcji, które są niezbędne z kilku istotnych powodów:
@@ -87,7 +87,7 @@ Współczesne komputery realizują ochronę zasobów poprzez tryby pracy proceso
 Wszelkie operacje wymagające kontroli nad sprzętem realizowane są za pośrednictwem \textbf{wywołań systemowych} \cite{Abraham_Silberschatz} (ang. system calls), które przełączają procesor w uprzywilejowany tryb jądra.
 
 \subsection{Procesy}
-\textbf{Proces} (ang. \textit{process}) można rozumieć jako wykonujący się program komputerowy \cite{Abraham_Silberschatz}.Jego kluczową cechą jest przydzielona, odizolowana od innych procesów wirtualna \textbf{przestrzeń adresowa}
+\textbf{Proces} (ang. \textit{process}) można rozumieć jako wykonujący się program komputerowy \cite{Abraham_Silberschatz}. Jego kluczową cechą jest przydzielona, odizolowana od innych procesów wirtualna \textbf{przestrzeń adresowa}.
 Jej wprowadzenie ma zagwarantować bezpieczeństwo – błąd w obrębie jednego procesu nie wpływa bezpośrednio na stabilność procesów systemowych i innych procesów użytkownika.  
 
 Współczesne systemy komputerowe składają się z licznych komponentów i aplikacji, co sprawia, że na wspólnych, fizycznych zasobach sprzętowych funkcjonuje jednocześnie wiele procesów. 
@@ -114,10 +114,10 @@ W celu zapewnienia przenoszalności oprogramowania wielowątkowego między róż
 \textbf{Szeregowanie zadań} odpowiada za zarządzanie przydziałem czasu procesora. Ponieważ pojedynczy rdzeń CPU nie może wykonywać wielu zadań jednocześnie, \textbf{planista} (ang. \textit{scheduler}) decyduje o kolejności i czasie uruchamiania wątków i procesów na podstawie określonych algorytmów \cite{Abraham_Silberschatz}.
 Mechanizm ten zapewnia sprawiedliwy dostęp do zasobów i płynność działania systemu, jednak częsta zmiana wykonywanych zadań generuje bezpośredni narzut czasowy związany z przełączaniem kontekstu. 
 \subsection{Pamięć wirtualna}
-\textbf{Pamięć wirtualna} sprawia, że procesy nie operują bezpośrednio na fizycznej pamięci operacyjnej, lecz na wirtualnej przestrzeni adresowej przydzielanej i mapowanej na sprzęt przez \textbf{jednostkę zarzadzania pamiecia MMU (ang. \textit{Memory Management Unit} )}\cite{Tanenbaum}.
+\textbf{Pamięć wirtualna} sprawia, że procesy nie operują bezpośrednio na fizycznej pamięci operacyjnej, lecz na wirtualnej przestrzeni adresowej przydzielanej i mapowanej na sprzęt przez \textbf{jednostkę zarządzania pamięcią (MMU, ang. \textit{Memory Management Unit})}\cite{Tanenbaum}.
 
 W kontekście pamięci wirtualnej kluczowym mechanizmem jest \textbf{stronnicowanie} \cite{Tanenbaum}. Polega ono na podziale wirtualnej przestrzeni adresowej programu na bloki o stałym rozmiarze, zwane stronami (ang. \textit{pages}), które są dynamicznie odwzorowywane na fizyczną pamięć operacyjną. Operacje tę wykonuje jednostka MMU.
-Mechanmizm zarządzania pamięcią wirtualną zostało opisane, na przykładzie systemu Linux w sekcji \ref{Linux_wykorzystaniePamieci}
+Mechanizm zarządzania pamięcią wirtualną został opisany, na przykładzie systemu Linux w sekcji \ref{Linux_wykorzystaniePamieci}
 
 
 \section{Systemy wbudowane czasu rzeczywistego wraz z ich podziałem}
@@ -125,7 +125,7 @@ Systemem wbudowanym nazywamy dedykowany system komputerowy, który stanowi integ
 ściśle określonego zadania \cite{Tanenbaum}. W przeciwieństwie do komputerów ogólnego przeznaczenia (takich jak komputery osobiste czy smartfony), 
 na których użytkownik może uruchamiać dowolne aplikacje, system wbudowany ma z góry zdefiniowaną funkcję i nie jest przeznaczony do późniejszych, swobodnych modyfikacji przez użytkownika końcowego.
 
-Szczególną grupą w obrębie systemów wbudowanych są \textbf{systemy wbudowane czasu rzeczywistego}. Są to takie systemy, których poprawność wyniku prztwarzania nie zależy tylko od poprawności logicznej odpowiedzi, ale też od czasu przetwarzania, poprzedzającego odpowiedź systemu \cite{WangK}.
+Szczególną grupą w obrębie systemów wbudowanych są \textbf{systemy wbudowane czasu rzeczywistego}. Są to takie systemy, których poprawność wyniku przetwarzania nie zależy tylko od poprawności logicznej odpowiedzi, ale też od czasu przetwarzania, poprzedzającego odpowiedź systemu \cite{WangK}.
 W przypadku niewypracowania odpowiedzi w zadanym czasie zdarzenie to jest traktowane jako błąd systemu, co w skrajnych przypadkach może prowadzić do awarii lub uszkodzenia fizycznego sprzętu. 
 
 Systemy czasu rzeczywistego są powszechnie stosowane w zastosowaniach krytycznych, takich jak przemysł zbrojeniowy, aparatura medyczna czy branża motoryzacyjna, co wymusza wprowadzenie ścisłych kryteriów oceny ich niezawodności. W celu jednoznacznego zdefiniowania wymagań dotyczących determinizmu czasowego,
@@ -136,7 +136,7 @@ W literaturze \cite{Tanenbaum} systemy czasu rzeczywistego dzieli się na:
     \item \textbf{Systemy miękkie (Soft real-time systems )}
     \item \textbf{Systemy stabilne (Firm real-time systems )} 
 \end{itemize}
-W celu lepszego zobrazowania podzialu systmów czasu rzeczywistego, na rysunku \cref{fig:wykresy RTOS} przedstawiono wykresy funkcji przydatności odpowiedzi $y(t)$ od czasu jej wypracowania przez system \cite{Tanenbaum}. 
+W celu lepszego zobrazowania podziału systemów czasu rzeczywistego, na rysunku \cref{fig:wykresy RTOS} przedstawiono wykresy funkcji przydatności odpowiedzi $y(t)$ od czasu jej wypracowania przez system \cite{Tanenbaum}. 
 \begin{figure}[htbp]
 \centering
 \definecolor{userblue}{RGB}{225, 243, 254}
@@ -247,27 +247,27 @@ Przed przystąpieniem do analizy poszczególnych wykresów, konieczne jest zdefi
 \end{itemize}
 Analizując przebiegi funkcji przydatności dla poszczególnych klas systemów, można precyzyjnie scharakteryzować ich zachowanie.
 
-Najbardziej restrykcyjne kryteria czasowe są charkerystyczne dla twardych systemy czasu rzeczywistego, co zobrazowano na rysunku \ref{fig:Hard RTOS wykres}.
+Najbardziej restrykcyjne kryteria czasowe są charakterystyczne dla twardych systemów czasu rzeczywistego, co zobrazowano na rysunku \ref{fig:Hard RTOS wykres}.
 Ich stosowanie gwarantuje bezwzględnie terminowe wypełnienie zadań krytycznych przed upływem limitu $t_T$. Przekroczenie czasu przetwarzania powoduje natychmiastowy spadek funkcji przydatności do wartości $-\infty$.
 W przypadku rozwiązań spóźniona odpowiedź jest nie tylko całkowicie bezużyteczna, ale jej pojawienie się po wyznaczonym terminie jest najczęściej równoznaczne z wystąpieniem krytycznego błędu, który może doprowadzić do poważnej awarii lub fizycznego uszkodzenia całego systemu.
 
 Kolejną z omawianych grup stanowią miękkie systemy czasu rzeczywistego, których zachowanie zilustrowano na rysunku \ref{fig:softRTOS wykres}. Systemy te cechują się mniejszym rygorem w kwestii terminowości, co oznacza, że zadania są wykonywane tak szybko, 
 jak to możliwe, a ewentualne opóźnienia nie niosą za sobą skutków katastrofalnych. Jeśli odpowiedź zostanie dostarczona po czasie $t_1$, ale przed ostatecznym limitem $t_T$, jej przydatność maleje, powodując jedynie spadek jej jakości.
-Przy przetwarzaniu przekracającym czas $t_T$ przydatność odpowiedzi wynosi zero. 
+Przy przetwarzaniu przekraczającym czas $t_T$ przydatność odpowiedzi wynosi zero. 
 
-Solidne systemy czasu rzeczywistego stanowią pewnego rodzaju kompromis pomięczy twardymi, a miękkimi systemamu czasu rzeczywistego. Zachowanie funkcji przydatności systemów solidnych przedstawiono na rysunku \ref{fig:firm RTOS wykres}. 
+Solidne systemy czasu rzeczywistego stanowią pewnego rodzaju kompromis pomiędzy twardymi a miękkimi systemami czasu rzeczywistego. Zachowanie funkcji przydatności systemów solidnych przedstawiono na rysunku \ref{fig:firm RTOS wykres}. 
 Każda odpowiedź dostarczona w przedziale od $t_0$ do $t_T$ zachowuje stałą, pełną wartość $u$. W momencie przekroczenia terminu granicznego $t_T$ przydatność wyniku natychmiastowo i skokowo spada do zera.
 Choć fakt spóźnienia powoduje całkowitą nieprzydatność rozwiązania, to sytuacja ta wciąż nie generuje bezpośredniego zagrożenia dla stabilności czy integralności samego systemu. 
 
-Zdefiniowane powyżej rygory czasowe określają, teoretyczny oczekiwania wobec systemu czasu rzeczywistego. W praktyce realizacja tych założeń sprowadza się do oceny zasadności stosowania \textbf{systemu operacyjnego czasu rzeczywistego} 
+Zdefiniowane powyżej rygory czasowe określają teoretyczne oczekiwania wobec systemu czasu rzeczywistego. W praktyce realizacja tych założeń sprowadza się do oceny zasadności stosowania \textbf{systemu operacyjnego czasu rzeczywistego} 
 w zderzeniu z bezpośrednim programowaniem sprzętu. Decyzja ta bezpośrednio determinuje strukturę i elastyczność budowanego środowiska.
 
 
 \section{Architektura struktur jądra systemów operacyjnych}
 
-Systemy operacyjne można klasyfikować według wielu kryteriów, z których jednym z najczęsciej spotykanym jest podział, ze względu na ich docelowe przeznaczenie. Przy takim podziale możemy wyróżnić systemy operacyjne generalnego przeznaczenia, systemy operacyjne rozproszone, systemy operacyjne komputerów nmainframe, systemy operacyjne serwerów oraz wiele innych \cite{Tanenbaum}.
+Systemy operacyjne można klasyfikować według wielu kryteriów, z których jednym z najczęściej spotykanym jest podział, ze względu na ich docelowe przeznaczenie. Przy takim podziale możemy wyróżnić systemy operacyjne generalnego przeznaczenia, systemy operacyjne rozproszone, systemy operacyjne komputerów mainframe, systemy operacyjne serwerów oraz wiele innych \cite{Tanenbaum}.
 
-Jednakże, w kontekście analizy wydajności kluczowy jest podział ze względu na strukturę systemu, która określa architekturę jego jądra.  Na tym etapie jądro systemu możemy zdefiniować jedyny program, który działa w pamięci komputera nieprzerwanie przez cały czas od jego uruchomienia, pełniąc funkcję pomostu komunikacyjnego między uruchomionymi aplikacjami,
+Jednakże, w kontekście analizy wydajności kluczowy jest podział ze względu na strukturę systemu, która określa architekturę jego jądra.  Na tym etapie jądro systemu możemy zdefiniować jako jedyny program, który działa w pamięci komputera nieprzerwanie przez cały czas od jego uruchomienia, pełniąc funkcję pomostu komunikacyjnego między uruchomionymi aplikacjami,
 a fizycznym sprzętem \cite{Abraham_Silberschatz}.
 
 Konstrukcja jądra decyduje o sposobie komunikacji między usługami systemowymi, a warstwą aplikacyjną, co bezpośrednio wpływa na narzuty czasowe oraz efektywność optymalizacji kodu programów. 
@@ -277,7 +277,7 @@ W \textbf{architekturze monolitycznej} (ang. \textit{monolithic kernel}) wszystk
 Takie podejście sprawia, że jądro zawiera w sobie ogromną liczbę elementów, co mocno komplikuje proces jego tworzenia oraz późniejszego szukania błędów. Największą zaletą architektury monolitycznej jest jednak wysoka prędkość przetwarzania informacji -- z uwagi na to, że 
 jądro jest w całości kompilowane do jednego programu, poszczególne funkcjonalności mogą z siebie nawzajem korzystać, co znacząco przyśpiesza działanie systemu. 
 Przy architekturze monolitycznej aplikacje użytkownika są uruchamiane jako osobne procesy w chronionej pamięci. Dzięki temu jądro nie jest narażone na błędy w programach użytkownika, a różne aplikacje nie mogą nawzajem bezpośrednio mieć dostępu zasobów im nie przydzielonych.
-Główną wadą systemów monolitycznych pozostaje jednak słaba odporność na awarie samego jądra; jeśli błąd pojawi się w jego obrębie niego, na przykład w jednym ze sterowników, może dojść do awarii całego systemu.
+Główną wadą systemów monolitycznych pozostaje jednak słaba odporność na awarie samego jądra; jeśli błąd pojawi się w jego obrębie, na przykład w jednym ze sterowników, może dojść do awarii całego systemu.
 
 \textbf{Architektura mikrojądra} (ang. \textit{microkernel}) opiera się na zasadzie minimalizacji kodu wykonywanego z najwyższymi uprawnieniami procesora \cite{Abraham_Silberschatz}. Kompletny system operacyjny składa się w tym przypadku z uproszczonego jądra
 oraz zestawu współpracujących ze sobą procesów systemowych. Samo mikrojądro realizuje jedynie fundamentalne zadania, takie jak zarządzanie wątkami oraz obsługa komunikacji międzyprocesowej \cite{Tanenbaum}. Wszystkie pozostałe usługi, wliczając w to sterowniki urządzeń i systemy plików, są odseparowane od jądra i funkcjonują jako niezależne programy w przestrzeni użytkownika.
@@ -319,6 +319,6 @@ W systemie Linux pamięć jest stronnicowana. W związku z tym, podstawową jedn
 
 Każdy proces uruchomiony w systemie operuje na własnej wirtualnej przestrzeni adresowej, która logicznie dzieli się na trzy główne segmenty: kod, dane oraz stos \cite{Tanenbaum}. Segment kodu przechowuje instrukcje programu i domyślnie posiada atrybut umożliwiający jedynie jego odczyt, co pozwala na bezpieczne współdzielenie go między wieloma jednoczesnymi uruchomieniami tego samego programu \cite{Abraham_Silberschatz}. Segment danych przechowuje zmienne globalne i statyczne, przy czym dla zmiennych niezainicjowanych  Linux stosuje optymalizację: mapuje je na jedną fizyczną, wyzerowaną stronę, dopóki proces nie spróbuje dokonać modyfikacji, co wyzwala mechanizm kopiowania przy zapisie (ang. \textit{copy-on-write}) \cite{Tanenbaum}. Ponadto jądro oferuje mechanizm mapowania plików w pamięci, co umożliwia procesom bezpośredni dostęp do danych plikowych lub współdzielonych bibliotek z pominięciem standardowych wywołań systemowych \cite{Tanenbaum}.
 
-Do zarządzania przydziałem fizycznych stron pamięci Linux wykorzystuje \textbf{algorytm bliźniaków} (ang. \textit{buddy algorithm}) \cite{Tanenbaum}. Choć mechanizm ten jest w większości przypadków wysoce wydajny, może prowadzić do zjawiska fragmentacji wewnętrznej w przypadku konieczności alokacji struktur o rozmiarach znacznie mniejszych niż domyślne wielkości strony. Aby zminimalizować ten problem i zredukować narzut systemowy, system wdraża mechanizm dyspozytora płytowego (ang. \textit{slab allocator}) \cite{LinuxKernelDevelopment}, który działa dysponuje pamiecia poprzez algorytm blizniakow, aby pozniej podzieli strone na mniejsze fragmenty i umozliwic jej zarzadzanie \cite{Tanenbaum}. 
+Do zarządzania przydziałem fizycznych stron pamięci Linux wykorzystuje \textbf{algorytm bliźniaków} (ang. \textit{buddy algorithm}) \cite{Tanenbaum}. Choć mechanizm ten jest w większości przypadków wysoce wydajny, może prowadzić do zjawiska fragmentacji wewnętrznej w przypadku konieczności alokacji struktur o rozmiarach znacznie mniejszych niż domyślne wielkości strony. Aby zminimalizować ten problem i zredukować narzut systemowy, system wdraża mechanizm dyspozytora płytowego (ang. \textit{slab allocator}) \cite{LinuxKernelDevelopment}, który dysponuje pamięcią poprzez algorytm bliźniaków, aby później podzielić stronę na mniejsze fragmenty i umożliwić jej zarządzanie \cite{Tanenbaum}. 
 
-Na poziomie interfejsu programistycznego jądra alokacja pamięci odbywa się za pomocą kilku wyspecjalizowanych funkcji do zarządzania pamięcią.Warto tutaj wspominieć o tych najpowszechniejszych, czyli \texttt{kmalloc}, gwarantująca przydział obszaru ciągłego zarówno w przestrzeni wirtualnej, jak i fizycznej \cite{LinuxKernelDevelopment} oraz \texttt{vmalloc} wykorzystywana do alokacji większych struktur, niewymagających ciągłości fizycznej. Ta druga jednak wiąże się  z  większym narzutem wydajnościowym wynikającym z konieczności modyfikacji tablic stron \cite{LinuxKernelDevelopment}.
+Na poziomie interfejsu programistycznego jądra alokacja pamięci odbywa się za pomocą kilku wyspecjalizowanych funkcji do zarządzania pamięcią. Warto tutaj wspomnieć o tych najpowszechniejszych, czyli \texttt{kmalloc}, gwarantująca przydział obszaru ciągłego zarówno w przestrzeni wirtualnej, jak i fizycznej \cite{LinuxKernelDevelopment} oraz \texttt{vmalloc} wykorzystywana do alokacji większych struktur, niewymagających ciągłości fizycznej. Ta druga jednak wiąże się  z  większym narzutem wydajnościowym wynikającym z konieczności modyfikacji tablic stron \cite{LinuxKernelDevelopment}.
