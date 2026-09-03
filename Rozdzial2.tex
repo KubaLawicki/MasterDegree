@@ -80,7 +80,6 @@ Na potrzeby niniejszej pracy konieczne jest przedstawienie następujących poję
     \item  \textbf{Wątek}
     \item \textbf{Szeregowanie zadań}
     \item \textbf{Pamięć wirtualna}
-    \item \textbf{Mechanizmy synchronizacji i współbieżności}
 \end{itemize}
 \subsection{Tryby pracy procesora}
 Współczesne komputery realizują ochronę zasobów poprzez tryby pracy procesora \cite{Abraham_Silberschatz}, z których kluczowe to \textbf{tryb użytkownika} (ang. user mode) oraz \textbf{tryb jądra} (ang. kernel mode). Aplikacje użytkownika funkcjonują w trybie użytkownika, nieuprzywilejowanym, co uniemożliwia im między innymi, bezpośredni dostęp do urządzeń peryferyjnych oraz fizycznej pamięci.
@@ -115,12 +114,10 @@ W celu zapewnienia przenoszalności oprogramowania wielowątkowego między róż
 \textbf{Szeregowanie zadań} odpowiada za zarządzanie przydziałem czasu procesora. Ponieważ pojedynczy rdzeń CPU nie może wykonywać wielu zadań jednocześnie, \textbf{planista} (ang. \textit{scheduler}) decyduje o kolejności i czasie uruchamiania wątków i procesów na podstawie określonych algorytmów \cite{Abraham_Silberschatz}.
 Mechanizm ten zapewnia sprawiedliwy dostęp do zasobów i płynność działania systemu, jednak częsta zmiana wykonywanych zadań generuje bezpośredni narzut czasowy związany z przełączaniem kontekstu. 
 \subsection{Pamięć wirtualna}
-\textbf{Pamięć wirtualna} sprawia, że procesy nie operują bezpośrednio na fizycznej pamięci operacyjnej, lecz na wirtualnej przestrzeni adresowej przydzielanej i mapowanej na sprzęt przez \textbf{jednostkę zarzadzania pamiecia (MMU (ang. \textit{Memory Management Unit}) )}\cite{Tanenbaum}.
+\textbf{Pamięć wirtualna} sprawia, że procesy nie operują bezpośrednio na fizycznej pamięci operacyjnej, lecz na wirtualnej przestrzeni adresowej przydzielanej i mapowanej na sprzęt przez \textbf{jednostkę zarzadzania pamiecia MMU (ang. \textit{Memory Management Unit} )}\cite{Tanenbaum}.
 
 W kontekście pamięci wirtualnej kluczowym mechanizmem jest \textbf{stronnicowanie} \cite{Tanenbaum}. Polega ono na podziale wirtualnej przestrzeni adresowej programu na bloki o stałym rozmiarze, zwane stronami (ang. \textit{pages}), które są dynamicznie odwzorowywane na fizyczną pamięć operacyjną. Operacje tę wykonuje jednostka MMU.
 Mechanmizm zarządzania pamięcią wirtualną zostało opisane, na przykładzie systemu Linux w sekcji \ref{Linux_wykorzystaniePamieci}
-
-\subsection{Mechanizmy synchronizacji i współbieżności}
 
 
 \section{Systemy wbudowane czasu rzeczywistego wraz z ich podziałem}

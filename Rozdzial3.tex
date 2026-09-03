@@ -1,4 +1,11 @@
-\chapter{Wybrany algorytm przetwarzania danych i techniki optymalizacji programów komputerowych}
+\chapter{Algorytm przetwarzania danych i techniki optymalizacji programów komputerowych}
+Przy konstrukcji systemu przetwarzania danych szczególne znaczenie ma dobór odpowiedniego algorytmu przetwarzania oraz sposobu jego implementacji. Jest to zasadniczo główne zadanie na początku pracy, ponieważ to właśnie algorytm przetwarzania najczęściej pozwala rozwiązać zadany systemowi problem. Dopiero po podjęciu tej decyzji architekt systemu może koncentrować się na wyborze platformy programowej czy sprzętowej, które będą miały wpływ na wydajność systemu wbudowanego. Należy jednak pamiętać, że ten sam algorytm, zapisany z wykorzystaniem tego samego języka programowania, może działać z różną szybkością w zależności od tego, jak został przetłumaczony na kod maszynowy konkretnego procesora.
+
+Na potrzeby niniejszej pracy jako przedmiot badań wybrano \textbf{szybką transformatę Fouriera (skrót: FFT)}. Algorytm ten stanowi podstawowe narzędzie cyfrowej analizy sygnałów, a jego znaczenie dla rozwoju techniki obliczeniowej trudno przecenić — w zestawieniu opublikowanym w pozycji \cite{DongarraTopTen} umieszczono go wśród dziesięciu algorytmów o największym wpływie na naukę i inżynierię w XX wieku. O jego wyborze zadecydowała również charakterystyka obliczeniowa: FFT wykonuje wielokrotnie te same, proste operacje arytmetyczne na dużych zbiorach danych, przez co jest wdzięcznym obiektem badań nad wpływem optymalizacji na czas wykonania programu.
+
+Każdy program komputerowy, również implementacja FFT, składa się nie tylko z idei algorytmu, tak zrozumiałej człowiekowi, ale też z niskopoziomowych operacji na sprzęcie, które są bezpośrednio zapisane w kodzie maszynowym, powstającym w wyniku przekształcenia programu użytkownika. Translację tę wykonują translatory języka programowania, a w przypadku niniejszej pracy, ze względu na użycie \textbf{języka programowania C} – kompilator. To, jakie instrukcje maszynowe znajdą się w programie wynikowym, zależy nie tylko od zapisu w kodzie źródłowym, ale również od zastosowanych narzędzi oraz przekazanych im poleceń. Zrozumienie tych mechanizmów jest niezbędne, aby świadomie wpływać na wydajność tworzonego oprogramowania.
+
+Celem niniejszego rozdziału jest przedstawienie wiedzy z dwóch obszarów. Pierwsza część zawiera opis matematycznych podstaw dyskretnej transformaty Fouriera oraz analizę algorytmu FFT, wraz z omówieniem jego kolejnych etapów i wariantów. Druga część poświęcona jest procesowi kompilacji: przedstawiono w niej narzędzia biorące udział w tworzeniu programu wykonywalnego, wewnętrzną budowę kompilatora oraz przegląd rozwiązań najczęściej stosowanych w systemach opartych na jądrze Linux. Rozdział zamyka omówienie technik optymalizacji kodu wraz z flagami kompilacji, które pozwalają programiście na używanie tych technik.
 \section{Opis i analiza Szybkiej Transformaty Fouriera}
 \subsection{Podstawy matematyczne algorytmu FFT}
 \textbf{Przekształcenie Fouriera} (ang. \textit{Fourier Transform}) dla sygnałów ciągłych służy do wyznaczania widma częstotliwościowego $X(j\omega)$ sygnału czasu ciągłego $x(t)$ \cite{ZielinskiDSP}. Wzory przekształcenia prostego i odwrotnego definiuje się następująco \cite{ZielinskiDSP}:
@@ -263,7 +270,7 @@ Przedstawione powyżej koncepcje stosowane w algorytmie FFT składają się łą
 \label{alg:fft-dit-iteracyjny}
 \begin{algorithmic}[1]
 \Require wektor próbek $x$ o długości $N$, gdzie $N = 2^p$
-\Ensure wektor $x$ zawierający prążki widma w kolejności naturalnej
+\Ensure wektor $x$ zawierający kolejne prążki widma 
 \Statex
 \Function{FFT}{$x$, $N$}
     \State \Call{Operacja BitReversal}{$x$, $N$}
@@ -347,7 +354,7 @@ W praktycznych implementacjach kilka faz bywa łączonych w jeden przebieg (ang.
 Na rynku dostępnych jest wiele implementacji kompilatorów języka C, zarówno komercyjnych, jak i rozwijanych w modelu otwartoźródłowym. W praktyce jednak w środowisku systemów opartych na jądrze Linux najczęściej spotyka się dwa rozwiązania: \textbf{GNU Compiler Collection (GCC)}, powstały w ramach projektu GNU \cite{StallmanGNU}, oraz \textbf{Clang}, będący częścią projektu \textbf{LLVM}.\
 Samo jądro systemu Linux przez długi okres było kompilowane było wyłącznie narzędziami GNU, jednak w ostanim czasie Clang i LLVM stały się dla nich dostepną alternatywą -- kompilowane z ich wykorzstaniem jądra systemu Linux wykorzystują między innymi systemy Android czy ChromeOS \cite{KernelLLVM}.
 
-Warto zaznaczyć, że również w systemach wbudowanych, niewykorzystujących systemów operacyjnych, narzędzia GNU czy Clang wraz z LLVM są często spotykane. Oferują one wsparcie dla wielu architektur procesorów, pozwalając na uruchomienie kompilatora na sprzęcie o jednej architekturze (nazywanej również terminem \textbf{maszyny hosta}) w celu wygenerowania kodu maszynowego przeznaczonego dla zupełnie innej, docelowej architektury (nazywanej \textbf{maszyną targetu}). Proces ten określany jest mianem \textbf{kompilacji skrośnej} (ang. \textit{cross-compilation}). Obydwa wspomniane kompilatory posiadają zestaw narzędzi przeznaczonych do różnych architektur spotykanych w systemach wbudowanych, takich jak \textbf{ARM, RISC-V, AVR}.
+Warto zaznaczyć, że również w systemach wbudowanych, niewykorzystujących systemów operacyjnych, narzędzia GNU czy Clang wraz z LLVM są często spotykane. Oferują one wsparcie dla wielu architektur procesorów, pozwalając na uruchomienie kompilatora na sprzęcie o jednej architekturze (nazywanej również terminem \textbf{maszyny hosta}) w celu wygenerowania kodu maszynowego przeznaczonego dla zupełnie innej, docelowej architektury (nazywanej \textbf{maszyną targetu}). Proces ten określany jest mianem \textbf{kompilacji skrośnej} (ang. \textit{cross-compilation}) \cite{Kompilatory_Aho}. Obydwa wspomniane kompilatory posiadają zestaw narzędzi przeznaczonych do różnych architektur spotykanych w systemach wbudowanych, takich jak \textbf{ARM, RISC-V, AVR}.
 \subsection{Kompilator GCC}
 
 \textbf{GCC} powstał jako część projektu GNU \cite{StallmanGNU} i jest tradycyjnym, domyślnym kompilatorem większości dystrybucji systemu Linux \cite{LinuxKernelDevelopment}. Jego architektura rozwiązań bazuje na klasycznym modelu kompilatora, który opisuje \cref{subsection:WewStrukturaKompilatora}. GCC dzieli proces tłumaczenia na część analizującą (front end) i część generującą kod wynikowy (back end). Część środkowa, odpowiedzialna za optymalizacje, przekształca program w dwóch własnych, uproszczonych reprezentacjach -- GENERIC oraz GIMPLE -- na których wykonywane są kolejne przekształcenia mające na celu poprawnienie kodu \cite{novillo2006gcc}. 
@@ -355,10 +362,73 @@ Warto zaznaczyć, że również w systemach wbudowanych, niewykorzystujących sy
 
 \textbf{Clang} pełni rolę części analizującej (front end) dla  części syntezy obsługiwanej przez \textbf{LLVM}. LLVM zapewnia zestawu narzędzi kompilatorowych, zaprojektowanego tak, aby umożliwić analizę i poprawianie kodu na każdym etapie jego translacji i uruchomienia \cite{lattner2004llvm}. Podobnie jak GCC, LLVM przekształca program do własnej, uproszczonej reprezentacji pośredniej, jednak w odróżnieniu od GCC reprezentacja ta została zaprojektowana w taki sposób, aby nie musięć zależeć od konkretnego języka programowania \cite{lattner2004llvm}. Dzięki takiej budowie LLVM można podzielić na trzy niezależne części: część analizującą (Clang), wspólną dla wszystkich architektur warstwę optymalizacji oraz część generującą kod maszynowy dla konkretnego procesora. Kod projektu LLVM, w tym Clang, jest udostępniany na licencji Apache License \cite{LLVMDevPolicy}.
 
-Oba kompilatory, mimo różnic w budowie wewnętrznej, są ze sobą często porównywane w literaturze pod kątem jakości i wydajności generowanego kodu, w tym w zastosowaniach wbudowanych systemów wbudowanych \cite{poorhosseini2020compiler}.Oba rozwiązania dysponują bowiem wbudowanymi mechanizmami zaawansowanej optymalizacji kodu, o których traktuje \cref{section:TechnikiOptymalizacji}. Proces ten może być kontrolowany przez inżyniera oprogramowania poprzez stosowanie \textbf{flag kompilacji}, czyli poleceń określających pożądany stopień i cel optymalizacji programu docelowego. \cref{section:flagiKompilatora} przybliża dostępne flagi dla obywdu opisywanych kompilatorów.
-\section{Zaawansowane techniki optymalizacji kodu}\label{section:TechnikiOptymalizacji}
-\section{Flagi kompilacji dostępne w kompilatorach Clang i Gcc}\label{section:flagiKompilatora}
+Oba kompilatory, mimo różnic w budowie wewnętrznej, są ze sobą często porównywane w literaturze pod kątem jakości i wydajności generowanego kodu, w tym w zastosowaniach wbudowanych systemów wbudowanych \cite{poorhosseini2020compiler}. Dysponują one  bowiem wbudowanymi mechanizmami zaawansowanej optymalizacji kodu.
+Podstawowym narzędziem do konfiguracji optymalizacji programów w jęzuku C są \textbf{flagi kompilacji}, czyli ścisle określony zbiór poleceń określających pożądany stopień optymalizacji programu. Polecenia te używane są własnie przy procesie transalcji kodu źródłowego na kod wykonywalny. Podstawowe mechanizmy optymalizacji kodu, wraz z flagami kompilacji zostaną przedstawione w \cref{section:TechnikiOptymalizacji}
+\section{Zaawansowane techniki optymalizacji kodu i flagi kompilacji}\label{section:TechnikiOptymalizacji}
+Optymalizacja kodu w czasie procesu kompilacji jest to dążenie do takiego przekształcenia programu wynikowego, aby osiągał one lepsze wyniki w pewnych metrykach, przy zachowaniu poprawności jego założonego działania \cite{Kompilatory_Aho}. Metrykami tymi są na przykład czas wykonania programu, zużycie zasobów pamięci, wielkość kodu programu, czy w przypadku bardzo dużych projektów czas kompilacji\cite{Kompilatory_Aho}. Warunek zachowania poprawności programu jest jednak nadrzędny — przekształcenie, które zmienia wynik obliczeń, nie jest optymalizacją, lecz błędem \cite{Kompilatory_Aho}.  Kompilator nie analizuje przy tym programu na tyle głęboko, aby zastąpić zastosowany przez programistę algorytm innym, na przykład o mniejszej zlożoności obliczeniowej; stosuje jedynie niskopoziomowe przekształcenia, polegająca na przykład na przekształceniach algebraicznych lub na wykorzystaniu dostępnej architektury jednostki centralnej \cite{Kompilatory_Aho}.
 
+Termin "optymalizacja" jest w tym kotenkście w pewnym stopniu myląca. Program kompilatora nie jest w stanie zagwarantować, że kod wygenerowany przez niego będzie najszybszym możliwym rozwiązaniem danego zadania \cite{Kompilatory_Aho}. W praktyce chodzi o zestaw przekształceń, które w większości przypadków poprawiają założone metryki dla wielu programów, a nie o rozwiązanie optymalne w sensie matematycznym.
+
+
+Nie istnieje również jedno kryterium tego, co znaczy „lepszy” kod. Skrócenie czasu wykonania odbywa się zwykle kosztem zwiększenia rozmiaru programu, a przekształcenia poprawiające wydajność utrudniają jednocześnie pracę z debuggerem. W systemach wbudowanych kompromis ten nabiera szczególnego znaczenia, ponieważ ograniczona bywa zarówno moc obliczeniowa, jak i dostępna pamięć. Z tego względu kompilatory udostępniają nie jeden, lecz kilka poziomów optymalizacji, ukierunkowanych na różne cele — ich zestawienie przedstawiono w \cref{tab:poziomy_optymalizacji}.
+
+Na przestrzeni lat zmieniły się także same kryteria tego, co w kodzie warto ograniczać. Przykładowo dawniej, gdy procesory sygnałowe wykonywały operacje mnożenia w większej ilości cykli zegara, opłacało się minimalizować ich liczbę nawet kosztem zwiększenia liczby pozostałych operacji, na przykład dodawania, które wymagało mniej cykli. Obecnie jednak procesory sygnałowe potrzebują na każdą z przytoczonych operacji w zasadzie tyle samo czasu, a przesyłanie danych pomiędzy rejestrami a pamięcią trwa, w więkoszści przypadków, tyle samo co operacje arytmetyczne \cite{ZielinskiDSP}. Pomimo tego, że w dzisiejszych czasach nie ma konieczności na zwracania uwagi na typ wykonywanych operacji, wciąż pozostaje dążenie do zmniejszania ilości ich wykonania.
+\subsection{Przekształcenia optymalizujące}
+
+\subsubsection{Metody usuwania nadmiarowości}
+
+Programowanie w językach wysokiego poziomu ma zarówno wiele aspektów pozytywnych, takich jak używanie wysokopoziomowych abstrakcji, jak i negatywnych, takich jak wykonywanie zbędnych obliczeń. Właśnie z tej przyczyny spora część operacji w programach jest niepotrzebna i nie wynika z braku wiedzy inżyniera oprogramowania, a z narzutu języka. Takie operacje jak odwołania do elementów tablic czy pól struktur rozwijane są bowiem na etapie kompilacji do szeregu operacji arytmetycznych na komórkach pamięci. Operacje te bywają wspólne dla wielu odwołań, a programista nie ma możliwości ich samodzielnego wyeliminowania \cite{Kompilatory_Aho}. W dalszej części prezentowanej sekcji opisano kilka metod na eliminację niepotrzebnych operacji w czasie trwania programu.
+
+Z \textbf{wspólnym podwyrażeniem} (ang. \textit{common subexpression}) mamy do czynienia, gdy wynik operacji jest już znany (na przykład ta sama operacja z tymi samymi składnikami została już przeprowadzona), a jej zmienne się nie zmieniły. Kompilator ma możliwość przed wykonaniem programu uznać, że operacja da ten sam wynik co poprzednio i użyć wartości obliczonej za pierwszym razem, zamiast powtarzać obliczenia \cite{Kompilatory_Aho}. Pokrewną techniką jest \textbf{propagacja kopii} (ang. \textit{copy propagation}), czyli zastąpienie zmiennej wartością, którą wcześniej jej przypisano \cite{Kompilatory_Aho}.
+
+Jeżeli kompilator zdoła ustalić, że wartość danej zmiennej jest stała, czyli nie zmieni się w czasie programu, może wyznaczyć ją już w czasie kompilacji i wstawić w miejsce odwołań do niej. Przekształcenie to nosi nazwę \textbf{zwijania stałych} (ang. \textit{constant folding}) \cite{Kompilatory_Aho}. 
+
+
+\subsubsection{Przekształcenia pętli programów}
+
+Pętle, a w szczególności pętle zagnieżdżone, są dość newralgicznym punktem programów komputerowych, ze względu na możliwie długi czas ich wykonywania. Z tego względu opłaca się zmniejszać liczbę instrukcji wykonywanych w ich wnętrzu, nawet za cenę zwiększenia ilości kodu poza pętlą \cite{Kompilatory_Aho}. Na tej zasadzie opiera się \textbf{przenoszenie kodu} (ang. \textit{code motion}), polegające na wyniesieniu przed pętlę tych obliczeń, których wynik nie zmienia się pomiędzy kolejnymi iteracjami.
+
+Kolejnym przekształceniem jest \textbf{redukcja siły operacji} (ang. \textit{strength reduction}), polegająca na zastąpieniu kosztownych instrukcji ich szybszymi odpowiednikami. Historycznie technikę tę wykorzystywano dość powszechnie do zamiany mnożenia na proste dodawanie wewnątrz pętli \cite{Kompilatory_Aho, ZielinskiDSP}. Współczesne procesory posiadają rozbudowane układy mnożące, które są na tyle wydajne, że z tego konkretnego zastosowania się już korzysta. Redukcja siły wciąż pozostaje przydatna w przypadku powolnych operacji, na przykład dzielenia i modulo, które kompilator może zastępować szybkimi operacjami bitowymi.
+
+Kolejną operacją jest \textbf{rozwijanie pętli} (ang. \textit{loop unrolling}), polegające na umieszczeniu kilku kolejnych iteracji w jednym, powiększonej instrukcji pętli. Zabieg ten ogranicza narzut związany z obsługą instrukcji pętli, a jednocześnie zwiększa liczbę operacji wykonywanych w pojedynczym przebiegu, co daje kompilatorowi większe możliwości wykrycia operacji nadających się do równoległego wykonania \cite{Kompilatory_Aho}. Odbywa się to jednak kosztem zwiększenia rozmiaru kodu programu wynikowego.
+
+\subsubsection{Wywołania procedur i przydział rejestrów}
+
+Optymalizacja nie musi zawsze dotyczyć samych obliczeń. Może również polegać na redukcji kosztów ich obsługi. Jedną z technik realizującą takie przekształcenia jest \textbf{wciąganie procedur} (ang. \textit{procedure inlining}), czyli zastąpienie wywołania procedury jej ciałem \cite{Kompilatory_Aho}. Eliminuje ono narzut związany ze skokiem do innej części programu.
+
+Kolejną taką techniką jest odpowiedni \textbf{przydział rejestrów} (ang. \textit{register allocation}). Rejestry są najszybszą pamięcią dostępną w procesorze, jednak ich liczba jest ograniczona, przez co nie wszystkie wartości mogą być w nich przechowywane jednocześnie; pozostałe muszą zostać umieszczone w pamięci operacyjnej. Instrukcje operujące na rejestrach wymagają mniej cykli procesora do wykonania, niż te, które odwołują się do pamięci \cite{Kompilatory_Aho}. Zadanie kompilatora polega więc na takim doborze wartości przechowywanych w rejestrach, aby ograniczyć liczbę odwołań do pamięci — problem ten rozwiązuje się między innymi metodą kolorowania grafu \cite{Kompilatory_Aho}.
+
+\subsection{Hierarchia pamięci i pamięć podręczna}
+
+
+Czas wykonania programu zależy nie tylko od liczby wykonanych instrukcji, ale również od czasu dostępu do danych, potrzebnych do icjh wykonania. W związku z tym, że pamięć o dużym rozmiarze i bardzo krótkim czasie dostępu jest praktycznie niespotykana (lub bardzo kosztowna), komputery projektuje się z pamięcią w postaci hierarchii — od nielicznych, szybkich rejestrów procesora, przez pamięć podręczną, aż po wolniejszą pamięć operacyjną \cite{Kompilatory_Aho}.
+
+Skuteczność opisanej hierarchii wynika z naturalnego sposobu działania komputerów — programy rzadko odwołują się do pamięci w sposób losowy. Zamiast tego mają tendencję do  używania tych samych lub sąsiadujących ze sobą danych. Właśnie dlatego sprzęt pobiera informacje do pamięci podręcznej od razu całymi fragmentami, zwanymi liniami \cite{Kompilatory_Aho}. Odczyt danych już obecnych w pamięci podręcznej, nazywany \textbf{trafieniem} (ang. \textit{cache hit}), trwa zaledwie kilka cykli procesora, podczas gdy \textbf{chybienie} (ang. \textit{cache miss}) wymaga sięgnięcia do wolniejszej pamięci operacyjnej i trwa nawet kilkadziesiąt razy dłużej \cite{Kompilatory_Aho}. Z tego powodu sposób, w jaki algorytm odwołuje się do kolejnych komórek tablicy, wpływa na czas jego wykonania niezależnie od liczby wykonywanych operacji arytmetycznych.
+
+\subsection{Podstawowe flagi optymalizacyjne}
+
+Opisane wcześniej przekształcenia nie są stosowane przez kompilator samoczynnie. Decyzja,które z nich zostaną wykonane, należy do twórcy oprogramownia. Do realizacji tych technik służą odpowiednie flagi kompilacji. Najczęściej wykorzystuje się w tym celu zbiorcze poziomy optymalizacji, oznaczane jako \texttt{-O0}, \texttt{-O1}, \texttt{-O2}, \texttt{-O3}, \texttt{-Os}, \texttt{-Oz}, \texttt{-Og} oraz \texttt{-Ofast}. W \cref{tab:poziomy_optymalizacji} zestawiono ogólne założenia stojące za każdym z tych poziomów, w postaci opisanej w dokumentacjach kompilatorów clang i gcc.
+
+Warto podkreślić,że pod każdym z nich kryje się lista pojedynczych flag, odpowiadających konkretnym przekształceniom optymalizującym program wykonywalny. Flagi pozwalają wybrać zarówo najważniejsze przekształcenia opisane w \cref{section:TechnikiOptymalizacji}, jak i inne techniki opisane szerzej w literaturze \cite{Kompilatory_Aho}.
+
+Dla przykładu poziom \texttt{-O1} włącza w kompilatorze GCC kilkadziesiąt takich flag, między innymi \texttt{-ftree-dce} odpowiadającą za eliminację martwego kodu, \texttt{-ftree-copy-prop} realizującą propagację kopii czy \texttt{-fmove-loop-invariants} przenoszącą niezmienniki poza pętlę \cite{gcc_optlevels}. Kolejne poziomy dokładają do tej listy następne przekształcenia. Pełne wykazy flag włączanych przez poszczególne poziomy dostępne są w dokumentacjach kompilatorów \cite{gcc_optlevels, clang_cmdguide}. Dokładny zestaw przekształceń włączanych na danym poziomie można również sprawdzić, kompilując program z opcją \texttt{-Q --help=optimizers} \cite{gcc_optlevels}.
+Poszczególne flagi można również włączać i wyłączać pojedynczo, niezależnie od wybranego poziomu.
+
+\subsubsection{Flagi związane z architekturą procesora}
+
+Osobną grupę stanowią flagi określające docelową architekturę sprzętową. Mają one szczególne znaczenie przy kompilacji skrośnej, ponieważ kompilator uruchamiany jest wówczas na maszynie o innej architekturze niż docelowa i nie ma jak ustalić możliwości procesora, na którym program będzie wykonywany.
+
+Współczesne procesory udostępniają międzyinnymi możliwości przetwarzania typu \textbf{SIMD} (ang. \textit{Single Instruction, Multiple Data}), pozwalające wykonać jedną operację równocześnie na wielu wartościach umieszczonych w pojedynczym, szerokim rejestrze \cite{ArmNeonGuide}. Rozwiązanie to sprawdza się zwłaszcza tam, gdzie te same, proste obliczenia powtarzane są wielokrotnie na dużych zbiorach danych, a więc również w algorytmach cyfrowego przetwarzania sygnałów \cite{ArmNeonGuide}. W procesorach ARM moduł sprzętowy realizujący przetwarzanie SIMD  nosi nazwę \textbf{NEON} i zostało szerzej omówione w \cref{subsection:jednostkaNeon}.
+
+Architekturę wskazuje się opcjami \texttt{-march} oraz \texttt{-mcpu} \cite{ArmNeonGuide}, a do uruchomienia jednostki NEON konieczne jest dodatkowo podanie opcji \texttt{-mfpu=neon}, sygnalizującej dostępność tego mechanizmu \cite{ArmNeonGuide}. Pominięcie opcji \texttt{-mcpu} sprawia, że kompilator przyjmuje wbudowany rdzeń domyślny, przez co wygenerowany kod może działać wolniej \cite{ArmNeonGuide}.
+
+Za samo przekształcenie kodu w tę postać, nazywane \textbf{wektoryzacją} (ang. \textit{vectorization}), odpowiada w kompilatorze GCC flaga \texttt{-ftree-vectorize}, włączana domyślnie na poziomie \texttt{-O2} \cite{gcc_optlevels}. Bez poprawnie wskazanej architektury docelowej nie zostanie ona jednak wykonana, mimo wybrania wysokiego poziomu optymalizacji.
+
+\subsubsection{Flagi wpływające na dokładność obliczeń}
+
+Ostatnią grupę stanowią flagi zmieniające sposób wykonywania działań zmiennoprzecinkowych. Najbardziej znaną z nich jest \texttt{-ffast-math}, włączana automatycznie przez poziom \texttt{-Ofast} i przez żaden inny \cite{gcc_optlevels}. Pozwala ona kompilatorowi między innymi na zmianę kolejności działań zmiennoprzecinkowych, co narusza wymagania standardów języków C i C++ i może prowadzić do otrzymania innego wyniku obliczeń \cite{gcc_optlevels}.
+
+Flagi tego typu mogą przyspieszyć wykonanie programu, jednak ich zastosowanie wymaga świadomej decyzji. W algorytmach, w których kolejność wykonywania działań wpływa na dokładność wyniku, uzyskane wartości mogą znacząco różnić się od poprawnych wartości\cite{gcc_optlevels}.
 \begin{table}[htbp]
     \centering
     \caption{Poziomy optymalizacji w kompilatorach GCC i Clang, na podstawie oficjalnych dokumentacji\cite{gcc_optlevels,clang_cmdguide}}
@@ -369,49 +439,45 @@ Oba kompilatory, mimo różnic w budowie wewnętrznej, są ze sobą często por�
         \midrule
 
         \texttt{-O0} &
-            Brak optymalizacji (ustawienie domyślne). Generuje nieoptymalny kod, lecz zapewnia najkrótszy czas kompilacji i najlepsze warunki do debugowania. &
-            Oznacza brak optymalizacji -- najszybsza kompilacja i najlepiej debugowalny kod wynikowy. \\
+            Ustawienie domyślne. Skraca czas kompilacji i ułatwia debugowanie, ponieważ zachowanie programu odpowiada bezpośrednio kodowi źródłowemu. &
+            Brak optymalizacji. Najszybsza kompilacja i najlepiej debugowalny kod wynikowy. \\
         \addlinespace
 
-        \texttt{-O1} &
-            Umiarkowana optymalizacja (odpowiednik samego \texttt{-O}). Rozsądnie optymalizuje kod bez istotnego wydłużenia czasu kompilacji, choć część zmiennych może być niedostępna w debuggerze. &
+       \texttt{-O1} (\texttt{-O}) &
+            Kompilator ogranicza rozmiar kodu i czas jego wykonania, unikając przekształceń wymagających dużego nakładu obliczeniowego. Poziom zalecany dla obszernego kodu generowanego maszynowo, jako kompromis między czasem kompilacji a zużyciem pamięci. &
             Poziom pośredni między \texttt{-O0} a \texttt{-O2}. \\
         \addlinespace
 
         \texttt{-O2} &
-            Rozszerzona optymalizacja generująca silnie zoptymalizowany kod kosztem wydłużonego czasu kompilacji; istotnie utrudnia pracę z debuggerem. &
-            Umiarkowany poziom optymalizacji włączający większość dostępnych optymalizacji. \\
+            Włącza niemal wszystkie przekształcenia niewymagające kompromisu między rozmiarem a szybkością kodu. Wydłuża czas kompilacji względem \texttt{-O1}. &
+            Umiarkowany poziom optymalizacji, włączający większość dostępnych przekształceń. \\
         \addlinespace
 
-        \texttt{-O3} &
-            Pełna optymalizacja obejmująca bardziej zaawansowane przekształcenia, zwłaszcza pętli, potencjalnie kosztem większego rozmiaru kodu wynikowego. Praca z debuggerem jest w praktyce bardzo utrudniona. &
-            Odpowiednik \texttt{-O2} rozszerzony o optymalizacje wymagające dłuższego czasu kompilacji lub zwiększające rozmiar kodu, w celu poprawy szybkości wykonania. \\
+           \texttt{-O3} &
+            Włącza wszystkie przekształcenia z \texttt{-O2} oraz dodatkowe, dotyczące głównie pętli -- między innymi zamianę kolejności pętli zagnieżdżonych, ich dzielenie oraz częściowe rozwijanie. &
+            Odpowiednik \texttt{-O2} rozszerzony o przekształcenia wymagające dłuższego czasu kompilacji lub zwiększające rozmiar kodu w zamian za szybsze wykonanie. \\
         \addlinespace
 
-        \texttt{-Os} &
-            Optymalizacja pod kątem rozmiaru kodu i danych zamiast szybkości; bazuje na \texttt{-O2} z wyłączeniem przekształceń zwiększających rozmiar binarki oraz dodatkowymi optymalizacjami redukującymi rozmiar. &
-            Odpowiednik \texttt{-O2} z dodatkowymi optymalizacjami zmniejszającymi rozmiar kodu wynikowego. \\
+            \texttt{-Os} &
+            Bazuje na \texttt{-O2}, wyłączając przekształcenia zwykle zwiększające rozmiar kodu, m.in.\ wyrównanie funkcji i pętli. Dodatkowo włącza wciąganie procedur oraz przekształcenia ukierunkowane na redukcję rozmiaru. &
+            Odpowiednik \texttt{-O2} z dodatkowymi przekształceniami zmniejszającymi rozmiar kodu wynikowego. \\
         \addlinespace
-
         \texttt{-Oz} &
-            Agresywna optymalizacja rozmiaru kodu i danych; może zwiększyć liczbę wykonywanych instrukcji, jeśli wymagają one mniejszej liczby bajtów do zakodowania. &
-            Odpowiednik \texttt{-Os}, lecz z jeszcze dalszą redukcją rozmiaru kodu wynikowego. \\
+            Agresywna redukcja rozmiaru kodu, zbliżona do \texttt{-Os}. Może zwiększyć liczbę wykonywanych instrukcji, jeśli zajmują one mniej bajtów w pamięci. &
+            Odpowiednik \texttt{-Os}, lecz z dalszą redukcją rozmiaru kodu wynikowego. \\
         \addlinespace
 
         \texttt{-Og} &
-            Optymalizacja zorientowana na komfort debugowania zamiast szybkości; bazuje na \texttt{-O1}, dążąc do wyeliminowania negatywnego wpływu optymalizacji na proces debugowania. &
-            Zbliżony do \texttt{-O1}, lecz z nieco ograniczoną optymalizacją i lepszą widocznością zmiennych; dodatkowo ustawia flagę \texttt{-fextend-variable-liveness}, poprawiającą dostępność zmiennych podczas debugowania. \\
+            Bazuje na \texttt{-O1}, wyłączając przekształcenia najbardziej utrudniające debugowanie -- między innymi przenoszenie niezmienników poza pętlę oraz eliminację martwych zapisów. &
+            Zbliżony do \texttt{-O1}. Część przekształceń jest wyłączona na rzecz lepszej widoczności zmiennych podczas debugowania. \\
         \addlinespace
 
         \texttt{-Ofast} &
-            Poziom nieuwzględniony w cytowanym dokumencie GNAT jako osobna flaga GCC (w praktyce GCC obsługuje \texttt{-Ofast} analogicznie do Clang -- zob.\ kolumna obok). &
-            Włącza wszystkie optymalizacje z \texttt{-O3} wraz z dodatkowymi agresywnymi optymalizacjami mogącymi naruszać ścisłą zgodność ze standardem języka (m.in.\ \texttt{-ffast-math}). Flaga oznaczona jako przestarzała od Clang 19. \\
+            Włącza wszystkie przekształcenia z \texttt{-O3} oraz dodatkowe, mogące naruszać zgodność ze standardem języka (m.in.\ \texttt{-ffast-math}). &
+            Włącza wszystkie przekształcenia z \texttt{-O3} wraz z dodatkowymi, agresywnymi optymalizacjami naruszającymi zgodność ze standardem języka. Od wersji 19 Clang oznacza tę flagę jako przestarzałą, ze względu na nieprzewidywalny wpływ na zachowanie poprawnego kodu. \\
 
         \bottomrule
     \end{tabularx}
-
     \vspace{0.5em}
 \end{table}
-
-
 
