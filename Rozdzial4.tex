@@ -2,13 +2,361 @@
 %Tutaj trzeba kilka razy do znudzenia powtorzyc o naszym celu badan
 
 \section{Zaimplementowane warianty algorytmu FFT}\label{section:WariantyFFTUzyteWPracy}
-%tutaj piszemy krotko o kazdym algorytmie uzytym i uzasadniamy dlaczego on jest wybrany do badan
+
+Badania przeprowadzono na 11 implementacjach FFT. Proponowany zestaw opisano w \cref{tab:warianty-fft}. Należy przy tym zaznaczyć,że badanie nie miało być przeglądem wszystkich
+znanych odmian algorytmu. Jego celem było sprawdzenie, w jaki sposób przekształcenia wewnątrz kodu
+oraz flagi kompilacji wpływają na wybrane metryki wydajnościowe transformaty.  Prezentowany zestaw wybrano tak, aby dało się rozdzielić dwa źródła
+różnic w metrykach wykonania: schemat algorytmu i sposób zapisania tego schematu
+w kodzie.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Zestawienie zaimplementowanych wariantów FFT}
+  \label{tab:warianty-fft}
+  \begin{tabularx}{\textwidth}{l l l X}
+    \toprule
+    Wariant & Schemat & Układ & Cecha wyróżniająca \\
+    \midrule
+    \texttt{radix2-v0}      & radix-2      & AoS & wyznaczanie współczynników obrotu na bieżaco \\
+    \texttt{radix2-v1}      & radix-2      & AoS & współczynniki obrotu z tablicy \\
+    \texttt{radix2-v2-soa}  & radix-2      & SoA & \texttt{restrict}, układ danych pod wektoryzację \\
+    \texttt{radix2-v3-neon} & radix-2      & SoA & jawne funkcje wewnętrzne NEON \\
+    \texttt{radix4-v0}   & radix-4      & AoS & współczynniki obrotu liczone w pętli \\
+    \texttt{radix4-v1}         & radix-4      & AoS & owspółczynniki obrotu z tablicy \\
+    \texttt{splitradix}     & split-radix  & AoS & mieszany podział radix-2/radix-4, niestandardowy dostep do pamieci  \\
+    \texttt{stockham}       & Stockham     & AoS & kopiowanie tablicy, bez permutacji wstępnej \\
+    \midrule
+    \texttt{radix2-par}     & radix-2      & AoS & podział po blokach etapu \\
+    \texttt{radix2-par-v2}  & radix-2      & AoS & równomierny podział pracy w etapie\\
+    \texttt{radix4-par}     & radix-4      & AoS & równomierny podział pracy w etapie \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Pierwsze kryterium podziału to schemat obliczeń. Proponowane algorytmy to radix-2, radix-4, split-radix i Stockham.
+Różnią się one liczbą operacji zmiennoprzecinkowych i wzorcem dostępu do pamięci.
+Pełny kod źródłowy wszystkich wariantów znajduje się w załączniku do niniejszej
+pracy, a uzasadnienie doboru poszczególnych implementacji omówiono
+w \cref{subsection:WersjeJednowatkowe}.
+
+Drugim kryterium jest sposób implementacji rozwiązania w  kodzie. Dla
+tego samego algorytmu przetwarzania przygotowano kilka implementacji różniących się
+wyłącznie technikami programistycznymi. Sprawdzono wpływ układu danych wejściowych, źródła
+współczynników obrotu, korzyści płynących z używania w kodzie programu typów danych pod instrukcje SIMD oraz sposobu
+podziału pracy między wątki. 
+Dwa z zaimplementowanych wariantów ilustrują również, jak złe decyzje implementacyjne mogą zmieniać parametry wykonania, w tym nawet dokładność algorytmu.
+Zachowano w nich celowo nieefektywne rozwiązanie, żeby zmierzyć koszt pojedynczej decyzji implementacyjnej przy z pozoru niezmienionym algorytmie.
+
+\subsection{Wspólne założenia implementacyjne}
+
+Obliczenia prowadzone są w pojedynczej precyzji. Wybór ten wynika z docelowej
+platformy — rejestr wektorowy NEON o szerokości 128 bitów mieści cztery liczby
+32-bitowe i tylko dwie 64-bitowe ~\cite{ArmNeonGuide}, więc typ \texttt{float}
+daje dwukrotnie większy potencjał wektoryzacji.
+
+Dane wejściowe przechowywane są, w zależności od algorytmu, w jednym z dwóch układów. 
+Rozróżnienie to ma znaczenie, ponieważ w pracy operuje się na strukturach liczb zespolonych, złożonych z części rzeczywistej i urojonej.
+Różnica między nimi polega na rozdzieleniu tablic struktur na osobne tablice dla każdego jej pola. Zabieg ten mnoże ułatwić pracę
+kompilatora, ponieważ eliminuje ryzyko nakładania się obszarów pamięci
+sygnalizowane analizie aliasowania wskaźników ~\cite{ArmNeonGuide}. W pracy
+przyjęto dla tych dwóch układów danych nazewnictwo powszechne w literaturze:
+\textbf{układ złożony} (skrót \textbf{AoS}, ang. \textit{Array of Structures}) oraz
+\textbf{układ rozdzielony} (skrót \textbf{SoA}, ang. \textit{Structure of Arrays}).
+
+Współczynniki obrotu, dla wszystkich algorytmów, poza jednym radix2, liczone są raz, a ich tablica przekazywana jest
+do funkcji transformaty jako argument. Tablica występuje w dwóch formach
+używanych zamiennie przez różne warianty. Do wylicznia wspólczynnika obrotu przyjęto konwencję z ujemnym wykładnikiem,
+przedstawioną na \cref{eq:twiddle}, stosowaną konsekwentnie we wszystkich implementacjach.
+
+Wszystkie warianty, poza algorytmem Stockhama, działają w miejscu, co oznacza, że wynik transformaty zapisywany jest w tym
+samym buforze, w którym znajdowały się dane wejściowe ~\cite{ZielinskiDSP}. Nie potrzebna jest alokacja nowej pamieci na wyniki posrednie. Stosowane algorytmy wymagają
+wstępnej permutacji danych — odwrócenia bitowego dla radiksu 2 i split-radix
+oraz odwrócenia cyfr w systemie czwórkowym dla radiksu 4. Rozmiar transformaty
+jest zawsze potęgą dwójki; warianty radix-4 dodatkowo wymagają potęgi czwórki.
+
+Dodatkowo algorytmy Radix2 i Radix 4 można implementować na dwa możliwe sposoby, różniące się tym, co
+podlega podziałowi. Warianty te stosują \textbf{decymację w dziedzinie czasu}
+(DIT, ang. \textit{Decimation in Time}) lub \textbf{decymację w dziedzinie
+częstotliwości} (DIF, ang. \textit{Decimation in Frequency})~\cite{ZielinskiDSP}.
+
+W schemacie DIT dzieli się próbki sygnału na parzyste
+i nieparzyste, co wymaga wstępnego przestawienia próbek.Wynik w takim przypadku otrzymuje się w porządku naturalnym.
+W schemacie DIF przestawieniu podlegają zamiast tego prążki widma - sygnał
+wejściowy pozostaje w porządku naturalnym, a permutacja przenoszona jest na
+wyjście ~\cite{ZielinskiDSP}.
+Wszystkie zaimplementowane warianty radix2, radix4 i split-radix wykorzystują schemat DIT.
+\subsection{Użyte biblioteki}
+Zestaw bibliotek zewnętrznych jest celowo ubogi, żeby mierzony program pozostał w całości pod kontrolą kompilatora badanego w pracy.
+
+Biblioteka \textbf{pthreads} (\emph{POSIX Threads}), będąca częścią standardu
+POSIX ~\cite{POSIX_Threads}, używana jest do wszystkich wariantów wielowątkowych. Wykorzystano
+z niej tworzenie i przyłączanie wątków oraz barierę \texttt{pthread\_barrier\_t},
+która synchronizuje wątki między kolejnymi etapami transformaty. Implementacje
+wariantów wielowątkowych oparto na wiedzy zaczerpniętej
+z~\cite{POSIX_Threads}.
+
+Biblioteka matematyczna \textbf{libm} dostarcza funkcje \texttt{cosf} i \texttt{sinf}.
+Używana jest przy generowaniu tablicy współczynników obrotu oraz
+wewnątrz pętli obliczeniowych dwóch wariantów algorytmu, co opisano
+w\cref{subsection:WersjeJednowatkowe}.
+
+Biblioteka \textbf{FFTW}~\cite{FFTWPaper} pełni rolę punktu odniesienia.
+Zainstalowana została jako gotowy, skompilowany pakiet dystrybucji Debian
+(\texttt{libfftw3-dev}), a nie zbudowana ze źródeł na potrzeby tej pracy. Nie
+jest więc przedmiotem badania wpływu flag optymalizacji. Warto zaznaczyć, że 
+biblioteka dobiera własną strategię obliczeń w czasie działania \cite{FFTWPaper}.
+W pracy biblioteka posłużyła do oceny poprawności wyników oraz jako wartość
+referencyjna dla parametrów wydajnościowych osiąganych przez dojrzałą
+i sprawdzoną implementację.
+
+Należy wymienić również plik nagłówkowy \texttt{arm\_neon.h}. Udostępnia on funkcje
+i typy zmiennych dla jednostki NEON. Nie jest to
+biblioteka w klasycznym tego słowa znaczeniu, lecz interfejs do instrukcji
+procesora.
+
+\subsection{Badane wersje pojedynczo wątkowe}\label{subsection:WersjeJednowatkowe}
+
+Pierwszym z prezentowanych algorytmóww jest \texttt{radix2-v0} — klasyczny radix-2 DIT w układzie AoS,
+w którym współczynniki obrotu powstają na bieżąco w każdej pętli ~\cite{NumericalRecipesC}. W każdym etapie wyliczana
+jest jedna wartość twiddle factor, a kolejne otrzymuje się przez mnożenie, wykorzystując poprzednia wartość. Rozwiązanie to jest tanie obliczeniowo, ale
+kumuluje błąd zaokrąglenia w kolejnych mnożeniach. Kod źródłowy algorytmu przedstawiono w \cref{lst:v0}
+
+\begin{lstlisting}[language=C,caption={Kompletna implentacja \texttt{radix2-v0}},label=lst:v0]
+static complex_t *Radix2_v0(complex_t *x, uint32_t n, ...){
+    bit_reverse_aos(x, n);
+
+    for (uint32_t step = 2; step <= n; step <<= 1)
+    {
+        uint32_t half = step >> 1;
+        float theta = -2.0f * PI_F / (float)step;
+        complex_t w_step = {cosf(theta), sinf(theta)};
+
+        for (uint32_t i = 0; i < n; i += step)
+        {
+            complex_t w = {1.0f, 0.0f};
+            for (uint32_t j = 0; j < half; j++)
+            {
+                uint32_t top = i + j;
+                uint32_t bot = top + half;
+                complex_t t = complex_mul(x[bot], w.real, w.imag);
+
+                x[bot].real = x[top].real - t.real;
+                x[bot].imag = x[top].imag - t.imag;
+                x[top].real += t.real;
+                x[top].imag += t.imag;
+
+                w = complex_mul(w, w_step.real, w_step.imag);
+            }
+        }
+    }
+    return x;
+}
+\end{lstlisting}
+
+Wariant \texttt{radix2-v1} różni się od poprzedniego wyłącznie źródłem
+współczynników: pobiera je z przygotowanej wcześniej tablicy, zamiast wyliczać
+je na bieżąco. Algorytm, układ danych i struktura pętli pozostają
+identyczne. Na \cref{lst:radix2v1} przedstawiono istotną modyfikację względem
+\texttt{v0}, która poprawia dokładność numeryczną.
+
+\begin{lstlisting}[language=C,caption={Modyfikacja \texttt{radix2-v1}, względem \texttt{v0}.Odczyt współczynnika obrotu z tablicy },label=lst:radix2v1]
+const complex_t *w = tw->st_aos + tw_stage_offset(half);
+/* wspolczynnik pobierany bezposrednio z tablicy, modyfikacja w stosunku do poniżego wyliczenia z v0/
+complex_t t = complex_mul(x[bot], w[j].real, w[j].imag);
+\end{lstlisting}
+
+Wariant \texttt{radix2-v2-soa} przenosi ten sam algorytm do układu SoA
+i oznacza wszystkie wskaźniki modyfikatorem \texttt{restrict}. Obie
+zmiany służą temu samemu celowi — usunięciu przeszkód, które blokują
+automatyczną wektoryzację~\cite{ArmNeonGuide}. Rozdzielenie części rzeczywistej i urojonej
+daje w wewnętrznej pętli ciągły dostęp do pamięci, a modyfikator \texttt{restrict} informuję kompilator, że ten wskaźnik będzie jedynym odniesiniem do danej komórki pamięci \cite{ArmNeonGuide}. 
+Obie zmiany, względem wersji  \texttt{radix2-v1} widoczne są na \cref{lst:soa}.
+
+\begin{lstlisting}[language=C,caption={Rozdzielone tablice i modyfikator \texttt{restrict}, zastosowany w wariancie \texttt{radix2-v2-soa}},label=lst:soa]
+float *restrict re = x->re;
+float *restrict im = x->im;
+
+const float *restrict wr = tw->st_re + tw_stage_offset(half);
+const float *restrict wi = tw->st_im + tw_stage_offset(half);
+
+float *restrict top_re = re + i;
+float *restrict bot_re = re + i + half;
+/* analogicznie top_im, bot_im */
+\end{lstlisting}
+
+Wariant \texttt{radix2-v3-neon} rozszerza poprzedni o jawne funkcje wewnętrzne
+NEON~\cite{ArmNeonGuide}.Pojedyncza pętla algorytmu przetwarza cztery próbki naraz, a mnożenie
+zespolone realizowane jest instrukcjami złożonego mnożenia z akumulacją,
+widocznymi na \cref{lst:neon}~\cite{ArmNeonGuide}. Pozostała, niepełna część
+pętli obsługiwana jest kodem skalarnym. Wariant dodano, aby
+sprawdzić, o ile ręczne użycie niskopoziomowych instrukcji SIMD poprawia
+mierzone metryki względem wersji polegającej na automatycznej wektoryzacji
+włączanej flagami kompilatora.
+\begin{lstlisting}[language=C,caption={Zastosowanie instrukcji SIMD w wariancie \texttt{radix2-v3-neon}},label=lst:neon]
+float32x4_t br  = vld1q_f32(bot_re + j);
+float32x4_t bi  = vld1q_f32(bot_im + j);
+float32x4_t vwr = vld1q_f32(wr + j);
+float32x4_t vwi = vld1q_f32(wi + j);
+
+float32x4_t tr = vmulq_f32(br, vwr);
+tr = vfmsq_f32(tr, bi, vwi);          /* tr = br*wr - bi*wi */
+float32x4_t ti = vmulq_f32(br, vwi);
+ti = vfmaq_f32(ti, bi, vwr);          /* ti = br*wi + bi*wr */
+\end{lstlisting}
+
+Warianty \texttt{radix4-v0} i \texttt{radix4-v1} różnią się, podobnie jak te same wersje dla radix2,
+źródłem współczynników obrotu. Teoretyczny opis algorytmu radix4 oraz idee jego
+implementacji opisano w ~\cite{takahashi2019fast}. Wariant
+\texttt{radix4-v0} wymaga jednak wyliczenia dużej ilości współczynników trygonometrycznych i innej permutacji bitowej niż radix2. 
+Kod źródłowy pojedyńczego  przebiegu algorytmu przedstawiono w \cref{lst:radix4v0}.
+\begin{lstlisting}[language=C,caption={Przebieg algorytmu w  \texttt{radix4-v0}},label=lst:radix4v0]
+for (uint32_t step = 4; step <= n; step <<= 2) {
+        uint32_t quarter = step >> 2;
+        float    theta   = -2.0f * PI_F / (float)step;
+
+        for (uint32_t i = 0; i < n; i += step) {
+            for (uint32_t j = 0; j < quarter; j++) {
+                float w1_r = cosf(theta * (float)j);
+                float w1_i = sinf(theta * (float)j);
+                float w2_r = cosf(theta * 2.0f * (float)j);
+                float w2_i = sinf(theta * 2.0f * (float)j);
+                float w3_r = cosf(theta * 3.0f * (float)j);
+                float w3_i = sinf(theta * 3.0f * (float)j);
+
+                uint32_t i0 = i + j;
+                uint32_t i1 = i0 + quarter;
+                uint32_t i2 = i1 + quarter;
+                uint32_t i3 = i2 + quarter;
+
+                complex_t x0 = x[i0];
+                complex_t t1 = complex_mul(x[i1], w1_r, w1_i);
+                complex_t t2 = complex_mul(x[i2], w2_r, w2_i);
+                complex_t t3 = complex_mul(x[i3], w3_r, w3_i);
+
+                float a_r = x0.real + t2.real, a_i = x0.imag + t2.imag;
+                float b_r = x0.real - t2.real, b_i = x0.imag - t2.imag;
+                float c_r = t1.real + t3.real, c_i = t1.imag + t3.imag;
+                float d_r = t1.real - t3.real, d_i = t1.imag - t3.imag;
+
+                x[i0].real = a_r + c_r;  x[i0].imag = a_i + c_i;
+                x[i1].real = b_r + d_i;  x[i1].imag = b_i - d_r;
+                x[i2].real = a_r - c_r;  x[i2].imag = a_i - c_i;
+                x[i3].real = b_r - d_i;  x[i3].imag = b_i + d_r;
+            }
+\end{lstlisting}
+
+Wariant \texttt{radix4-v1} stosuje ten sam zabieg co \texttt{radix2-v1} —
+współczynniki obrotu pobierane są z przygotowanej wcześniej tablicy, zamiast
+wyliczane na bieżąco, przy identycznej strukturze motylka.
+
+Wersje algorytmu radix4 uwzględniono w pracy, ponieważ przy tej samej liczbie próbek
+wymagają mniej etapów obliczeń i krótszych pętli niż radix2, co powinno
+przekładać się na mniejszą liczbę wykonywanych instrukcji; wymagają jednak
+innego rozkładu danych wejściowych, co może sprawić, że niekoniecznie będą one szybsze, pomimo mniejszej liczby instrukcji.
+
+Wariant \texttt{splitradix} łączy podział radix2 i radix4, dzięki czemu
+wykonuje mniej mnożeń zespolonych niż każdy z nich osobno~\cite{takahashi2019fast}. W pojedynczym przebiegu algorytmu
+dwie z czterech próbek są korygowane współczynnikami obrotu przed
+połączeniem, a pozostałe dwie łączone są bezpośrednio~\cite{takahashi2019fast}.
+Teoretyczny opis algorytmu oraz wyprowadzenie tej struktury przedstawiono
+w~\cite{takahashi2019fast}. Fragment etapu L-kształtnego przedstawiono
+w \cref{lst:splitradix}.
+
+\begin{lstlisting}[language=C,caption={Fragment etapu L-kształtnego wariantu \texttt{splitradix}},label=lst:splitradix]
+                    float t1_r = h.real * w1_r - h.imag * w1_i;
+                    float t1_i = h.real * w1_i + h.imag * w1_r;
+                    float t3_r = iq.real * w3_r - iq.imag * w3_i;
+                    float t3_i = iq.real * w3_i + iq.imag * w3_r;
+
+                    float a_r = t1_r + t3_r;
+                    float a_i = t1_i + t3_i;
+                    float b_r = t1_i - t3_i;
+                    float b_i = -(t1_r - t3_r);
+
+                    x[ig].real = g.real + a_r;
+                    x[ig].imag = g.imag + a_i;
+                    x[ih].real = g.real - a_r;
+                    x[ih].imag = g.imag - a_i;
+                    x[ig4].real = g4.real + b_r;
+                    x[ig4].imag = g4.imag + b_i;
+                    x[ii].real = g4.real - b_r;
+                    x[ii].imag = g4.imag - b_i;
+\end{lstlisting}
+
+Wariant \texttt{splitradix} uwzględniono w pracy, ponieważ mniejsza liczba
+mnożeń zespolonych powinna przekładać się na mniejszą liczbę wykonywanych
+instrukcji. Wymaga on jednak bardziej nieregularnej struktury pętli niż
+radix2 i radix4 i trudniejszego dostępu do pamięci.
+
+Wariant \texttt{stockham} ma inne założenie niż prezentowane algorytmy z rodziny Radix 2 i 4. Działa on bowiem z dwoma tablicami
+zamiast z jedną, co nazywane jest działaniem  (ang. \textit{out-of-place}).
+Zamiast przestawiać elementy tablicy wejścia, w każdym etapie zapisuje wynik do
+bufora ~\cite{takahashi2019fast}. Dzięki temu nie jest potrzebna wstępna
+permutacja bitowa, a wynik końcowy otrzymywany jest w porządku naturalnym.
+Fragment odpowiedzialny za zamianę buforów przedstawiono w \cref{lst:stockham}.
+Teoretyczny opis algorytmu dostępny jest w pozycji ~\cite{takahashi2019fast}.
+\begin{lstlisting}[language=C,caption={Zapis do drugiego bufora  w wariancie \texttt{stockham}},label=lst:stockham]
+const complex_t *a = src + j * m;
+const complex_t *b = src + j * m + l * m;
+complex_t *o0 = dst + 2 * j * m;
+complex_t *o1 = dst + 2 * j * m + m;
+
+o0[k].real = ar + br;
+o1[k].real = dr * wr - di * wi;
+
+complex_t *t = src; src = dst; dst = t;  
+\end{lstlisting}
+
+Wariant \texttt{stockham} uwzględniono w pracy, ponieważ eliminuje
+sekwencyjną fazę permutacji bitowej; wymaga jednak dwukrotnie większego
+zapotrzebowania na pamięć niż warianty działające w miejscu.
+\subsection{Badane wersje wielowątkowe}
+
+Wszystkie warianty równoległe zbudowano na tym samym szkielecie. Wątki tworzone
+są raz, przed pierwszym etapem, i przyłączane dopiero po ostatnim. Wewnątrz
+funkcji roboczej znajduje się pętla po etapach, a synchronizacja odbywa się
+przez barierę wywoływaną na jej końcu. Jest to niezbędne, ponieważ każdy etap
+FFT korzysta z wyników etapu poprzedniego. Rozwiązanie takie eliminuje koszt
+wielokrotnego tworzenia wątków, ale pozostawia koszt bariery — jedną na etap,
+czyli $\log_2 N$ synchronizacji na całą transformatę.
+
+We wszystkich wariantach równoległych permutacja wstępna pozostaje sekwencyjna.
+Jest to część nierównoleglizowalna, która wyznacza teoretyczny sufit
+przyspieszenia. Liczbę wątków ograniczono do 64 oraz do liczby motylków
+w etapie, żeby uniknąć sytuacji, w której wątek bez przydzielonej pracy jedynie
+obciąża barierę.
+
+Wariant \texttt{radix2-par} dzieli pracę po blokach etapu: wątek o numerze $t$
+obsługuje bloki o indeksach $t$, $t + p$, $t + 2p$ i tak dalej, gdzie $p$ oznacza
+liczbę wątków. Podział jest naturalny i nie wymaga żadnych obliczeń
+indeksowych, ale ma poważną wadę. Liczba bloków maleje dwukrotnie w każdym
+kolejnym etapie i w ostatnich etapach spada poniżej liczby wątków. W etapie
+końcowym istnieje tylko jeden blok, więc pracuje wyłącznie jeden wątek, a
+pozostałe czekają na barierze.
+
+Wariant \texttt{radix2-par-v2} usuwa tę wadę. Zamiast dzielić bloki, traktuje
+wszystkie motylki etapu jako jednowymiarową przestrzeń o stałym rozmiarze $N/2$
+i dzieli ją na równe przedziały. Indeksy próbek odtwarzane są z numeru motylka
+operacjami przesunięcia bitowego i maskowania, co jest możliwe dzięki temu, że
+długości etapów są potęgami dwójki. Podział jest więc wyliczany raz i pozostaje
+zrównoważony we wszystkich etapach. Para \texttt{radix2-par}–\texttt{radix2-par-v2}
+pokazuje, że przy niezmienionym algorytmie i tej samej liczbie operacji sam
+sposób przydziału pracy decyduje o skalowalności.
+
+Wariant \texttt{radix4-par} przenosi rozwiązanie z \texttt{radix2-par-v2} na
+schemat radix-4. Przestrzeń motylków ma tu rozmiar $N/4$, a każdy motylek
+przetwarza cztery próbki i wymaga trzech współczynników obrotu pobieranych
+z pełnej tablicy. Wariant pozwala sprawdzić, czy mniejsza liczba etapów —
+a więc i mniejsza liczba barier — rekompensuje większy koszt pojedynczej
+iteracji.
 \section{Opis plattformy sprzetowej}\label{}
 %Nie za dlugi, moze jakis obrazek z creativecommons, ale nie wiem jak go sie cytuje
 \subsection{Jednostka Neon}\label{subsection:jednostkaNeon}
 \section{Założenia projektowe i architektura aplikacji}
+
+\subsection{Stosowane narzedzia pomiarowe}
+%Jakis perf, itp itd czego uzywam
 \subsection{Weryfikacja poprawności obliczeń z biblioteka zewnetrzna}
-\section{Użyte biblioteki i narzędzia programistyczne}
 %Tutaj trzeba napisac co optymalizujemy, w jaki sposob i jakie sa z tym problemy    
 
 %Tu trzeba napisac o pomiarach czasu, bibliotekach do patrzenia na to, cross kompilacji, sprawdzaniu uzyciu stosu, wykorzystania stosu, etc
