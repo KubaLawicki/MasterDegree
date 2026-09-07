@@ -12,35 +12,3 @@
 % W celu realizacji postawionych założeń zostaną przeprowadzone badania implementujące sieci SOM w różnych kombinacjach funkcji sąsiedztwa, topologii sieci oraz sposobu określania wartości promienia sąsiedztwa. Sieci te zostaną poddane uczeniu na trzech zbiorach danych, różniących się między sobą wielkością, liczbą wymiarów oraz złożonością i strukturą klas.
 \section{Zawartość rozdziałów}
 Ogólną strukturę niniejszej pracy można przedstawić w następujący sposób:
-\begin{itemize}
-    
-    \item \textbf{Rozdział 2: Charakterystyka systemów wbudowanych opartych na systemie Linux.}  
-    \\Obejmuje charakterystykę systemów wbudowanych opartych na systemie Linux, z opisem podstawowych pojęc jak jadro systemu, menadzer procesow, zarządzanie pamięcią oraz mechanizmy wielozadaniowości. 
-    Opisuje specyfikę zarządzania zasobami sprzętowymi przez jądro systemu. 
-    Szczególną uwagę poświęcono mechanizmom wielozadaniowości, szeregowania wątków oraz zarządzania pamięcią wirtualną,
-    które mają kluczowy wpływ na wydajność aplikacji. 
-    \item \textbf{Rozdział 3: Wybrany algorytm przetwarzania danych i techniki optymalizacji kodu.}
-    \\Przedstawia teoretyczne podstawy algorytmu Szybkiej Transformaty Fouriera (FFT) oraz analizę jego złożoności obliczeniowej. 
-    Prezentuje różne implementacje tego algorytmu
-    Omawia proces kompilacji kodu w języku C, nakreslając istotę wyboru kompilatora. 
-    Ponadto przedstawia poziomy optymalizacji oferowane przez kompilator GCC, używany w pracy. 
-    Wyjaśnia zaawansowane techniki programistyczne, takie jak instrukcje wektorowe  oraz optymalizacja pod kątem dostępu dopamięci podręcznej.
-    \item \textbf{Rozdział 4: Projekt i implementacja aplikacji testowej.}  
-    \\Opisuje szczegółowo opracowane oprogramowanie realizujące algorytm Szybkiej Transformaty Fouriera (FFT).
-     Przedstawia alternatywne warianty implementacji kodu: wersję sekwencyjną , wersję zoptymalizowaną pod kątem dostępu do pamięci oraz 
-     wersję wielowątkową wykorzystującą mechanizmy współbieżności.
-    
-    \item \textbf{Rozdział 5: Środowisko badawcze i metodyka pomiarów.}  
-    \\Charakteryzuje wykorzystaną platformę sprzętową oraz konfigurację systemu operacyjnego Linux.
-    Opisuje narzędzia programistyczne, biblioteki oraz frameworki użyte do implementacji i optymalizacji kodu.
-     Definiuje scenariusze testowe, przygotowane konfiguracje procesu kompilacji (zestawy flag optymalizacyjnych)
-      oraz narzędzia i metody użyte do pomiaru czasu wykonania i zużycia zasobów systemowych.
-    
-    \item \textbf{Rozdział 6: Analiza wpływu optymalizacji na wydajność systemu.}  
-    \\Prezentuje wyniki przeprowadzonych badań.
-     Każdy podrozdział zawiera zestawienie i analizę wpływu konkretnych czynników – poziomu optymalizacji kompilatora, zmian w kodzie źródłowym oraz liczby wątków – na ostateczną wydajność aplikacji w systemie wbudowanym.
-    
-    \item \textbf{Rozdział 7: Podsumowanie i wnioski.}  
-    \\Stanowi syntezę uzyskanych wyników oraz ocenę skuteczności badanych metod optymalizacji.
-     Zawiera wnioski końcowe dotyczące relacji między nakładem pracy programisty a automatyczną optymalizacją kompilatora oraz propozycje dalszych kierunków badań.
-\end{itemize}

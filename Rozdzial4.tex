@@ -1,6 +1,130 @@
 \chapter{Projekt systemu testowego i metodyka przeprowadzonych badań}\label{}
 %Tutaj trzeba kilka razy do znudzenia powtorzyc o naszym celu badan
 
+\section{Opis platformy sprzętowej}\label{section:PlatformaSprzetowa}
+
+Platformą sprzętową, na której zrealizowano opisywany system testowy, jest
+Raspberry Pi 4 Model B~\cite{RaspberryPi4Product}.Na płytce znajduje się układ SoC (system na chipie, ang. \textit{System on Chip}) Broadcom BCM2711,
+zawierający cztery rdzenie ARM Cortex-A72 taktowane zegarem do 1,5~GHz~\cite{RaspberryPi4Product}. W celu zapewnienia odpowiednich temperatur dla pomiarów zastosowano również 
+dedykowaną obudowę na płytke z wentylatorami i radiator do rozpraszania ciepła z układu SoC.
+Podstawowe parametry techniczne przedstawiono poniżej:
+\begin{itemize}
+    \item \textbf{SoC:} Broadcom BCM2711~\cite{RaspberryPi4Product}
+    \item \textbf{Rdzenie CPU:} 4× ARM Cortex-A72, architektura ARMv8-A~\cite{ArmCortexA72TRM}
+    \item \textbf{Taktowanie:} 1,5~GHz~\cite{RaspberryPi4Product}
+    \item \textbf{Pamięć podręczna L1:} 48~kB instrukcji (z kontrolą parzystości) + 32~kB danych (z korekcją ECC) na rdzeń~\cite{ArmCortexA72TRM}
+    \item \textbf{Pamięć podręczna L2:} współdzielona, z korekcją ECC~\cite{ArmCortexA72TRM}
+    \item \textbf{Pamięć operacyjna:} 1~GB ~\cite{RaspberryPi4Product}
+    \item \textbf{Jednostka SIMD:} NEON (Advanced SIMD), rejestry 128-bitowe~\cite{ArmNeonGuide}
+\end{itemize}
+
+Wybór tej platformy wynika z jej powszechnej dostępności oraz z faktu, że
+reprezentuje typowy, niedrogi system wbudowany oparty na architekturze
+ARMv8-A~\cite{RaspberryPi4Product}. Rdzeń Cortex-A72 posiada 
+jednostkę zarządzania pamięcią (MMU), co umożliwia uruchomienie pełnego
+systemu Linux, a nie jedynie jego okrojonej wersji przeznaczonej dla
+mikrokontrolerów~\cite{ArmCortexA72TRM}. Płytka posiada dodatkowo wszystkie
+elementy potrzebne do praktycznego korzystania z systemu - kartę microSD
+jako nośnik systemu, złącza sieciowe oraz porty USB.
+
+Uproszczony diagram blokowy rdzenia (z zaznaczoną jednostką SIMD NEON) przedstawiono na \cref{fig:cortex-a72-neon} ~\cite{ArmCortexA72TRM}.
+
+Na rysunku widoczne są cztery identyczne rdzenie, z których każdy zawiera własną jednostkę centralną
+(CPU),jednostkę zmiennoprzecinkową (FPU) oraz pamięci podręczne L1, które występują na rysunku wraz z oznaczeniami mechanizmów ochrony danych (kontrola
+parzystości i korekcja ECC). Poza rdzeniami znajdują się bloki ACP i SCU odpowiadają za spójność danych
+między pamięciami podręcznymi poszczególnych rdzeni oraz dostęp zewnętrznych urządzeń. Jest też do dyspozycji pamięć podręczna L2, współdzielona między rdzenie. 
+Jednostka SoC komunikuję się ze pozostałymi układami peryferyjnymi na płytce za pomocną 128-bitowej magistrali. Jednostka NEON jest sprzętowym blokiem SIMD wbudowanym
+w każdy rdzeń; jej działanie opisano szczegółowo
+w~\cref{subsection:jednostkaNeon}.
+\begin{figure}[H]
+\centering
+\definecolor{userblue}{RGB}{225, 243, 254}
+\definecolor{userbluedark}{RGB}{43, 92, 138}
+\definecolor{userorange}{RGB}{237, 137, 54}
+\definecolor{usergray}{RGB}{203, 213, 224}
+\definecolor{userslate}{RGB}{45, 55, 72}
+
+\begin{tikzpicture}[
+    font=\footnotesize,
+    blok/.style={draw=userslate, thick, rounded corners=2pt},
+    txt/.style={align=center, text=userslate}
+]
+
+% ===================== RAMKA ZEWNETRZNA =====================
+\draw[draw=userslate, very thick, rounded corners=4pt] (0,0.9) rectangle (13,11.4);
+\node[font=\small\bfseries, text=userslate] at (6.5,10.95) {Arm Cortex-A72};
+
+% ===================== PASEK DEBUGOWANIA =====================
+\draw[blok, fill=usergray!60] (0.4,9.8) rectangle (12.6,10.45);
+\node[txt] at (6.5,10.125) {Arm CoreSight --- debugowanie i śledzenie wielordzeniowe};
+
+% ===================== STOS RDZENI (4 sztuki) =====================
+% karty rysowane od najdalszej do najblizszej
+\draw[blok, fill=usergray!35] (1.75,3.85) rectangle (12.55,8.05);
+\draw[blok, fill=usergray!50] (1.30,4.30) rectangle (12.10,8.50);
+\draw[blok, fill=usergray!70] (0.85,4.75) rectangle (11.65,8.95);
+
+\node[font=\scriptsize, text=userslate] at (12.32,7.82) {4};
+\node[font=\scriptsize, text=userslate] at (11.87,8.27) {3};
+\node[font=\scriptsize, text=userslate] at (11.42,8.72) {2};
+
+% --- rdzen widoczny w calosci ---
+\draw[blok, fill=userblue] (0.4,5.2) rectangle (11.2,9.5);
+\node[anchor=north east, font=\small\bfseries, text=userslate] at (11.0,9.4) {Rdzeń 1};
+
+% CPU
+\draw[blok, fill=userbluedark] (0.75,7.35) rectangle (5.60,8.95);
+\node[txt, text=white, font=\small\bfseries] at (3.175,8.15) {Armv8-A CPU\\32/64 bitowy};
+
+% NEON (wyroznienie)
+\draw[blok, fill=userorange] (5.95,8.25) rectangle (10.85,8.95);
+\node[txt, font=\small\bfseries] at (8.40,8.60) {NEON --- jednostka SIMD};
+
+% FPU
+\draw[blok, fill=white] (5.95,7.35) rectangle (10.85,8.05);
+\node[txt] at (8.40,7.70) {Jednostka zmiennoprzecinkowa};
+
+% Cache L1
+\draw[blok, fill=white] (0.75,5.55) rectangle (5.60,7.00);
+\node[txt] at (3.175,6.275) {48~kB I-cache\\z~kontrolą parzystości};
+
+\draw[blok, fill=white] (5.95,5.55) rectangle (10.85,7.00);
+\node[txt] at (8.40,6.275) {32~kB D-cache\\z~korekcją ECC};
+
+% ===================== ACP / SCU / L2 =====================
+\draw[blok, fill=usergray!60] (0.4,2.7) rectangle (1.9,3.6);
+\node[txt, font=\small\bfseries] at (1.15,3.15) {ACP};
+
+\draw[blok, fill=usergray!60] (2.1,2.7) rectangle (3.6,3.6);
+\node[txt, font=\small\bfseries] at (2.85,3.15) {SCU};
+
+\draw[blok, fill=userblue] (3.8,2.7) rectangle (12.6,3.6);
+\node[txt, font=\small\bfseries] at (8.2,3.15) {Współdzielona pamięć podręczna L2\\z~korekcją ECC (512~kB -- 4~MB)};
+
+% ===================== MAGISTRALA =====================
+\draw[blok, fill=usergray!60] (0.4,1.4) rectangle (12.6,2.3);
+\node[txt] at (6.5,1.85) {128-bitowa magistrala AMBA~4 ACE lub AMBA~5 CHI};
+
+\end{tikzpicture}
+\caption{Uproszczony schemat rdzenia Cortex-A72 z zaznaczoną jednostką NEON. Opracowanie własne na podstawie \cite{ArmCortexA72TRM}. }
+\label{fig:cortex-a72-neon}
+\end{figure}
+
+
+\subsection{Jednostka NEON}\label{subsection:jednostkaNeon}
+
+NEON to sprzętowa jednostka realizująca rozszerzenie SIMD (\emph{Single
+Instruction, Multiple Data} - pojedyncza instrukcja, wiele danych), dostępna
+w rdzeniach ARM, w tym w Cortex-A72~\cite{ArmNeonGuide}. Przetwarzanie SIMD polega na
+wykonywaniu tej samej operację jednocześnie na kilku zmiennych naraz, zamiast przetwarzać je pojedynczo w kolejnych cyklach.
+Jednostka ta  operuje na dedykowanych rejestrach 128-bitowych, mieszczących w jednej
+instrukcji do szesnastu liczb 8-bitowych, ośmiu 16-bitowych, czterech
+32-bitowych lub dwóch 64-bitowych. Przetwarzanie jest możliwe zarówno na typach całkowitych, jak
+i zmiennoprzecinkowych~\cite{ArmNeonGuide}.
+
+W prowadzonych badaniach jednostka NEON używana była zarówno samoczynnie przez kompilator, poprzez
+automatyczną wektoryzację włączaną flagami kompilatora, jak i świadomie przez użycie funkcji w \texttt{radix2-v3-neon}, opisanym w~\cref{subsection:WersjeJednowatkowe}.
+
 \section{Zaimplementowane warianty algorytmu FFT}\label{section:WariantyFFTUzyteWPracy}
 
 Badania przeprowadzono na 11 implementacjach FFT. Proponowany zestaw opisano w \cref{tab:warianty-fft}. Należy przy tym zaznaczyć,że badanie nie miało być przeglądem wszystkich
@@ -13,22 +137,22 @@ w kodzie.
   \centering
   \caption{Zestawienie zaimplementowanych wariantów FFT}
   \label{tab:warianty-fft}
-  \begin{tabularx}{\textwidth}{l l l X}
+  \begin{tabularx}{\textwidth}{l l X}
     \toprule
-    Wariant & Schemat & Układ & Cecha wyróżniająca \\
+    Wariant & Algorytm & Cecha wyróżniająca \\
     \midrule
-    \texttt{radix2-v0}      & radix-2      & AoS & wyznaczanie współczynników obrotu na bieżaco \\
-    \texttt{radix2-v1}      & radix-2      & AoS & współczynniki obrotu z tablicy \\
-    \texttt{radix2-v2-soa}  & radix-2      & SoA & \texttt{restrict}, układ danych pod wektoryzację \\
-    \texttt{radix2-v3-neon} & radix-2      & SoA & jawne funkcje wewnętrzne NEON \\
-    \texttt{radix4-v0}   & radix-4      & AoS & współczynniki obrotu liczone w pętli \\
-    \texttt{radix4-v1}         & radix-4      & AoS & owspółczynniki obrotu z tablicy \\
-    \texttt{splitradix}     & split-radix  & AoS & mieszany podział radix-2/radix-4, niestandardowy dostep do pamieci  \\
-    \texttt{stockham}       & Stockham     & AoS & kopiowanie tablicy, bez permutacji wstępnej \\
+    \texttt{radix2-v0}      & radix-2       & wyznaczanie współczynników obrotu na bieżaco \\
+    \texttt{radix2-v1}      & radix-2       & współczynniki obrotu z tablicy \\
+    \texttt{radix2-v2-soa}  & radix-2       & \texttt{restrict}, układ danych SoA \\
+    \texttt{radix2-v3-neon} & radix-2      & jawne funkcje wewnętrzne NEON \\
+    \texttt{radix4-v0}   & radix-4       & współczynniki obrotu liczone w pętli \\
+    \texttt{radix4-v1}         & radix-4       & współczynniki obrotu z tablicy \\
+    \texttt{splitradix}     & split-radix   & mieszany podział radix-2/radix-4, niestandardowy dostep do pamieci  \\
+    \texttt{stockham}       & Stockham      & kopiowanie tablicy, bez permutacji wstępnej \\
     \midrule
-    \texttt{radix2-par}     & radix-2      & AoS & podział po blokach etapu \\
-    \texttt{radix2-par-v2}  & radix-2      & AoS & równomierny podział pracy w etapie\\
-    \texttt{radix4-par}     & radix-4      & AoS & równomierny podział pracy w etapie \\
+    \texttt{radix2-par}     & radix-2      & podział po blokach etapu \\
+    \texttt{radix2-par-v2}  & radix-2      & równomierny podział pracy w etapie\\
+    \texttt{radix4-par}     & radix-4       & równomierny podział pracy w etapie \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -312,54 +436,451 @@ sekwencyjną fazę permutacji bitowej; wymaga jednak dwukrotnie większego
 zapotrzebowania na pamięć niż warianty działające w miejscu.
 \subsection{Badane wersje wielowątkowe}
 
-Wszystkie warianty równoległe zbudowano na tym samym szkielecie. Wątki tworzone
-są raz, przed pierwszym etapem, i przyłączane dopiero po ostatnim. Wewnątrz
-funkcji roboczej znajduje się pętla po etapach, a synchronizacja odbywa się
-przez barierę wywoływaną na jej końcu. Jest to niezbędne, ponieważ każdy etap
-FFT korzysta z wyników etapu poprzedniego. Rozwiązanie takie eliminuje koszt
-wielokrotnego tworzenia wątków, ale pozostawia koszt bariery — jedną na etap,
-czyli $\log_2 N$ synchronizacji na całą transformatę.
-
-We wszystkich wariantach równoległych permutacja wstępna pozostaje sekwencyjna.
-Jest to część nierównoleglizowalna, która wyznacza teoretyczny sufit
-przyspieszenia. Liczbę wątków ograniczono do 64 oraz do liczby motylków
-w etapie, żeby uniknąć sytuacji, w której wątek bez przydzielonej pracy jedynie
-obciąża barierę.
+Wszystkie warianty zaimplementowano na podobnych założeniach. Wątki są
+tworzone raz, przed pierwszym etapem, i przyłączane dopiero po ostatnim,
+a synchronizację między etapami zapewnia bariera wywoływana na końcu każdego
+z nich — jest to niezbędne, ponieważ kolejny etap FFT korzysta z wyników
+poprzedniego~\cite{POSIX_Threads}. Permutacja wstępna pozostaje we wszystkich
+wariantach sekwencyjna, co wprowadza ograniczenie minimalnego czasu przetwarzania.
 
 Wariant \texttt{radix2-par} dzieli pracę po blokach etapu: wątek o numerze $t$
-obsługuje bloki o indeksach $t$, $t + p$, $t + 2p$ i tak dalej, gdzie $p$ oznacza
-liczbę wątków. Podział jest naturalny i nie wymaga żadnych obliczeń
-indeksowych, ale ma poważną wadę. Liczba bloków maleje dwukrotnie w każdym
-kolejnym etapie i w ostatnich etapach spada poniżej liczby wątków. W etapie
-końcowym istnieje tylko jeden blok, więc pracuje wyłącznie jeden wątek, a
-pozostałe czekają na barierze.
+obsługuje bloki o indeksach $t$, $t + p$, $t + 2p$ i tak dalej, gdzie $p$
+oznacza liczbę wątków. Liczba bloków maleje dwukrotnie w każdym kolejnym
+etapie, więc w etapach końcowych część wątków nie ma przydzielonej pracy —
+w ostatnim etapie istnieje tylko jeden blok, więc obliczenia wykonuje
+wyłącznie jeden wątek. Kod źródłowy funkcji wątku
+przedstawiono w \cref{lst:radix2par-worker}.
 
-Wariant \texttt{radix2-par-v2} usuwa tę wadę. Zamiast dzielić bloki, traktuje
-wszystkie motylki etapu jako jednowymiarową przestrzeń o stałym rozmiarze $N/2$
-i dzieli ją na równe przedziały. Indeksy próbek odtwarzane są z numeru motylka
-operacjami przesunięcia bitowego i maskowania, co jest możliwe dzięki temu, że
-długości etapów są potęgami dwójki. Podział jest więc wyliczany raz i pozostaje
-zrównoważony we wszystkich etapach. Para \texttt{radix2-par}–\texttt{radix2-par-v2}
-pokazuje, że przy niezmienionym algorytmie i tej samej liczbie operacji sam
-sposób przydziału pracy decyduje o skalowalności.
+\begin{lstlisting}[language=C,caption={Funkcja wątku w wariancie \texttt{radix2-par}},label=lst:radix2par-worker]
+static void *worker(void *arg)
+{
+    thread_data_t *d = (thread_data_t *)arg;
+    uint32_t n = d->n;
+
+    for (uint32_t step = 2; step <= n; step <<= 1) {
+        uint32_t half = step >> 1;
+        const complex_t *w = d->tw->st_aos + tw_stage_offset(half);
+
+        for (uint32_t i = d->thread_id * step; i < n; i += step * d->num_threads) {
+            for (uint32_t j = 0; j < half; j++) {
+                uint32_t  top = i + j;
+                uint32_t  bot = top + half;
+                complex_t t   = complex_mul(d->x[bot], w[j].real, w[j].imag);
+
+                d->x[bot].real = d->x[top].real - t.real;
+                d->x[bot].imag = d->x[top].imag - t.imag;
+                d->x[top].real += t.real;
+                d->x[top].imag += t.imag;
+            }
+        }
+        pthread_barrier_wait(d->barrier);
+    }
+    return NULL;
+}
+\end{lstlisting}
+
+Synchronizacja między wątkami opiera się na barierze utworzonej raz, przed
+pierwszym etapem, oraz zniszczonej po przyłączeniu wszystkich wątków. Fragment
+odpowiedzialny za administracje wątkami przedstawiono w \cref{lst:radix2par-barrier}.
+
+\begin{lstlisting}[language=C,caption={Administracja wątków w wariancie \texttt{radix2-par}},label=lst:radix2par-barrier]
+pthread_barrier_init(&barrier, NULL, nthreads);
+for (uint32_t i = 0; i < nthreads; i++) {
+    data[i] = (thread_data_t){ x, tw, n, i, nthreads, &barrier };
+    pthread_create(&threads[i], NULL, worker, &data[i]);
+}
+for (uint32_t i = 0; i < nthreads; i++)
+    pthread_join(threads[i], NULL);
+pthread_barrier_destroy(&barrier);
+\end{lstlisting}
+
+Wariant \texttt{radix2-par-v2} ma inne podejście do podziału pracy między wątki.
+Zamiast dzielić dane wejściowe na bloki, wariant \texttt{radix2-par-v2}
+traktuje wszystkie operacje wykonywane w danym etapie jako jeden ciągły ciąg
+o stałej długości $N/2$ i dzieli go na równe części, po jednej dla każdego
+wątku. Indeksy próbek odtwarzane są z numeru elementu tego ciągu operacjami przesunięcia
+bitowego i maskowania, co jest możliwe dzięki temu, że długości etapów są
+potęgami dwójki. Podział jest więc wyliczany raz i pozostaje zrównoważony we
+wszystkich etapach. Zmiana podziału pracy między wątki została zaczerpnieta z sposobu implemetacji fft na procesorach graficznych, co zostało zaprezentowane w ~\cite{govindaraju2008high}.
+Zmianę względem \texttt{radix2-par} przedstawiono
+w \cref{lst:radix2parv2}.
+
+\begin{lstlisting}[language=C,caption={Podział płaskiej przestrzeni motylków i odtworzenie indeksów w wariancie \texttt{radix2-par-v2} — modyfikacja względem \texttt{radix2-par}},label=lst:radix2parv2]
+static void range_of(uint32_t total, uint32_t id, uint32_t nthreads,
+                     uint32_t *first, uint32_t *last)
+{
+    uint32_t base = total / nthreads;
+    uint32_t rest = total % nthreads;
+    *first = id * base + (id < rest ? id : rest);
+    *last  = *first + base + (id < rest ? 1u : 0u);
+}
+
+/* odtworzenie indeksow z numeru motylka b, zamiast petli po blokach */
+uint32_t  j   = b & mask;
+uint32_t  top = ((b >> log_half) << (log_half + 1)) + j;
+uint32_t  bot = top + half;
+\end{lstlisting}
+
+Algorytmy \texttt{radix2-par}–\texttt{radix2-par-v2} wybrano do porównania z uwagi na chęc zbadania, czy przy niezmienionym
+algorytmie sam sposób przydziału pracy między watki może decydować o skalowalności.
 
 Wariant \texttt{radix4-par} przenosi rozwiązanie z \texttt{radix2-par-v2} na
-schemat radix-4. Przestrzeń motylków ma tu rozmiar $N/4$, a każdy motylek
+schemat radix-4. Przestrzeń etapów przetwarzania ma rozmiar $N/4$, a każdy z motylków
 przetwarza cztery próbki i wymaga trzech współczynników obrotu pobieranych
-z pełnej tablicy. Wariant pozwala sprawdzić, czy mniejsza liczba etapów —
-a więc i mniejsza liczba barier — rekompensuje większy koszt pojedynczej
-iteracji.
-\section{Opis plattformy sprzetowej}\label{}
-%Nie za dlugi, moze jakis obrazek z creativecommons, ale nie wiem jak go sie cytuje
-\subsection{Jednostka Neon}\label{subsection:jednostkaNeon}
+z pełnej tablicy. Odtworzenie indeksów przedstawiono w \cref{lst:radix4par}.
+
+\begin{lstlisting}[language=C,caption={Odtworzenie indeksów z numeru motylka w wariancie \texttt{radix4-par}},label=lst:radix4par]
+uint32_t j = b & mask;
+uint32_t i = (b >> log_quarter) << (log_quarter + 2);
+
+uint32_t k1 = (j * stride) & msk;
+uint32_t k2 = (2u * j * stride) & msk;
+uint32_t k3 = (3u * j * stride) & msk;
+\end{lstlisting}
+
+Wariant ten wybrano do badań, ponieważ zdecydowano się sprawdzić, czy mniejsza liczba etapów — a więc i mniejsza
+liczba barier — rekompensuje większy koszt pojedynczego przetwarzania.
 \section{Założenia projektowe i architektura aplikacji}
+Użyty system pomiarowy, od strony programowej, składa się z systemu operacyjnego
+Linux oraz programu użytkownika napisanego w języku C, który steruje
+przebiegiem badań. Program ten uruchamia kolejne warianty, mierzy ich czas wykonania
+i zbiera dane liczników sprzętowych. Ponieważ program pomiarowy działa jako
+zwykły proces pod kontrolą systemu operacyjnego, pomiar jest nieuchronnie obciążony szumem
+systemowym. Przez pojęcie szumu rozumie się w tym wypadku przełączaniem kontekstu, obsługą przerwań, aktywnością innych
+procesów czy wywłaszczenia zwiazane z przerwaniami. Z tej zależności wynikła konieczność przeprowadzenia konkretnych działań, których celem było ograniczenie szumu. 
+Działania te opisano w \cref{KonfiguracjaRPIOS}. 
+\\ Należy zwrócić przy tym uwagę, że w realnych zastosowaniach systemu wbudowanego prawdopodobnie nie byłoby
+możliwości przeprowadzenia wszystkich działań opisanych omawianej sekcji.
+Docelowe urządzenie w większości zastosowań pracuje z aktywnymi usługami systemowymi i bez kontroli nad taktowaniem procesora. Na potrzeby
+niniejszej pracy zdecydowano się częściowo wyciszyć system, aby uzyskać
+wyniki powtarzalne i możliwe do jak najbardziej jednoznacznej interpretacji.
+\subsection{Użyty system operacyjny i jego konfiguracja}\label{KonfiguracjaRPIOS}
+W przeprowadzonych badaniach wykorzystano system operacyjny Linux, a dokładnie Raspberry Pi OS, opartego na
+dystrybucji Debian 13, z jądrem Linux w wersji \texttt{6.18.39+rpt-rpi-v8}
+oraz biblioteką standardową \texttt{glibc} w wersji 2.41. 
 
-\subsection{Stosowane narzedzia pomiarowe}
-%Jakis perf, itp itd czego uzywam
-\subsection{Weryfikacja poprawności obliczeń z biblioteka zewnetrzna}
-%Tutaj trzeba napisac co optymalizujemy, w jaki sposob i jakie sa z tym problemy    
+Do kompilacji przygotowanych  wariantów użyto dwóch kompilatorów:
+\begin{itemize}
+    \item \textbf{GCC} w wersji 14.2.0 (pakiet dystrybucji Debian),
+    \item \textbf{Clang} w wersji 19.1.7 (pakiet dystrybucji Debian),
+\end{itemize}
+Obie wersje kompilatorów pochodzą z oficjalnych repozytoriów pakietów Debiana,
+co jest standardową praktyką, ponieważ zapewnia spójność z resztą
+oprogramowania systemowego i powtarzalność środowiska badawczego.
 
-%Tu trzeba napisac o pomiarach czasu, bibliotekach do patrzenia na to, cross kompilacji, sprawdzaniu uzyciu stosu, wykorzystania stosu, etc
-% Mozna cos wspominiec o deasemblacji i porownywaniu kodow asemblera
+Przed przystąpieniem do pomiarów podjęto szereg działań mających na celu ograniczenie
+zmienność wyników, niewynikających z stosowanych programów lub konfiguracji procesu kompilacji.
+Przed pomiarami wykonano następujące działania:
+\begin{itemize}
+    \item zasilanie zgodne ze specyfikacją i aktywne chłodzenie, aby uniknąć
+    obniżenia zegara i throttlingu termicznego;
+    \item instalacja Raspberry Pi OS Lite 64-bit bez środowiska graficznego -
+    obowiązkowe wsparcie NEON i mniej procesów w tle;
+    \item kompilacja bezpośrednio na platformie docelowej, bez kompilacji
+    krzyżowej;
+    \item ustawienie stałej częstotliwości taktowania procesora
+    (\emph{performance});
+    \item kontrola throttlingu i temperatury rdzenia przed każdą serią
+    i w jej trakcie, z odrzucaniem pomiarów wykonanych w stanie throttlingu;
+    \item wyłączenie zbędnych usług systemowych i zadań cyklicznych, w tym
+    łączności bezprzewodowej;
+    \item przypięcie procesu pomiarowego do wybranych rdzeni procesora
+    z podniesionym priorytetem szeregowania.
+\end{itemize}
+Środowisko weryfikowano również przed każdą serią skryptem sprawdzającym parametry środowiska. Dane te były zapisywane do plików logujących.
+%Jakis perf, itp itd czego uzywam %Tu trzeba napisac o pomiarach czasu jaki to jest czas, sprawdzaniu uzyciu stosu, wykorzystania stosu, etc
 
+\subsection{Architektura programu testowego}
+Program testowy składa się z trzech elementów: zaimplementowanego algorytmu,
+programu realizujacego pomiar oraz skryptu powłoki, który ma za zadanie zaautomatyzować przeprowadzanie wielu pomiarów w powtarzalnych warunkach.
+Do powiazania wdrożonego algorytmu z programem pomiarowym wprowadzono kilka funkcji pomocnicznych, służacych na przykład do pomiaru czasu, zapisywaniu danych pomiarowych do plików, etc.
+
+Każdy z zaimplementowanych wariantów FFT używa jedną wspólnej struktury opisowej. Finalny program pomiarowym
+jest kompilowany razem z jednym konkretnym plikiem algorytmu
+i wspólnym kodem infrastruktury, tworząc jeden plik wykonywalny na wariant. Dodatkowo,
+wyłącznie na potrzeby analizy wyników, plik algorytmu jest
+kompilowany osobno do pojedynczego pliku obiektowego, co pozwala wyodrębnić
+asembler samego algorytmu, bez domieszki kodu wspólnego.
+
+Program pomiarowy udostępnia trzy tryby pracy: pomiar czasu, walidację
+numeryczną względem referencyjnej transformaty w podwójnej precyzji oraz
+zapis widma do pliku. W trybie pomiaru dane wejściowe są 
+reinicjalizowane przed każdym powtórzeniem. Rejestrowane są między innymi \textbf{czas ściany} (ang. \textit{wall-clock time}, czyli
+rzeczywisty czas upływający między początkiem a końcem pomiaru),
+\textbf{czas procesora} (ang. \textit{CPU time}, czyli czas, przez który
+procesor faktycznie wykonywał instrukcje programu, z pominięciem oczekiwania
+na zasoby systemowe). Przed zapisaniem wyników pomiaru wykonywane są nierejestorwane przebiegi
+algorytmu (tak zwane przebiegi rozgrzewające), a przy każdym powtórzeniu zapisywana jest temperatura rdzenia
+i szczytowe zużycie pamięci.
+
+Skrypt powłoki służy do generowania pełnej macierzy testów, rozumianej jako
+kombinacje wybranych algorytmów FFT z warunkami testowymi, na które składają
+się kompilator, zestaw flag kompilacji, rozmiar danych wejśiowych oraz liczba
+wątków, stosowana dla wariantów wielowątkowych. Przed faktycznym rozpoczęciem testu skrypt sprawdza konfigurację środowiska,
+opisana w \cref{KonfiguracjaRPIOS}.  
+
+Rzeczywisty przebieg skryptu testowego dzieli się
+na cztery fazy: budowanie, walidację numeryczną (wariant, który nie
+przechodzi, nie jest uwzględniany w wynikach), pomiar czasu w kilku rundach
+oraz pomiar liczników sprzętowych. Pojedyncza runda pomiarowa obejmuje kilka
+powtórzeń pomiaru dla danej kombinacji warunków testowych, a cały pomiar
+czasu składa się z kilku takich rund, dzięki czemu każda komórka macierzy
+testów jest ostatecznie reprezentowana przez kilkadziesiąt powtórzeń.
+Kolejność komórek macierzy jest losowana niezależnie w każdej rundzie, co
+stanowi obronę przed rosnąca temperaturą fizycznego sprzętu.
+
+Wynikiem działania skryptu testowego jest zapis surowych, danych z zapisanych metryk do plików pomiarowych, stanowiących materiał do analizy.
+\\Przedstawiona powyżej procedura pomiarowa została przedstawiona na schemacie \cref{fig:przebieg-pomiaru}.
+
+\begin{figure}[H]
+\centering
+\definecolor{userblue}{RGB}{225, 243, 254}
+\definecolor{userbluedark}{RGB}{43, 92, 138}
+\definecolor{userorange}{RGB}{237, 137, 54}
+\definecolor{usergray}{RGB}{203, 213, 224}
+\definecolor{userslate}{RGB}{45, 55, 72}
+
+\begin{tikzpicture}[
+    font=\footnotesize,
+    blok/.style={draw=userslate, thick, rounded corners=2pt, fill=userblue,
+                 text width=9.5cm, align=center, inner sep=6pt},
+    maly/.style={draw=userslate, thick, rounded corners=2pt, fill=white,
+                 text width=5.2cm, align=center, inner sep=5pt},
+    strzalka/.style={->, thick, draw=userslate},
+    petla/.style={->, thick, draw=userorange}
+]
+
+% ===== macierz testów =====
+\draw[draw=userslate, very thick, rounded corners=4pt, fill=usergray!25]
+    (-5.4,12.4) rectangle (5.4,14.9);
+\node[anchor=north west, font=\small\bfseries, text=userslate] at (-5.2,14.75)
+    {Macierz testów};
+\node[align=center, text=userslate] at (0,13.3)
+    {liczba wariantów FFT $\times$ 2 kompilatory $\times$ liczba zestawów flag \\[3pt]
+     $\times$ rozmiary danych $\times$ liczby wątków};
+
+\node[blok, fill=usergray!60] (env) at (0,11.4) {\textbf{Kontrola środowiska pomiarowego}};
+\node[blok] (b1) at (0,10.2) {\textbf{Faza 1 --- Budowanie}};
+\node[blok] (b2) at (0,9.0) {\textbf{Faza 2 --- Walidacja numeryczna}};
+
+% ===== faza 3 =====
+\draw[draw=userorange, very thick, rounded corners=4pt, fill=userorange!8]
+    (-5.4,3.8) rectangle (5.4,8.1);
+\node[anchor=north west, font=\small\bfseries, text=userslate] at (-5.2,7.95)
+    {Faza 3 --- Pomiar czasu};
+\node[maly] (r1) at (-1.3,6.7) {losowanie kolejności komórek macierzy};
+\node[maly, fill=userblue] (r2) at (-1.3,5.5) {dla każdej komórki: \\ kilka powtórzeń pomiaru};
+\node[maly] (r3) at (-1.3,4.35) {oczekiwanie na wychłodzenie};
+\draw[strzalka] (r1) -- (r2);
+\draw[strzalka] (r2) -- (r3);
+\draw[petla] (r3.east) -- ++(0.7,0) -- ++(0,2.35) -- (r1.east);
+\node[text=userorange, font=\scriptsize\bfseries, align=left, anchor=west] at (2.3,5.5)
+    {kolejna\\runda};
+
+\node[blok, fill=userbluedark, text=white] (b4) at (0,2.6)
+    {\textbf{Faza 4 --- Liczniki sprzętowe}};
+\node[blok, fill=usergray!60] (out) at (0,1.2)
+    {\textbf{Surowe pliki wynikowe}};
+
+\draw[strzalka] (0,12.4) -- (env);
+\draw[strzalka] (env) -- (b1);
+\draw[strzalka] (b1) -- (b2);
+\draw[strzalka] (b2) -- (0,8.1);
+\draw[strzalka] (0,3.8) -- (b4);
+\draw[strzalka] (b4) -- (out);
+
+\end{tikzpicture}
+\caption{Przebieg pojedynczej serii pomiarowej}
+\label{fig:przebieg-pomiaru}
+\end{figure}
+\subsection{Programowe narzędzia pomiarowe}
+
+Do pomiaru czasu wykorzystano zegar monotoniczny systemu operacyjnego,
+niepodlegający korekcie czasu systemowego. Liczniki sprzętowe procesora
+odczytywano popularnym narzędziem Linuxa, o nazwie \texttt{perf}
+Narzedzie to udostępnia dostęp do jednostki monitorowania
+wydajności. Jednostka ta zlicza sprzętowo
+wybrane zdarzenia zachodzące podczas wykonywania programu, bez modyfikowania
+mierzonego kodu.
+Rdzeń Cortex-A72 udostępnia ograniczoną liczbę programowalnych liczników
+jednocześnie, dlatego zamiast jednej długiej listy zdarzeń zastosowano dwa
+krótsze zestawy.
+Pierwszy z nich obejmuje ogólny obraz wykonania: liczbę cykli procesora,
+liczbę wykonanych instrukcji, odwołania i chybienia pamięci podręcznej oraz
+błędne predykcje skoków. Drugi zestaw rozróżnia chybienia według konkretnego
+poziomu pamięci podręcznej.
+
+Zużycie pamięci i temperaturę rdzenia odczytywano z interfejsów systemowych. Do analizy kodu wynikowego
+użyto narzędzi \texttt{objdump} oraz \texttt{size}, a stopień wektoryzacji
+oceniano dodatkowo na podstawie raportów generowanych przez same kompilatory.
+
+\subsection{Weryfikacja poprawności obliczeń z biblioteka zewnetrzna}  
+Poprawność każdej implementacji  weryfikowano przez porównanie wyniku
+z wartościa referencyjną. wyznaczoną biblioteką FFTW w podwójnej
+precyzji~\cite{FFTWPaper}. Zastosowanie wyższej precyzji w wzorcu pozwala
+odróżnić błąd wynikający z pojedynczej precyzji obliczeń od błędu
+implementacji.
+
+Weryfikacja odbywa się w osobnej fazie, przed pomiarami czasu i liczników
+sprzętowych. Wariant, którego błąd przekracza przyjęty próg, jest odrzucany
+i nie bierze udziału w dalszych pomiarach. Wyniki porównania są
+zapisywane do pliku wraz z informacją o werdykcie.
 \section{Metodyka przeprowadzonych pomiarów}
+Badanie prowadzone jest wzdłuż trzech osi porównań. Pierwsza to wpływ flag
+kompilacji: ten sam wariant kodu budowany jest z różnymi zestawami flag,
+a punktem odniesienia jest poziom \texttt{-O0}, przy którym kompilator nie
+stosuje przekształceń optymalizacyjnych. Druga to wpływ technik
+programistycznych: te same flagi stosowane są do różnych wariantów
+implementacyjnych. Trzecia to wpływ samego kompilatora - ten sam kod
+budowany jest niezależnie kompilatorami GCC i Clang, przy zachowaniu
+odpowidających sobie zestawów flag, co pozwala sprawdzić, na ile obserwowane efekty
+są właściwością konkretnej implementacji kompilatora, a na ile wynikają
+z samych przekształceń optymalizacyjnych.
+
+Warunkiem poprawnego porównania jest to, aby między zestawianymi pomiarami
+zmieniała się wyłącznie badana zmienna. Dlatego wszystkie warianty korzystają
+z tego samego sygnału wejściowego, tej samej tablicy współczynników obrotu
+i tego samego kodu pomiarowego, a porównania prowadzone są wyłącznie w obrębie
+jednej serii, ponieważ między seriami mogą zmienić się warunki termiczne
+platformy.
+
+Przyjęto następujące parametry pomiaru:
+
+\begin{itemize}
+    \item kompilatory: GCC oraz Clang, z odpowiadajacymi zestawami flag,
+    \item rozmiary transformaty: 4096, 16384, 65536, 262144 oraz 1048576
+          próbek,
+    \item liczby wątków: 1, 2, 4, 8 oraz 16 (dla wariantów wielowątkowych),
+    \item sygnał wejściowy: ten sam dla każdego algorytmu,
+    \item liczba rund pomiarowych: 6, po 5 powtórzeń w rundzie, co daje
+          30 powtórzeń na każdą komórkę macierzy,
+    \item liczba przebiegów rozgrzewających: 3 przed każdą serią powtórzeń,
+    \item liczba zestawów flag: 11, od \texttt{-O0} po zestawy łączące
+          \texttt{-O3} z flagami architektury i wektoryzacji.
+\end{itemize}
+
+Rozmiary transformaty dobrano tak, aby rozpiąć zakres od zbioru danych
+mieszczącego się w pamięci podręcznej pierwszego poziomu, przez rozmiary
+mieszczące się w pamięci drugiego poziomu, aż po zbiory wyraźnie ją
+przekraczające.
+
+We wszystkich pomiarach stosowano ten sam sygnał wejściowy - wielotonowy,
+o częstotliwości próbkowania 6000~Hz i częstotliwości podstawowej 1000~Hz.
+Parametry te są stałymi wspólnymi dla wszystkich wariantów.
+Sygnał generowany jest deterministycznie, więc jest identyczny w każdym uruchomieniu programu.
+Pełny wykaz badanych zestawów flag przedstawiono w~\cref{lst:flagsets}.
+
+\begin{lstlisting}[language=bash,caption={Zestawy flag kompilacji badane w~pracy},label=lst:flagsets]
+O0                  -O0
+O1                  -O1
+O2                  -O2
+O3                  -O3
+Os                  -Os
+O3-unroll           -O3 -funroll-loops
+O3-ffast            -O3 -ffast-math
+O3-mcpu             -O3 -mcpu=cortex-a72
+O3-ffast-mcpu       -O3 -ffast-math -mcpu=cortex-a72
+O3-ffast-mcpu-alias -O3 -ffast-math -mcpu=cortex-a72 \
+                    --param vect-max-version-for-alias-checks=30
+O3-lto              -O3 -flto
+\end{lstlisting}
+
+Etykiety w lewej kolumnie służą do identyfikacji zestawów w wynikach.
+Kryteria odrzucania pomiarów przyjęto przed rozpoczęciem badań. Pomiar
+wykonany w stanie ograniczenia zegara jest odrzucany, wariant niepoprawny
+numerycznie nie jest mierzony, a seria, w trakcie której wystąpił throttling jest powtarzana.
+
+W przypadkach, w których pomiary czasu i liczników sprzętowych nie wyjaśniają
+zaobserwowanej różnicy, stosowane jest porównanie kodu wynikowego. Asembler
+samego algorytmu, uzyskany z osobno skompilowanego pliku, jest
+normalizowany przez usunięcie adresów i przesunięć, a następnie zestawiany
+z innym, porównywanym algorytmem.
+\subsection{Metryki używane w badaniach}
+W pracy stosowano następujace metryki:
+
+\subsubsection{Metryki czasowe}
+
+Podstawową metryką jest czas wykonania pojedynczej transformaty. Ze względu na
+prawoskośny rozkład czasów jako wartość reprezentatywną przyjęto medianę
+$t_{1/2}$, a nie średnią arytmetyczną. Rozrzut opisuje rozstęp
+międzykwartylowy, wyrażany również względem mediany, przedstawiony
+w~\cref{eq:iqr}.
+
+\begin{equation}\label{eq:iqr}
+\mathrm{IQR} = Q_3 - Q_1, \qquad
+\mathrm{IQR}_{\%} = \frac{Q_3 - Q_1}{t_{1/2}} \cdot 100\%
+\end{equation}
+
+gdzie $Q_1$ i $Q_3$ to odpowiednio pierwszy i trzeci kwartyl. Wartość
+$\mathrm{IQR}_{\%}$ pełni jednocześnie rolę wskaźnika jakości środowiska
+pomiarowego i wyznacza rozdzielczość całego badania --- różnice mniejsze niż
+zmierzony rozrzut są nieodróżnialne od szumu, niezależnie od tego, ile
+powtórzeń wykonano.
+
+Stosunek czasu procesora do czasu ściany, opisany
+w~\cref{eq:cpu-ratio}, pozwala ocenić wykorzystanie równoległości.
+
+\begin{equation}\label{eq:cpu-ratio}
+R = \frac{t_{\mathrm{CPU}}}{t_{\mathrm{wall}}}
+\end{equation}
+
+
+\subsubsection{Liczniki sprzętowe}
+
+Zliczana jest liczba cykli procesora $C$ oraz wykonanych instrukcji $I$.
+Ich iloraz, przedstawiony w~\cref{eq:ipc}, określa średnią liczbę instrukcji
+wykonanych w jednym cyklu.
+
+\begin{equation}\label{eq:ipc}
+\mathrm{IPC} = \frac{I}{C}
+\end{equation}
+
+Metryka ta rozdziela dwie różne przyczyny wolniejszego działania: większą
+liczbę instrukcji do wykonania od gorszego wykorzystania procesora. Dla
+pamięci podręcznej wyznaczany jest współczynnik chybień, osobno dla każdego
+poziomu, zgodnie z~\cref{eq:miss-rate}.
+
+\begin{equation}\label{eq:miss-rate}
+m = \frac{r}{a} \cdot 100\%
+\end{equation}
+
+gdzie $a$ oznacza liczbę odwołań do danego poziomu, a $r$ liczbę chybień.
+
+\subsubsection{Metryki wektoryzacji}
+
+Na podstawie asemblera samego algorytmu zliczane są instrukcje wektorowe
+$n_{\mathrm{SIMD}}$ oraz skalarne $n_{\mathrm{skal}}$ operujące na liczbach
+zmiennoprzecinkowych. Udział instrukcji wektorowych wyznaczono zgodnie
+z~\cref{eq:vect}.
+
+\begin{equation}\label{eq:vect}
+v = \frac{n_{\mathrm{SIMD}}}{n_{\mathrm{SIMD}} + n_{\mathrm{skal}}} \cdot 100\%
+\end{equation}
+
+
+\subsubsection{Metryki pamięciowe i rozmiar kodu}
+
+Rejestrowane jest szczytowe zużycie pamięci procesu oraz rozmiar sekcji kodu
+wynikowego samego algorytmu.
+
+\subsubsection{Metryki dokładności}
+
+Poprawność wyniku oceniana jest błędem średniokwadratowym względem
+transformaty referencyjnej, wyznaczanym zgodnie z~\cref{eq:rmse}.
+
+\begin{equation}\label{eq:rmse}
+\mathrm{RMSE} = \sqrt{\frac{1}{N}\sum_{k=0}^{N-1}
+    \left| X_k - X_k^{\mathrm{ref}} \right|^2}
+\end{equation}
+
+Drugą stosowaną miarą jest stosunek sygnału do szumu, opisany
+w~\cref{eq:snr}.
+
+\begin{equation}\label{eq:snr}
+\mathrm{SNR}_{\mathrm{dB}} = 10 \log_{10}
+    \frac{\sum_k |X_k^{\mathrm{ref}}|^2}{\sum_k |X_k - X_k^{\mathrm{ref}}|^2}
+\end{equation}
+
+gdzie $X_k$ oznacza $k$-ty prążek widma badanego wariantu, a
+$X_k^{\mathrm{ref}}$ --- odpowiadający mu prążek transformaty referencyjnej.
+Dodatkowo rejestrowany jest błąd maksymalny pojedynczego prążka.
