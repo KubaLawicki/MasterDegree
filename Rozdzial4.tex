@@ -1,6 +1,29 @@
 \chapter{Projekt systemu testowego i metodyka przeprowadzonych badań}\label{}
-%Tutaj trzeba kilka razy do znudzenia powtorzyc o naszym celu badan
+Stosowany na potrzeby niniejszej pracy system pomiarowy składa się z dwóch
+warstw: fizycznej platformy sprzętowej oraz oprogramowania na nim uruchomianego.
+Warstwy te są ze sobą ściśle powiązane, dobór sprzętu
+determinuje dostępne mechanizmy przyspieszania obliczeń, takie jak
+wielordzeniowość czy jednostka SIMD, natomiast to, czy te mechanizmy zostaną
+faktycznie wykorzystane, zależy od zaimplementowanego algorytmu oraz od
+sposobu, w jaki zostanie skompilowany.
 
+Warstwę sprzętową stanowi płytka Raspberry Pi 4 Model B, oparta na czterech
+rdzeniach ARM Cortex-A72. Warstwę programową tworzą
+natomiast cztery niezbędne elementy. Pierwszym z nich jest system operacyjny Linux, pod
+którego nadzorem uruchamiany jest program testowy. Następne elementy są ściśle powiązane ze sobą
+a należa do nich zaimplementowane warianty
+algorytmu FFT, program pomiarowy, odpowiedzialny
+za wykonanie i zmierzenie pojedynczej transformaty oraz skrypt powłoki,
+automatyzujący przeprowadzenie całej serii pomiarów w powtarzalnych
+warunkach. Rozdzielenie tych ról pozwala zmieniać jeden element testu, bez ingerencji w pozostałe, co jest warunkiem
+koniecznym rzetelnego porównania.
+
+Prezentowany rozdział ma na celu przedstawienie wszystkich elementów
+składających się na przeprowadzone badanie. Pierwsza część opisuje platformę
+sprzętową, następnie prezentowane są zaimplementowane warianty algorytmu FFT wraz z uzasadnieniem
+ich doboru. Kolejna część opisuje architekturę systemu pomiarowego i kroki
+podjęte w celu ograniczenia szumu pomiarowego. Rozdział zamyka metodyka
+przeprowadzonych pomiarów, wraz z stosowanymi metrykami pomiarowymi.
 \section{Opis platformy sprzętowej}\label{section:PlatformaSprzetowa}
 
 Platformą sprzętową, na której zrealizowano opisywany system testowy, jest
@@ -572,8 +595,8 @@ Przed przystąpieniem do pomiarów podjęto szereg działań mających na celu o
 zmienność wyników, niewynikających z stosowanych programów lub konfiguracji procesu kompilacji.
 Przed pomiarami wykonano następujące działania:
 \begin{itemize}
-    \item zasilanie zgodne ze specyfikacją i aktywne chłodzenie, aby uniknąć
-    obniżenia zegara i throttlingu termicznego;
+    \item zasilanie zgodne ze specyfikacją i aktywne chłodzenie, aby procesor nie obniżał częstotliwości taktowania z powodu spadku napięcia lub przegrzania
+     — zjawisko to określa się jako ograniczanie wydajności (ang. throttling);
     \item instalacja Raspberry Pi OS Lite 64-bit bez środowiska graficznego -
     obowiązkowe wsparcie NEON i mniej procesów w tle;
     \item kompilacja bezpośrednio na platformie docelowej, bez kompilacji
@@ -632,7 +655,7 @@ stanowi obronę przed rosnąca temperaturą fizycznego sprzętu.
 Wynikiem działania skryptu testowego jest zapis surowych, danych z zapisanych metryk do plików pomiarowych, stanowiących materiał do analizy.
 \\Przedstawiona powyżej procedura pomiarowa została przedstawiona na schemacie \cref{fig:przebieg-pomiaru}.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
 \centering
 \definecolor{userblue}{RGB}{225, 243, 254}
 \definecolor{userbluedark}{RGB}{43, 92, 138}
@@ -813,9 +836,8 @@ w~\cref{eq:iqr}.
 
 gdzie $Q_1$ i $Q_3$ to odpowiednio pierwszy i trzeci kwartyl. Wartość
 $\mathrm{IQR}_{\%}$ pełni jednocześnie rolę wskaźnika jakości środowiska
-pomiarowego i wyznacza rozdzielczość całego badania --- różnice mniejsze niż
-zmierzony rozrzut są nieodróżnialne od szumu, niezależnie od tego, ile
-powtórzeń wykonano.
+pomiarowego i wyznacza rozdzielczość całego badania - różnice mniejsze niż
+zmierzony rozrzut są nieodróżnialne od szumu,
 
 Stosunek czasu procesora do czasu ściany, opisany
 w~\cref{eq:cpu-ratio}, pozwala ocenić wykorzystanie równoległości.

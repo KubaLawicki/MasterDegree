@@ -1,7 +1,15 @@
 \chapter{Analiza wyników przeprowadzonych badan}
-\section{Analiza wpływu flag kompilatora na kod sekwencyjny}\
 
 
+\section{Analiza wpływu optymalizacji programu sekwencyjnego}\
+\subsection{Wpływ poziomów optymalizacji kompilatora}
+\subsection{Wpływ wybranych flag na wektoryzację}
+\subsection{Wpływ celowych modyfikacji kodu programu}
+%tutaj o instrukcjach SIMD, ulozenie danych 
+\subsection{Wpływ wyboru schematu algorytmu}
+\subsection{Wpływ rozmiaru danych wejściowych na trafienia pamięci podręcznej}
+\subsection{Porównanie kompilatorów GCC i Clang}
+\subsection{Wpływ kompilatora na błędy numeryczny wybranych algorytmów}
 % wymaga: \usepackage{booktabs}
 % opcjonalnie: \usepackage{rotating} + sidewaystable, jesli nie mieszcza sie w szerokosci
 
@@ -44,7 +52,6 @@ fftw                  &  2,321 &  2,257 &  2,307 &  2,402 &  2,331 &  2,374 &  2
 \bottomrule
 \end{tabular}
 \end{table}
-\section{Analiza wpływu optymalizacji ręcznej programu sekwencyjnego}
 
 \begin{table}[htbp]
 \centering
@@ -105,5 +112,6 @@ lto        & \texttt{-O3 -flto} \\
 \bottomrule
 \end{tabular}
 \end{table}
-\section{Analiza skalowalności rozwiązania wielowątkowego}
-\section{Zestawienie zbiorcze i dyskusja wyników}
+\section{Analiza wpływu optymalizacji programu wielowątkowego}
+\subsection{Skalowanie z liczbą wątków}
+\subsection{Wpływ flag kompilacji na warianty równoległe}
