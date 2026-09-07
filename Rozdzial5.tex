@@ -1,117 +1,760 @@
 \chapter{Analiza wyników przeprowadzonych badan}
+Program kompilatora jest niezbędnym narzędziem pracy, dla każdgo inżyniera 
+wytwarzającego oprogramowanie, który zwraca uwagę na zużycie zasobów maszyny wykonującej jego program.
+W wielu przypadkach narzędzie to jest traktowane jako czarna
+skrzynka - kod źródłowy jest wejściem, na wyjściu otrzymujemy plik wykonywalny , a to, co dzieje
+się pomiędzy, pozostaje poza uwagą programisty. Przy próbie optymalizacji programu zwykle to logika i przebieg algorytmu 
+jest modyfikowana jako pierwsza, pomijając wpływ, jaki na wydajność ma proces tłumaczenia kodu na instrukcje maszynowe.
 
+Celem przeprowadzonych badań było sprawdzenie na ile możliwa jest poprawa wydajności implementacji FFT z użyciem różnych zabiegów.
+Jednym z nich była weryfikacja ile daje sama zmiana flag optymalizacji kompialatora przy niezmienionym
+kodzie algorytmu. Weryfikowano również czy jawne użycie instrukcji wykorzystania sprzętu fizycznego, nawet w ograniczonej skali takiej jak 
+zmiana układu danych wejściowych czy ręczne użycie instrukcji wektorowych, może dać realny wpływ na optymalizacje. 
 
-\section{Analiza wpływu optymalizacji programu sekwencyjnego}\
+Wyniki i wnioski z przeprowadzonych badań mogą mieć aspekt praktyczny, zwłaszcza w systemach wbudowanych, które często mają ograniczone
+zasoby. W ich przypadku większa wydajność, bez droższego sprzętu fizycznego, oznacza niższy koszt
+i pobór energii,co może realnie poprawić działanie, stabilność i rentowność całego systemu.
+
+Celem niniejszego rozdziału jest przedstawienie uzyskanych wyników oraz próba
+ich wyjaśnienia poprzez analizę przyczyn stojących za zmianą poszczególnych
+parametrów optymalizacyjnych.
+
+\section{Powtarzalność pomiarów i próg istotności różnic}\label{sec:prog-istotnosci}
+Przed omawianiem wyników należy zaznaczyć, że zgodnie z metodyką przedstawioną w~\cref{sec:metodykaBadan}, przeprowadzone badania dały bardzo
+obszerny zbiór wyników, który w całości załączono jako załącznik do
+niniejszej pracy. Zestaw ten zawiera 100 tabel, zbliżonych formą do
+prezentowanych w rozdziale. Tabele przedstawione poniżej wybrano
+spośród nich celowo, tak aby zilustrować najbardziej interesujące
+mechanizmy zaobserwowane w trakcie badań.
+
+Jakość środowiska pomiarowego dla wersji sekwencyjnej, z danymi wejściowymi o 1048576 próbkach  ilustruje
+\cref{tab:iqr-gcc-1M}. Rozstęp względny większości wariantów nie
+przekracza 3\%.
+W załaczonych wynikach tabela dla wersji współbieżnej pokazuje bardzo zbliżony wzorzec.
+Rozstęp względny między pomiarami nie przekracza tam 4\%, co potwierdza, że wysoka
+powtarzalność pomiarów nie jest cechą specyficzną dla wariantów
+sekwencyjnych, lecz efektem zastosowanej metodyki.
+
+Na tej podstawie można pokusić się o stwierdzenie, że różnice w czasie
+wykonania przekraczające 5\% wynikają z rzeczywistego wpływu flag
+kompilacji lub decyzji implementacyjnych, a nie z szumu pomiarowego. Należy brać jednak pod uwagę, że w innych konfiguracjach macierzy
+testów, na przykład przy mniejszych rozmiarach danych wejściowych rozstęp względny bywa wyższy (ale wciąż nie przekraczający 7\%), co należy uwzględnić przy
+interpretacji różnic bliskich granicy.
+%============================================================================
+% Tabela 1.15   (etykieta: tab:iqr-gcc-1M)
+% Rozstęp międzykwartylowy bezwzględny i względny dla GCC i 1048576 próbek, wersja sekwencyjna
+%============================================================================
+
+\begin{table}[H]
+\centering
+\caption{Rozstęp międzykwartylowy bezwzględny i względny dla GCC i 1048576 próbek, wersja sekwencyjna.}\label{tab:iqr-gcc-1M}
+\scriptsize
+\setlength{\tabcolsep}{3.0pt}
+\begin{tabular}{lrrrrrrrrrrr}
+\toprule
+Algorytm & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
+\midrule
+\multicolumn{12}{l}{\textit{Rozstęp międzykwartylowy IQR [ms]}} \\[2pt]
+radix2\_v0 & 1,197 & 3,271 & 2,567 & 2,570 & 3,411 & 2,688 & 3,129 & 3,684 & 1,575 & 2,685 & 1,051 \\
+radix2\_v1 & 15,923 & 1,872 & 0,540 & 1,279 & 1,603 & 1,593 & 1,415 & 1,197 & 1,634 & 1,720 & 1,336 \\
+radix2\_v2\_soa & 5,861 & 2,353 & 3,665 & 2,685 & 8,621 & 3,282 & 3,947 & 2,987 & 3,155 & 2,241 & 2,272 \\
+radix2\_v3\_neon & 4,969 & 5,419 & 4,200 & 4,928 & 5,496 & 6,389 & 3,962 & 1,507 & 2,235 & 3,438 & 6,759 \\
+radix4 & 5,112 & 3,821 & 4,789 & 6,146 & 4,149 & 3,889 & 4,990 & 3,929 & 3,847 & 2,535 & 3,556 \\
+radix4\_naive & 4,731 & 1,170 & 1,175 & 1,252 & 1,365 & 1,374 & 1,333 & 1,441 & 0,343 & 0,224 & 1,298 \\
+splitradix & 11,586 & 6,939 & 5,438 & 10,603 & 12,877 & 4,317 & 7,192 & 7,439 & 4,638 & 3,148 & 11,708 \\
+stockham & 4,809 & 0,706 & 0,432 & 0,729 & 1,280 & 0,223 & 0,826 & 0,952 & 0,240 & 0,493 & 0,172 \\
+\addlinespace
+\multicolumn{12}{l}{\textit{Rozstęp względny IQR/mediana [\%]}} \\[2pt]
+radix2\_v0 & 0,14 & 1,54 & 1,24 & 1,24 & 1,63 & 1,30 & 1,52 & 1,78 & 0,76 & 1,29 & 0,50 \\
+radix2\_v1 & 2,49 & 0,88 & 0,26 & 0,61 & 0,76 & 0,77 & 0,68 & 0,58 & 0,78 & 0,82 & 0,63 \\
+radix2\_v2\_soa & 1,24 & 1,11 & 1,75 & 1,29 & 4,15 & 1,55 & 1,82 & 1,43 & 1,46 & 1,04 & 1,07 \\
+radix2\_v3\_neon & 1,18 & 2,55 & 1,99 & 2,34 & 2,56 & 3,06 & 1,86 & 0,71 & 1,05 & 1,60 & 3,18 \\
+radix4 & 0,79 & 1,26 & 1,71 & 2,20 & 1,51 & 1,47 & 1,62 & 1,45 & 1,28 & 0,84 & 1,25 \\
+radix4\_naive & 0,75 & 0,46 & 0,46 & 0,42 & 0,54 & 0,56 & 0,53 & 0,55 & 0,14 & 0,09 & 0,50 \\
+splitradix & 1,55 & 1,09 & 0,91 & 1,78 & 2,14 & 0,72 & 1,14 & 1,34 & 0,77 & 0,52 & 1,95 \\
+stockham & 1,55 & 0,41 & 0,25 & 0,80 & 0,76 & 0,24 & 0,91 & 1,04 & 0,26 & 0,54 & 0,19 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Analiza wpływu optymalizacji programu sekwencyjnego}
+
 \subsection{Wpływ poziomów optymalizacji kompilatora}
-\subsection{Wpływ wybranych flag na wektoryzację}
-\subsection{Wpływ celowych modyfikacji kodu programu}
+Pierwsze rozważania dotyczą wpływu stosowanych flag kompilatora na przygotowane algorytmu sekwencyjne (inaczej jednowątkowe).
+
+Robocze:
+Przeskok z O0 daje najwiecej zdecydowanie, pozniej te czasy sie wyplaszczaja. Loop unrooling widac po rozmiarach .text z asm
+
+%============================================================================
+% Tabela 1.2+1.5 -- tab:med-merged-16k
+% Mediana czasu wykonania transformaty dla GCC i Clang 16384 próbek, wersja sekwencyjna. Wartości w~milisekundach.
+%============================================================================
+\begin{table}[H]
+\centering
+\caption{Mediana czasu wykonania transformaty dla GCC i Clang, 16384 próbek, wersja sekwencyjna. Wartości w~milisekundach. Pogrubiono krótszy z dwóch czasów w~każdej komórce.}
+\label{tab:med-merged-16k}
+\scriptsize
+\setlength{\tabcolsep}{3.0pt}
+\begin{tabular}{llrrrrrrrrrrr}
+\toprule
+Algorytm & Kompilator & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
+\midrule
+\multirow{2}{*}{radix2\_v0}
+  & GCC   & 8,6189 & 1,0518 & 0,9270 & 0,9421 & 0,9592 & 0,8966 & 0,9259 & 0,9315 & 0,9156 & 0,9143 & 0,9405 \\
+  & Clang & \textbf{6,4565} & \textbf{0,9253} & \textbf{0,9261} & \textbf{0,9018} & \textbf{0,9199} & \textbf{0,9060} & \textbf{0,8185} & \textbf{0,7955} & \textbf{0,8049} & \textbf{0,8040} & \textbf{0,9320} \\
+\addlinespace
+\multirow{2}{*}{radix2\_v1}
+  & GCC   & 6,4426 & 0,9004 & 0,7562 & 0,7563 & 0,9076 & 0,7775 & 0,8442 & 0,8871 & 0,8472 & 0,8453 & 0,7858 \\
+  & Clang & \textbf{5,0313} & \textbf{0,6843} & \textbf{0,7063} & \textbf{0,7172} & \textbf{0,6778} & \textbf{0,7136} & \textbf{0,7277} & \textbf{0,7377} & \textbf{0,7551} & \textbf{0,7569} & \textbf{0,7188} \\
+\addlinespace
+\multirow{2}{*}{radix2\_v2\_soa}
+  & GCC   & 4,2421 & 0,9567 & 0,8427 & 0,8594 & 0,9564 & 0,8606 & 0,8561 & 0,8834 & 0,8826 & \textbf{0,7111} & 0,9681 \\
+  & Clang & \textbf{4,1100} & \textbf{0,8651} & \textbf{0,6758} & \textbf{0,6579} & \textbf{0,8528} & \textbf{0,6484} & \textbf{0,6248} & \textbf{0,6239} & \textbf{0,6290} & 0,6153 & \textbf{0,7038} \\
+\addlinespace
+\multirow{2}{*}{radix2\_v3\_neon}
+  & GCC   & \textbf{3,6592} & \textbf{0,5794} & \textbf{0,5624} & \textbf{0,5643} & \textbf{0,6118} & \textbf{0,5635} & \textbf{0,5656} & \textbf{0,5721} & \textbf{0,5840} & \textbf{0,6496} & \textbf{0,5872} \\
+  & Clang & 4,5329 & 0,6017 & 0,5995 & 0,6188 & 0,5986 & 0,6420 & 0,6603 & 0,6267 & 0,6265 & 0,6362 & 0,6335 \\
+\addlinespace
+\multirow{2}{*}{radix4}
+  & GCC   & 4,6056 & 0,9789 & 0,9057 & 0,8940 & 0,9521 & 0,8850 & 0,9829 & 0,9307 & 0,9901 & 0,9858 & 0,9310 \\
+  & Clang & \textbf{3,7740} & \textbf{0,9248} & \textbf{0,9086} & \textbf{0,8852} & \textbf{0,8792} & \textbf{0,8759} & \textbf{0,9005} & \textbf{0,8518} & \textbf{0,8478} & \textbf{0,8480} & \textbf{0,8920} \\
+\addlinespace
+\multirow{2}{*}{radix4\_naive}
+  & GCC   & 6,0956 & \textbf{2,1677} & 3,0243 & 3,0293 & \textbf{2,2145} & 3,0125 & \textbf{2,0307} & 3,0414 & \textbf{1,9943} & \textbf{1,9947} & \textbf{2,1756} \\
+  & Clang & \textbf{5,1931} & 2,7980 & \textbf{2,7485} & \textbf{2,7394} & 2,7238 & \textbf{2,6721} & 2,1736 & \textbf{2,7164} & 2,1778 & 2,1781 & 2,6662 \\
+\addlinespace
+\multirow{2}{*}{splitradix}
+  & GCC   & \textbf{3,1690} & \textbf{1,1991} & 1,0808 & 1,0852 & 1,1302 & 1,1023 & 1,1422 & 1,0561 & 1,1259 & 1,1261 & 1,1097 \\
+  & Clang & 3,2003 & 1,0451 & \textbf{1,0273} & \textbf{1,0389} & \textbf{1,0633} & \textbf{1,0200} & \textbf{0,9967} & \textbf{0,9883} & \textbf{1,0310} & \textbf{1,0090} & \textbf{1,0474} \\
+\addlinespace
+\multirow{2}{*}{stockham}
+  & GCC   & 3,5101 & 0,6360 & 0,6060 & 0,6218 & \textbf{0,5544} & 0,6218 & 0,6022 & 0,6189 & 0,6149 & 0,6203 & 0,6245 \\
+  & Clang & \textbf{3,5632} & \textbf{0,4995} & \textbf{0,4456} & \textbf{0,4475} & 0,4702 & \textbf{0,4395} & \textbf{0,4433} & \textbf{0,4742} & \textbf{0,4478} & \textbf{0,4548} & \textbf{0,4296} \\
+\addlinespace
+\multirow{2}{*}{fftw}
+  & GCC   & 0,3596 & 0,3764 & 0,3513 & 0,3704 & 0,3649 & \textbf{0,3514} & 0,3701 & 0,3730 & \textbf{0,3498} & 0,3679 & 0,3631 \\
+  & Clang & \textbf{0,3516} & \textbf{0,3535} & \textbf{0,3470} & \textbf{0,3625} & \textbf{0,3502} & 0,3570 & \textbf{0,3671} & \textbf{0,3659} & 0,3630 & \textbf{0,3622} & \textbf{0,3589} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+\subsection{Wpływ celowych modyfikacji kodu programu, w tym wybór algorytmu}
+Robocze 
+Widac, ze neon jest duzo szybszy od v1 i v2, pewnie gdyby wykorzystac tez te instrukcje neon dla pozostalych to byloby jeszcze lepiej.
+Soa od poziomu 02, poza 0s jest tez szybsza troche, ale tylko dla Clanga tez w innych wariantach to wiekszy danych widac. Poziom O1 działa najgorzej dla soa, trzeba zobaczyc w ASM dlaczego.
+Wyliczanie kazdorazowe w wersjach v0 i naive zabija predkosc wywolania, dla rozsadnych rozmiarow warto przekazywac wspolczynniki jako parametry wejsciowe, a nie liczyc je w locie.
+%============================================================================
+% Tabela 1.8   (etykieta: tab:speedup-gcc-1M)
+% Przyspieszenie względem -O0 dla GCC i 16384 próbek, wersja sekwencyjna. Wartości bezwymiarowe, poziom \texttt{-O0} przyjęto za~1,00.
+%============================================================================
+\begin{table}[H]
+\centering
+\caption{Przyspieszenie względem -O0 dla GCC i 16384 próbek, wersja sekwencyjna. Wartości bezwymiarowe, poziom \texttt{-O0} przyjęto za~1,00.}
+\label{tab:speedup-gcc-16k}
+\scriptsize
+\setlength{\tabcolsep}{3.0pt}
+\begin{tabular}{lrrrrrrrrrrr}
+\toprule
+Algorytm & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
+\midrule
+radix2\_v0 & 1,00 & 8,19 & 9,30 & 9,15 & 8,99 & 9,61 & 9,31 & 9,25 & 9,41 & 9,43 & 9,16 \\
+radix2\_v1 & 1,00 & 7,15 & 8,52 & 8,52 & 7,10 & 8,29 & 7,63 & 7,26 & 7,60 & 7,62 & 8,20 \\
+radix2\_v2\_soa & 1,00 & 4,43 & 5,03 & 4,94 & 4,44 & 4,93 & 4,96 & 4,80 & 4,81 & 5,97 & 4,38 \\
+radix2\_v3\_neon & 1,00 & 6,32 & 6,51 & 6,48 & 5,98 & 6,49 & 6,47 & 6,40 & 6,27 & 5,63 & 6,23 \\
+radix4 & 1,00 & 4,70 & 5,08 & 5,15 & 4,84 & 5,20 & 4,69 & 4,95 & 4,65 & 4,67 & 4,95 \\
+radix4\_naive & 1,00 & 2,81 & 2,02 & 2,01 & 2,75 & 2,02 & 3,00 & 2,00 & 3,06 & 3,06 & 2,80 \\
+splitradix & 1,00 & 2,64 & 2,93 & 2,92 & 2,80 & 2,88 & 2,77 & 3,00 & 2,81 & 2,81 & 2,86 \\
+stockham & 1,00 & 5,52 & 5,79 & 5,65 & 6,33 & 5,65 & 5,83 & 5,67 & 5,71 & 5,66 & 5,62 \\
+\bottomrule
+\end{tabular}
+\end{table}
 %tutaj o instrukcjach SIMD, ulozenie danych 
-\subsection{Wpływ wyboru schematu algorytmu}
-\subsection{Wpływ rozmiaru danych wejściowych na trafienia pamięci podręcznej}
+
 \subsection{Porównanie kompilatorów GCC i Clang}
-\subsection{Wpływ kompilatora na błędy numeryczny wybranych algorytmów}
-% wymaga: \usepackage{booktabs}
-% opcjonalnie: \usepackage{rotating} + sidewaystable, jesli nie mieszcza sie w szerokosci
+Choć oba kompilatory generują mniejszy kod z podobną częstością (GCC w 45 z
+88 przypadków, Clang w 42), średni rozmiar kodu wynikowego dla GCC (518~B)
+jest o 40\% mniejszy niż dla Clang (724~B). 
 
-\begin{table}[htbp]
+Clang generuje szybszy kod w 78 z 99 przypadków (79\%), przy średniej
+przewadze rzędu 1,15 raza; łączny średni czas wykonania jest dla Clang
+o~6,7\% niższy niż dla GCC (z~pominięciem \texttt{-O0}).
+%============================================================================
+% Tabela 1.53 i 1.54   (etykieta: tab:med-clang-16k)
+% Rozmiar sekcji kodu wynikowego algorytmu dla GCC i Clang, wersja sekwencyjna. Rozmiar sekcj.
+%============================================================================
+\begin{table}[H]
 \centering
-\caption{Czas wykonania pojedynczej transformaty dla $N = 65536$, kompilator GCC~14.2.0.
-Mediana z 30 powtórzeń, w~milisekundach. Pogrubiono najkrótszy czas w~wierszu
-z~pominięciem \texttt{-O0}.}
-\label{tab:czasy-gcc}
+\caption{Rozmiar sekcji kodu wynikowego algorytmu dla GCC i Clang, wersja sekwencyjna. Rozmiar sekcji \texttt{.text} w~bajtach. Pogrubiono mniejszą z dwóch wartości w~każdej komórce.}
+\label{tab:text-merged}
 \scriptsize
-\setlength{\tabcolsep}{3.5pt}
+\setlength{\tabcolsep}{3.0pt}
+\begin{tabular}{llrrrrrrrrrrr}
+\toprule
+Algorytm & Kompilator & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
+\midrule
+\multirow{2}{*}{radix2\_v0}
+  & GCC   & 732  & 344 & 348  & 344  & \textbf{276} & 580  & 344  & 336  & 336  & 336  & 344 \\
+  & Clang & \textbf{628}  & \textbf{292} & \textbf{292}  & \textbf{280}  & \textbf{276} & \textbf{280}  & \textbf{272}  & \textbf{280}  & \textbf{280}  & \textbf{280}  & \textbf{280} \\
+\addlinespace
+\multirow{2}{*}{radix2\_v1}
+  & GCC   & 704  & 260 & \textbf{224}  & \textbf{228}  & 236 & \textbf{392}  & \textbf{260}  & \textbf{244}  & \textbf{244}  & \textbf{244}  & \textbf{228} \\
+  & Clang & \textbf{604}  & \textbf{236} & 840  & 852  & \textbf{224} & 852  & 848  & 864  & 860  & 860  & 852 \\
+\addlinespace
+\multirow{2}{*}{radix2\_v2\_soa}
+  & GCC   & 784  & \textbf{272} & \textbf{268}  & \textbf{272}  & \textbf{260} & \textbf{460}  & \textbf{272}  & \textbf{264}  & \textbf{264}  & 1032 & \textbf{272} \\
+  & Clang & \textbf{652}  & 288 & 712  & 740  & 264 & 740  & 736  & 772  & 768  & \textbf{768}  & 740 \\
+\addlinespace
+\multirow{2}{*}{radix2\_v3\_neon}
+  & GCC   & 1448 & \textbf{404} & \textbf{384}  & \textbf{564}  & \textbf{360} & \textbf{832}  & \textbf{564}  & \textbf{560}  & \textbf{560}  & \textbf{1068} & \textbf{564} \\
+  & Clang & \textbf{1396} & 444 & 1048 & 1536 & 412 & 1536 & 1532 & 1528 & 1528 & 1528 & 1536 \\
+\addlinespace
+\multirow{2}{*}{radix4}
+  & GCC   & 1216 & 476 & 452  & 456  & 428 & 456  & 472  & 440  & 468  & 468  & 456 \\
+  & Clang & \textbf{1068} & \textbf{416} & \textbf{416}  & \textbf{384}  & \textbf{416} & \textbf{384}  & \textbf{384}  & \textbf{396}  & \textbf{396}  & \textbf{396}  & \textbf{384} \\
+\addlinespace
+\multirow{2}{*}{radix4\_naive}
+  & GCC   & \textbf{1188} & \textbf{536} & \textbf{512}  & \textbf{512}  & \textbf{500} & \textbf{512}  & \textbf{572}  & \textbf{524}  & \textbf{572}  & \textbf{572}  & \textbf{512} \\
+  & Clang & 1080 & 560 & 560  & 548  & 548 & 548  & 2208 & 552  & 2232 & 2232 & 548 \\
+\addlinespace
+\multirow{2}{*}{splitradix}
+  & GCC   & 1444 & 580 & 528  & 528  & 532 & 528  & 540  & 532  & 544  & 544  & 528 \\
+  & Clang & \textbf{1392} & \textbf{464} & \textbf{464}  & \textbf{464}  & \textbf{448} & \textbf{464}  & \textbf{464}  & \textbf{476}  & \textbf{476}  & \textbf{476}  & \textbf{464} \\
+\addlinespace
+\multirow{2}{*}{stockham}
+  & GCC   & 764  & 320 & \textbf{320}  & \textbf{684}  & \textbf{208} & 1544 & \textbf{620}  & \textbf{668}  & \textbf{668}  & \textbf{668}  & \textbf{684} \\
+  & Clang & \textbf{716}  & \textbf{268} & 1080 & 852  & 216 & \textbf{852}  & 840  & 1092 & 868  & 868  & 852 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+\subsection{Wpływ kompilatora na błędy numeryczny wybranych algorytmów}\label{sec:WplywBledyNumeryczne}
+%absolutnie odnies sie do tabeli 5,1 (albo 1.15)
+Tutaj implementacja v0 ma blad numeryczny w wyliczaniu motylka, bylo pokazane w rozdziale wczesniej, trzeba zrobic cref tutaj. Warty do zauwazenia jest wniosek ze 
+kompilator to narzedzie, a nie poprawiacz kodu - jak napiszemy cos po prostu zle to on nie poprawi magicznie dokladnosci, tylko ten blad bedzie. Ten blad numeryczny
+jest tym bardziej widoczny im wieksze sa dane wejsciowe.
+%============================================================================
+% Tabela 1.44   (etykieta: tab:dokl-gcc-1M)
+% Błąd średniokwadratowy i stosunek sygnału do szumu dla GCC i 1048576 próbek, wersja sekwencyjna.
+%============================================================================
+\begin{table}[H]
+\centering
+\caption{Błąd średniokwadratowy i stosunek sygnału do szumu dla GCC i 16384 próbek, wersja sekwencyjna.}
+\label{tab:dokl-gcc-16k}
+\scriptsize
+\setlength{\tabcolsep}{3.0pt}
 \begin{tabular}{lrrrrrrrrrrr}
 \toprule
-Wariant & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os}
-        & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
+Algorytm & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
 \midrule
-radix2\_v0            & 39,409 &  4,972 &  4,369 &  4,417 &  4,515 & \textbf{4,238} &  4,378 &  4,384 &  4,344 &  4,307 &  4,475 \\
-radix2\_v1            & 29,635 &  4,405 & \textbf{3,656} &  3,713 &  4,426 &  3,774 &  4,160 &  4,247 &  4,096 &  4,087 &  3,716 \\
-radix2\_v2\_soa       & 21,050 &  5,098 &  4,613 &  4,752 &  4,957 &  4,572 &  4,724 &  4,727 &  4,781 & \textbf{3,599} &  4,731 \\
-radix2\_v3\_neon      & 17,121 &  3,020 &  2,992 &  2,978 &  3,428 & \textbf{2,970} &  3,085 &  3,012 &  3,106 &  3,397 &  3,128 \\
+\multicolumn{12}{l}{\textit{Błąd średniokwadratowy RMSE}} \\[2pt]
+radix2\_v0 $(\cdot 10^{-3})$ & 1,714 & 1,714 & 2,595 & 2,595 & 2,595 & 2,595 & 2,594 & 2,595 & 2,594 & 2,594 & 2,595 \\
+radix2\_v1 $(\cdot 10^{-5})$ & 1,377 & 1,377 & 1,429 & 1,429 & 1,429 & 1,429 & 1,444 & 1,429 & 1,444 & 1,444 & 1,429 \\
+radix2\_v2\_soa $(\cdot 10^{-5})$ & 1,377 & 1,377 & 1,429 & 1,429 & 1,429 & 1,429 & 1,444 & 1,429 & 1,444 & 1,444 & 1,429 \\
+radix2\_v3\_neon $(\cdot 10^{-5})$ & 1,445 & 1,445 & 1,467 & 1,467 & 1,467 & 1,467 & 1,542 & 1,467 & 1,542 & 1,542 & 1,467 \\
+radix4 $(\cdot 10^{-5})$ & 1,365 & 1,365 & 1,174 & 1,174 & 1,174 & 1,174 & 1,236 & 1,174 & 1,236 & 1,236 & 1,174 \\
+radix4\_naive $(\cdot 10^{-5})$ & 1,760 & 1,760 & 1,610 & 1,610 & 1,610 & 1,610 & 1,571 & 1,610 & 1,571 & 1,571 & 1,610 \\
+splitradix $(\cdot 10^{-5})$ & 1,276 & 1,276 & 1,280 & 1,280 & 1,280 & 1,280 & 1,165 & 1,280 & 1,165 & 1,165 & 1,280 \\
+stockham $(\cdot 10^{-5})$ & 1,342 & 1,342 & 1,387 & 1,387 & 1,387 & 1,387 & 1,429 & 1,387 & 1,429 & 1,429 & 1,387 \\
 \addlinespace
-radix2\_par (1 w.)    & 29,712 &  4,375 &  3,706 &  3,799 &  4,388 &  3,832 &  4,216 &  4,240 &  4,152 &  4,118 & \textbf{3,654} \\
-radix2\_par (2 w.)    & 18,944 &  3,646 & \textbf{2,801} &  2,868 &  3,353 &  2,862 &  3,028 &  3,131 &  3,072 &  3,073 &  2,803 \\
-radix2\_par (4 w.)    & 12,788 &  2,898 &  2,495 &  2,490 &  2,862 & \textbf{2,448} &  2,574 &  2,697 &  2,557 &  2,923 &  2,572 \\
-\addlinespace
-radix2\_par\_v2 (1 w.)& 33,094 &  4,909 &  3,818 &  3,762 &  4,911 & \textbf{3,718} &  4,539 &  4,836 &  4,823 &  4,771 &  3,769 \\
-radix2\_par\_v2 (2 w.)& 17,952 &  3,359 & \textbf{2,777} &  2,783 &  3,409 &  2,845 &  3,106 &  3,204 &  3,379 &  3,288 &  2,828 \\
-radix2\_par\_v2 (4 w.)& 10,348 &  2,559 &  2,298 &  2,288 &  2,599 & \textbf{2,274} &  2,521 &  2,557 &  2,518 &  2,535 &  2,392 \\
-\addlinespace
-radix4                & 21,291 &  5,555 &  5,232 &  5,124 &  5,317 & \textbf{4,661} &  5,548 &  5,282 &  5,679 &  5,631 &  5,090 \\
-radix4\_naive         & 28,456 & 10,249 & 10,082 & 10,305 & 10,408 &  9,863 &  9,703 & 10,334 & \textbf{9,551} &  9,619 & 10,441 \\
-radix4\_par (1 w.)    & 21,969 &  5,562 &  5,441 &  5,362 &  5,551 & \textbf{4,884} &  5,447 &  5,473 &  5,658 &  5,693 &  5,370 \\
-radix4\_par (2 w.)    & 14,405 &  4,495 &  4,414 &  4,364 &  4,532 & \textbf{3,820} &  4,408 &  4,437 &  4,614 &  4,604 &  4,325 \\
-radix4\_par (4 w.)    &  9,775 &  4,400 &  4,542 &  4,421 &  4,600 & \textbf{3,793} &  4,394 &  4,402 &  4,407 &  4,456 &  4,347 \\
-\addlinespace
-splitradix            & 15,729 &  6,870 &  6,004 &  5,997 &  6,105 &  6,233 &  6,369 & \textbf{5,738} &  6,211 &  6,128 &  6,066 \\
-stockham              & 15,907 &  5,514 &  5,336 &  3,853 &  5,407 &  3,821 &  3,735 &  3,793 &  3,776 &  3,740 & \textbf{3,711} \\
-\addlinespace
-fftw                  &  2,321 &  2,257 &  2,307 &  2,402 &  2,331 &  2,374 &  2,348 &  2,332 &  2,375 &  2,303 & \textbf{2,243} \\
+\multicolumn{12}{l}{\textit{Stosunek sygnału do szumu SNR [dB]}} \\[2pt]
+radix2\_v0 & 95,12 & 95,12 & 91,52 & 91,52 & 91,52 & 91,52 & 91,53 & 91,52 & 91,53 & 91,53 & 91,52 \\
+radix2\_v1 & 137,03 & 137,03 & 136,71 & 136,71 & 136,71 & 136,71 & 136,61 & 136,71 & 136,61 & 136,61 & 136,71 \\
+radix2\_v2\_soa & 137,03 & 137,03 & 136,71 & 136,71 & 136,71 & 136,71 & 136,61 & 136,71 & 136,61 & 136,61 & 136,71 \\
+radix2\_v3\_neon & 136,61 & 136,61 & 136,48 & 136,48 & 136,48 & 136,48 & 136,04 & 136,48 & 136,04 & 136,04 & 136,48 \\
+radix4 & 137,10 & 137,10 & 138,41 & 138,41 & 138,41 & 138,41 & 137,96 & 138,41 & 137,96 & 137,96 & 138,41 \\
+radix4\_naive & 134,89 & 134,89 & 135,67 & 135,67 & 135,67 & 135,67 & 135,88 & 135,67 & 135,88 & 135,88 & 135,67 \\
+splitradix & 137,69 & 137,69 & 137,66 & 137,66 & 137,66 & 137,66 & 138,48 & 137,66 & 138,48 & 138,48 & 137,66 \\
+stockham & 137,25 & 137,25 & 136,96 & 136,96 & 136,96 & 136,96 & 136,70 & 136,96 & 136,70 & 136,70 & 136,96 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\begin{table}[htbp]
+%============================================================================
+% Tabela 1.47   (etykieta: tab:dokl-clang-1M)
+% Błąd średniokwadratowy i stosunek sygnału do szumu dla Clang i 16384 próbek, wersja sekwencyjna.
+%============================================================================
+\subsection{Wpływ wybranych flag na wektoryzację}
+TO DO 
+!!!!!!!!!!!Ta tabela jest straszna, trzeba wymyślić jakis sensowniejszy sposób prezentacji tych wyników!!!!!
+%============================================================================
+% Tabela 1.51 i 1,52  (etykieta: tab:simd-skal-gcc)
+% Liczba instrukcji wektorowych i skalarnych dla GCC i clang, wersja sekwencyjna. Liczba statycznych instrukcji zmiennoprzecinkowych w~kodzie wynikowym.
+%============================================================================
+\begin{table}[H]
 \centering
-\caption{Czas wykonania pojedynczej transformaty dla $N = 65536$, kompilator Clang.
-Mediana z 30 powtórzeń, w~milisekundach. Pogrubiono najkrótszy czas w~wierszu
-z~pominięciem \texttt{-O0}.}
-\label{tab:czasy-clang}
+\caption{Liczba instrukcji wektorowych i skalarnych dla GCC i Clang, wersja sekwencyjna. Liczba statycznych instrukcji zmiennoprzecinkowych w~kodzie wynikowym. W~sekcji wektorowej pogrubiono wyższą wartość (więcej wektoryzacji), w~sekcji skalarnej -- niższą.}
+\label{tab:simd-skal-merged}
 \scriptsize
-\setlength{\tabcolsep}{3.5pt}
+\setlength{\tabcolsep}{3.0pt}
+\begin{tabular}{llrrrrrrrrrrr}
+\toprule
+Algorytm & Kompilator & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
+\midrule
+\multicolumn{13}{l}{\textit{Instrukcje wektorowe (SIMD)}} \\[2pt]
+\multirow{2}{*}{radix2\_v0}
+  & GCC   & 0 & 0 & 0          & 0          & 0 & 0          & 0          & 0          & 0          & 0          & 0 \\
+  & Clang & 0 & 0 & 0          & 0          & 0 & 0          & 0          & 0          & 0          & 0          & 0 \\
+\addlinespace
+\multirow{2}{*}{radix2\_v1}
+  & GCC   & 0 & 0 & 5          & 5          & 0 & \textbf{15}& 0          & 0          & 0          & 0          & 5 \\
+  & Clang & 0 & 0 & \textbf{9} & \textbf{9} & 0 & 9          & \textbf{8} & \textbf{9} & \textbf{8} & \textbf{8} & \textbf{9} \\
+\addlinespace
+\multirow{2}{*}{radix2\_v2\_soa}
+  & GCC   & 0 & 0 & 0          & 0          & 0 & 0          & 0          & 0          & 0          & \textbf{16}& 0 \\
+  & Clang & 0 & 0 & \textbf{9} & \textbf{9} & 0 & \textbf{9} & \textbf{8} & \textbf{9} & \textbf{8} & 8          & \textbf{9} \\
+\addlinespace
+\multirow{2}{*}{radix2\_v3\_neon}
+  & GCC   & \textbf{9} & 8 & 8          & 8          & 8 & \textbf{32}& 8          & 8          & 8          & 16         & 8 \\
+  & Clang & \textbf{9} & 8 & \textbf{17}& \textbf{17}& 8 & 17         & \textbf{16}& \textbf{17}& \textbf{16}& \textbf{16}& \textbf{17} \\
+\addlinespace
+\multirow{2}{*}{radix4}
+  & GCC   & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+  & Clang & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+\addlinespace
+\multirow{2}{*}{radix4\_naive}
+  & GCC   & 0 & 0 & 0 & 0 & 0 & 0 & 0          & 0 & 0          & 0          & 0 \\
+  & Clang & 0 & 0 & 0 & 0 & 0 & 0 & \textbf{31}& 0 & \textbf{31}& \textbf{31}& 0 \\
+\addlinespace
+\multirow{2}{*}{splitradix}
+  & GCC   & 0 & 0 & \textbf{2} & \textbf{2} & 0 & \textbf{2} & \textbf{2} & \textbf{2} & \textbf{2} & \textbf{2} & \textbf{2} \\
+  & Clang & 0 & 0 & 0          & 0          & 0 & 0          & 0          & 0          & 0          & 0          & 0 \\
+\addlinespace
+\multirow{2}{*}{stockham}
+  & GCC   & 0 & 0 & 0          & 7          & 0 & \textbf{49}& 9          & 7          & 7          & 7          & 7 \\
+  & Clang & 0 & 0 & \textbf{14}& \textbf{14}& \textbf{5} & 14         & \textbf{14}& \textbf{24}& \textbf{14}& \textbf{14}& \textbf{14} \\
+\addlinespace
+\multicolumn{13}{l}{\textit{Instrukcje skalarne}} \\[2pt]
+\multirow{2}{*}{radix2\_v0}
+  & GCC   & 11         & 17 & 13 & 13 & 13 & 36 & 13 & 13 & 13 & 13 & 13 \\
+  & Clang & \textbf{9} & \textbf{13} & \textbf{13} & \textbf{13} & \textbf{13} & \textbf{13} & \textbf{13} & \textbf{13} & \textbf{13} & \textbf{13} & \textbf{13} \\
+\addlinespace
+\multirow{2}{*}{radix2\_v1}
+  & GCC   & 10 & 10 & \textbf{1} & \textbf{1} & \textbf{8} & \textbf{3} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{1} \\
+  & Clang & \textbf{8} & \textbf{8} & 8 & 8 & \textbf{8} & 8 & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & 8 \\
+\addlinespace
+\multirow{2}{*}{radix2\_v2\_soa}
+  & GCC   & 10 & 10 & 8 & 8 & 8 & 24 & 8 & 8 & 8 & 16 & 8 \\
+  & Clang & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} & \textbf{8} \\
+\addlinespace
+\multirow{2}{*}{radix2\_v3\_neon}
+  & GCC   & 10 & 10 & \textbf{8} & \textbf{24} & \textbf{8} & \textbf{24} & \textbf{24} & \textbf{24} & \textbf{24} & \textbf{32} & \textbf{24} \\
+  & Clang & \textbf{8} & \textbf{8} & \textbf{8} & 32 & \textbf{8} & 32 & 32 & 32 & 32 & 32 & 32 \\
+\addlinespace
+\multirow{2}{*}{radix4}
+  & GCC   & \textbf{22} & \textbf{34} & 28 & 28 & 28 & 28 & 28 & 28 & 28 & 28 & 28 \\
+  & Clang & 20          & 28          & \textbf{28} & \textbf{28} & \textbf{28} & \textbf{28} & \textbf{28} & \textbf{28} & \textbf{28} & \textbf{28} & \textbf{28} \\
+\addlinespace
+\multirow{2}{*}{radix4\_naive}
+  & GCC   & \textbf{33} & \textbf{40} & \textbf{34} & \textbf{34} & \textbf{34} & \textbf{34} & \textbf{34} & \textbf{34} & \textbf{34} & \textbf{34} & \textbf{34} \\
+  & Clang & 31          & 34          & 34 & 34 & 34 & 34 & 34 & 34 & 34 & 34 & 34 \\
+\addlinespace
+\multirow{2}{*}{splitradix}
+  & GCC   & \textbf{29} & \textbf{28} & \textbf{20} & \textbf{20} & \textbf{24} & \textbf{20} & \textbf{23} & \textbf{20} & \textbf{23} & \textbf{23} & \textbf{20} \\
+  & Clang & 25          & 24          & 24          & 24          & 24          & 24          & 24          & 24          & 24          & 24          & 24 \\
+\addlinespace
+\multirow{2}{*}{stockham}
+  & GCC   & \textbf{10} & \textbf{10} & 8 & 16 & 8 & 64 & 12 & 16 & 16 & 16 & 16 \\
+  & Clang & 8           & 8           & \textbf{0} & \textbf{0} & \textbf{0} & \textbf{0} & \textbf{0} & \textbf{0} & \textbf{0} & \textbf{0} & \textbf{0} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Wpływ rozmiaru danych wejściowych}
+Tutaj bedziemy mówić o chybieniach cache i o tym,że przy danych, które wychodza za cache duzo czasu zajmuje kopiowanie. 
+Mozna jeszcze wsadzic tabelki 28 i 29, do zastanowienia. Jesli chce to sprawdzic to trzeba zobaczyc w jakim poziomie pamieci sa umieszczane dane,
+bo czasy dostepu sa inne. Podobno mozna to sprawdzic z binarki dosc prosto, temat do przemyslenia.
+
+%============================================================================
+% Tabela 1.3   (etykieta: tab:med-gcc-1M)
+% Mediana czasu wykonania transformaty dla GCC i 1048576 próbek, wersja sekwencyjna. Wartości w~milisekundach.
+%============================================================================
+\begin{table}[H]
+\centering
+\caption{Mediana czasu wykonania transformaty dla GCC i 1048576 próbek, wersja sekwencyjna. Wartości w~milisekundach.}
+\label{tab:med-gcc-1M}
+\scriptsize
+\setlength{\tabcolsep}{3.0pt}
 \begin{tabular}{lrrrrrrrrrrr}
 \toprule
-Wariant & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os}
-        & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
+Algorytm & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
 \midrule
-radix2\_v0            & 29,665 &  4,474 &  4,492 &  4,333 &  4,367 &  4,382 &  3,868 &  3,768 & \textbf{3,746} &  3,756 &  4,402 \\
-radix2\_v1            & 23,368 &  3,383 &  3,558 &  3,566 & \textbf{3,364} &  3,558 &  3,551 &  3,688 &  3,598 &  3,633 &  3,502 \\
-radix2\_v2\_soa       & 20,045 &  4,648 &  3,567 &  3,444 &  4,620 &  3,432 &  3,319 &  3,282 &  3,256 & \textbf{3,144} &  3,502 \\
-radix2\_v3\_neon      & 20,919 &  3,199 & \textbf{3,168} &  3,362 &  3,238 &  3,378 &  3,415 &  3,474 &  3,362 &  3,476 &  3,203 \\
+radix2\_v0 & 834,30 & 212,17 & 206,54 & 206,60 & 209,55 & 207,53 & 206,52 & 207,13 & 207,44 & 207,72 & 208,17 \\
+radix2\_v1 & 638,30 & 211,61 & 208,53 & 208,09 & 212,02 & 207,28 & 209,20 & 207,36 & 209,96 & 210,51 & 212,75 \\
+radix2\_v2\_soa & 473,97 & 211,86 & 209,70 & 208,33 & 207,83 & 212,03 & 216,72 & 208,50 & 216,78 & 215,87 & 212,16 \\
+radix2\_v3\_neon & 419,65 & 212,35 & 210,82 & 210,87 & 214,28 & 208,78 & 212,63 & 211,66 & 213,72 & 214,83 & 212,40 \\
+radix4 & 647,67 & 304,00 & 280,17 & 279,04 & 275,54 & 263,93 & 307,58 & 271,54 & 301,06 & 301,80 & 283,62 \\
+radix4\_naive & 632,95 & 254,73 & 257,96 & 254,87 & 254,23 & 246,92 & 251,88 & 256,21 & 246,13 & 245,51 & 258,40 \\
+splitradix & 745,81 & 634,16 & 597,59 & 596,89 & 602,57 & 601,41 & 630,62 & 553,78 & 605,62 & 600,52 & 600,61 \\
+stockham & 310,10 & 171,62 & 170,54 & 91,42 & 167,89 & 92,67 & 90,69 & 91,51 & 91,50 & 91,78 & 91,27 \\
 \addlinespace
-radix2\_par (1 w.)    & 23,707 &  3,373 &  3,600 &  3,561 & \textbf{3,337} &  3,506 &  3,631 &  3,588 &  3,706 &  3,729 &  3,440 \\
-radix2\_par (2 w.)    & 15,329 & \textbf{2,677} &  2,950 &  2,795 &  2,858 &  2,787 &  2,807 &  2,876 &  2,833 &  3,080 &  2,920 \\
-radix2\_par (4 w.)    & 10,274 &  2,523 &  2,457 & \textbf{2,453} &  2,496 &  2,744 &  2,458 &  2,490 &  2,496 &  2,491 &  2,505 \\
-\addlinespace
-radix2\_par\_v2 (1 w.)& 26,459 & \textbf{3,689} &  4,073 &  3,952 &  3,989 &  3,955 &  3,840 &  3,944 &  3,800 &  3,751 &  3,979 \\
-radix2\_par\_v2 (2 w.)& 14,606 & \textbf{2,769} &  3,004 &  2,840 &  2,871 &  2,800 &  2,870 &  2,776 &  2,828 &  2,812 &  2,947 \\
-radix2\_par\_v2 (4 w.)&  8,694 &  2,422 &  2,369 & \textbf{2,176} &  2,370 &  2,348 &  2,334 &  2,293 &  2,512 &  2,387 &  2,326 \\
-\addlinespace
-radix4                & 18,693 &  5,135 &  5,168 &  5,078 &  5,089 &  5,122 &  5,143 &  4,647 &  4,621 & \textbf{4,587} &  5,017 \\
-radix4\_naive         & 24,117 & 12,885 & 12,804 & 12,610 & 12,706 & 12,728 & 10,263 & 12,448 & \textbf{10,061} & 10,064 & 12,696 \\
-radix4\_par (1 w.)    & 19,176 &  5,088 &  5,004 &  4,934 &  5,034 &  4,944 &  5,145 & \textbf{4,569} &  4,646 &  4,724 &  5,054 \\
-radix4\_par (2 w.)    & 12,457 &  4,291 &  4,226 &  4,083 &  4,250 &  4,193 &  4,280 & \textbf{3,754} &  3,833 &  3,791 &  4,294 \\
-radix4\_par (4 w.)    &  8,913 &  4,476 &  4,440 &  4,275 &  4,279 &  4,202 &  4,525 & \textbf{3,718} &  3,939 &  3,910 &  4,395 \\
-\addlinespace
-splitradix            & 15,620 &  5,919 &  5,839 &  5,663 &  5,672 &  5,733 & \textbf{5,500} &  5,663 &  5,678 &  5,623 &  5,796 \\
-stockham              & 16,350 &  5,478 &  3,683 &  3,506 &  4,817 &  3,460 &  3,546 & \textbf{3,345} &  3,556 &  3,602 &  3,464 \\
-\addlinespace
-fftw                  &  2,296 &  2,347 &  2,300 &  2,312 &  2,325 &  2,343 & \textbf{2,277} &  2,317 &  2,322 &  2,310 &  2,276 \\
+fftw & 52,34 & 52,36 & 52,73 & 52,69 & 52,42 & 52,52 & 52,41 & 53,04 & 52,45 & 52,56 & 52,40 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\begin{table}[htbp]
+
+
+%============================================================================
+% Tabela 1.33   (etykieta: tab:cache-gcc-1M)
+% Współczynnik chybień pamięci podręcznej L1D i L2 dla GCC i 1048576 próbek, wersja sekwencyjna.
+%============================================================================
+\begin{table}[H]
 \centering
-\caption{Zestawy flag użyte w~badaniu.}
-\label{tab:flagi}
-\small
-\begin{tabular}{ll}
+\caption{Współczynnik chybień pamięci podręcznej L1D i L2 dla GCC i 1048576 próbek, wersja sekwencyjna.}
+\label{tab:cache-gcc-1M}
+\scriptsize
+\setlength{\tabcolsep}{3.0pt}
+\begin{tabular}{lrrrrrrrrrrr}
 \toprule
-Etykieta & Flagi \\
+Algorytm & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
 \midrule
-\texttt{O0} \dots \texttt{Os} & \texttt{-O0}, \texttt{-O1}, \texttt{-O2}, \texttt{-O3}, \texttt{-Os} \\
-unroll     & \texttt{-O3 -funroll-loops} \\
-ffast      & \texttt{-O3 -ffast-math} \\
-mcpu       & \texttt{-O3 -mcpu=cortex-a72} \\
-ff+mcpu    & \texttt{-O3 -ffast-math -mcpu=cortex-a72} \\
-+alias     & ff+mcpu \texttt{+ -{}-param vect-max-version-for-alias-checks=30} \\
-lto        & \texttt{-O3 -flto} \\
+\multicolumn{12}{l}{\textit{Chybienia L1D [\%]}} \\[2pt]
+radix2\_v0 & 0,14 & 1,06 & 1,08 & 1,06 & 1,07 & 1,07 & 1,08 & 1,08 & 1,07 & 1,09 & 1,08 \\
+radix2\_v1 & 0,26 & 1,12 & 1,94 & 2,01 & 1,10 & 2,00 & 1,11 & 1,14 & 1,12 & 1,14 & 2,17 \\
+radix2\_v2\_soa & 0,52 & 2,09 & 2,15 & 1,98 & 2,13 & 1,87 & 1,90 & 1,98 & 1,84 & 4,52 & 2,53 \\
+radix2\_v3\_neon & 0,85 & 4,76 & 5,43 & 4,87 & 4,94 & 5,03 & 5,03 & 5,08 & 5,21 & 5,09 & 6,03 \\
+radix4 & 1,33 & 10,83 & 10,91 & 11,24 & 11,32 & 10,81 & 11,06 & 11,82 & 10,87 & 10,85 & 11,78 \\
+radix4\_naive & 0,43 & 1,82 & 2,37 & 1,74 & 2,55 & 2,12 & 1,72 & 1,63 & 1,82 & 1,60 & 1,82 \\
+splitradix & 2,69 & 18,06 & 19,10 & 18,97 & 18,93 & 18,97 & 18,70 & 18,86 & 18,88 & 19,04 & 19,07 \\
+stockham & 0,76 & 3,24 & 3,18 & 1,51 & 5,63 & 1,57 & 1,47 & 1,44 & 1,57 & 1,39 & 1,41 \\
+\addlinespace
+\multicolumn{12}{l}{\textit{Chybienia L2D [\%]}} \\[2pt]
+radix2\_v0 & 33,71 & 34,74 & 34,89 & 35,25 & 34,94 & 34,90 & 34,70 & 34,86 & 34,87 & 34,85 & 34,90 \\
+radix2\_v1 & 31,46 & 31,38 & 31,15 & 30,77 & 31,53 & 31,03 & 31,34 & 30,99 & 31,49 & 31,29 & 30,76 \\
+radix2\_v2\_soa & 26,39 & 30,00 & 29,04 & 29,29 & 29,25 & 30,86 & 30,95 & 30,38 & 31,90 & 30,56 & 26,82 \\
+radix2\_v3\_neon & 24,48 & 31,44 & 29,53 & 31,23 & 31,08 & 30,34 & 31,02 & 30,72 & 30,62 & 30,54 & 28,10 \\
+radix4 & 27,55 & 25,42 & 27,98 & 27,35 & 26,01 & 27,73 & 28,52 & 25,63 & 27,83 & 28,77 & 26,59 \\
+radix4\_naive & 23,01 & 25,40 & 24,23 & 26,53 & 23,82 & 24,28 & 26,15 & 23,16 & 24,95 & 26,41 & 25,85 \\
+splitradix & 27,73 & 28,77 & 26,75 & 25,19 & 25,56 & 26,01 & 26,94 & 26,17 & 25,72 & 25,48 & 28,34 \\
+stockham & 28,89 & 32,79 & 33,09 & 26,19 & 32,65 & 26,24 & 26,20 & 26,29 & 26,03 & 26,24 & 26,34 \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+%============================================================================
+% Tabela 1.32   (etykieta: tab:cache-gcc-16k)
+% Współczynnik chybień pamięci podręcznej L1D i L2 dla GCC i 16384 próbek, wersja sekwencyjna.
+%============================================================================
+\begin{table}[H]
+\centering
+\caption{Współczynnik chybień pamięci podręcznej L1D i L2 dla GCC i 16384 próbek, wersja sekwencyjna.}
+\label{tab:cache-gcc-16k}
+\scriptsize
+\setlength{\tabcolsep}{3.0pt}
+\begin{tabular}{lrrrrrrrrrrr}
+\toprule
+Algorytm & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
+\midrule
+\multicolumn{12}{l}{\textit{Chybienia L1D [\%]}} \\[2pt]
+radix2\_v0 & 0,19 & 1,44 & 1,42 & 1,46 & 1,42 & 1,48 & 1,43 & 1,47 & 1,45 & 1,38 & 1,47 \\
+radix2\_v1 & 0,30 & 1,45 & 2,68 & 2,71 & 1,36 & 2,63 & 1,35 & 1,32 & 1,45 & 1,43 & 2,35 \\
+radix2\_v2\_soa & 0,84 & 2,17 & 2,83 & 1,97 & 2,70 & 2,65 & 2,28 & 2,15 & 2,57 & 4,33 & 2,73 \\
+radix2\_v3\_neon & 0,79 & 4,99 & 4,88 & 5,27 & 5,68 & 4,93 & 5,20 & 5,45 & 5,19 & 4,73 & 5,63 \\
+radix4 & 0,83 & 6,59 & 7,51 & 6,95 & 6,87 & 6,80 & 6,96 & 7,29 & 7,25 & 6,29 & 6,94 \\
+radix4\_naive & 0,24 & 1,33 & 1,44 & 1,96 & 1,48 & 1,20 & 1,49 & 1,05 & 1,54 & 1,57 & 1,64 \\
+splitradix & 2,07 & 14,12 & 15,52 & 15,46 & 14,19 & 15,02 & 14,85 & 15,49 & 14,39 & 15,48 & 15,72 \\
+stockham & 0,73 & 2,75 & 2,91 & 1,62 & 4,73 & 1,56 & 1,86 & 1,42 & 1,64 & 1,58 & 1,46 \\
+\addlinespace
+\multicolumn{12}{l}{\textit{Chybienia L2D [\%]}} \\[2pt]
+radix2\_v0 & 0,07 & 0,23 & 0,22 & 0,00 & 0,16 & 0,14 & 0,04 & 0,07 & 0,24 & 0,26 & 0,22 \\
+radix2\_v1 & 0,55 & 0,35 & 0,31 & 0,25 & 0,54 & 0,61 & 0,58 & 0,31 & 0,19 & 0,64 & 0,29 \\
+radix2\_v2\_soa & 0,23 & 0,42 & 0,13 & 0,42 & 0,59 & 0,28 & 0,27 & 0,31 & 0,17 & 0,30 & 0,32 \\
+radix2\_v3\_neon & 0,22 & 0,47 & 0,12 & 0,27 & 0,04 & 0,11 & 0,17 & 0,27 & 0,17 & 0,25 & 0,37 \\
+radix4 & 0,18 & 0,16 & 0,17 & 0,27 & 0,18 & 0,12 & 0,11 & 0,20 & 0,08 & 0,05 & 0,47 \\
+radix4\_naive & 0,17 & 0,10 & 0,10 & 0,11 & 0,30 & 0,15 & 0,12 & 0,17 & 0,12 & 0,16 & 0,28 \\
+splitradix & 0,17 & 0,09 & 0,21 & 0,02 & 0,11 & 0,07 & 0,11 & 0,28 & 0,14 & 0,13 & 0,21 \\
+stockham & 0,39 & 0,14 & 0,41 & 0,45 & 0,43 & 0,32 & 0,32 & 0,46 & 0,48 & 0,34 & 0,67 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
 \section{Analiza wpływu optymalizacji programu wielowątkowego}
+
+Ta sekcje trzeba przeprowadzic w bardzo analogiczny sposob jak te co jest wyzej, jak zrobisz sekcje sekwencyjna to to pojdzie w jeden wieczór
+
+
+%============================================================================
+% Tabela 1.68   (etykieta: tab:par-skal-gcc-64k)
+% Przyspieszenie i efektywność zrównoleglenia względem jednego wątku dla GCC i 65536 próbek, wersja współbieżna.
+%============================================================================
+\begin{table}[H]
+\centering
+\caption{Przyspieszenie i efektywność zrównoleglenia względem jednego wątku dla GCC i 65536 próbek, wersja współbieżna.}
+\label{tab:par-skal-gcc-64k}
+\scriptsize
+\setlength{\tabcolsep}{3.0pt}
+\begin{tabular}{lrrrrrrrrrrr}
+\toprule
+Algorytm (wątki) & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
+\midrule
+\multicolumn{12}{l}{\textit{Przyspieszenie względem jednego wątku [$\times$]}} \\[2pt]
+radix2\_par (1) & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 \\
+radix2\_par (2) & 1,57 & 1,20 & 1,30 & 1,29 & 1,30 & 1,34 & 1,36 & 1,36 & 1,33 & 1,36 & 1,26 \\
+radix2\_par (4) & 2,40 & 1,51 & 1,57 & 1,51 & 1,60 & 1,54 & 1,54 & 1,52 & 1,60 & 1,64 & 1,48 \\
+radix2\_par (8) & 1,90 & 1,00 & 1,01 & 1,05 & 1,06 & 1,04 & 1,03 & 1,12 & 1,08 & 1,09 & 1,04 \\
+\addlinespace
+radix2\_par\_v2 (1) & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 \\
+radix2\_par\_v2 (2) & 1,83 & 1,44 & 1,38 & 1,41 & 1,47 & 1,36 & 1,46 & 1,49 & 1,49 & 1,46 & 1,38 \\
+radix2\_par\_v2 (4) & 3,20 & 1,94 & 1,63 & 1,69 & 1,90 & 1,67 & 1,89 & 2,01 & 1,91 & 1,92 & 1,66 \\
+radix2\_par\_v2 (8) & 2,54 & 1,25 & 1,10 & 1,12 & 1,27 & 1,11 & 1,24 & 1,34 & 1,28 & 1,29 & 1,11 \\
+\addlinespace
+radix4\_par (1) & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 \\
+radix4\_par (2) & 1,73 & 1,25 & 1,22 & 1,25 & 1,20 & 1,28 & 1,25 & 1,23 & 1,27 & 1,23 & 1,22 \\
+radix4\_par (4) & 2,48 & 1,28 & 1,24 & 1,26 & 1,21 & 1,30 & 1,25 & 1,21 & 1,26 & 1,28 & 1,23 \\
+radix4\_par (8) & 1,98 & 1,12 & 1,06 & 1,09 & 1,04 & 1,08 & 1,08 & 1,05 & 1,08 & 1,09 & 1,06 \\
+\addlinespace
+\multicolumn{12}{l}{\textit{Efektywność zrównoleglenia [\%]}} \\[2pt]
+radix2\_par (1) & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 \\
+radix2\_par (2) & 78,3 & 60,2 & 65,2 & 64,6 & 64,9 & 66,8 & 68,0 & 68,1 & 66,3 & 67,9 & 62,8 \\
+radix2\_par (4) & 60,1 & 37,7 & 39,4 & 37,9 & 39,9 & 38,5 & 38,6 & 38,1 & 39,9 & 40,9 & 37,0 \\
+radix2\_par (8) & 23,8 & 12,5 & 12,6 & 13,2 & 13,3 & 13,0 & 12,9 & 14,0 & 13,5 & 13,7 & 13,0 \\
+\addlinespace
+radix2\_par\_v2 (1) & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 \\
+radix2\_par\_v2 (2) & 91,7 & 72,1 & 69,0 & 70,3 & 73,3 & 68,0 & 72,9 & 74,3 & 74,4 & 73,1 & 68,8 \\
+radix2\_par\_v2 (4) & 80,0 & 48,5 & 40,9 & 42,3 & 47,4 & 41,7 & 47,2 & 50,2 & 47,7 & 48,0 & 41,5 \\
+radix2\_par\_v2 (8) & 31,7 & 15,7 & 13,8 & 14,0 & 15,9 & 13,9 & 15,5 & 16,7 & 16,0 & 16,1 & 13,9 \\
+\addlinespace
+radix4\_par (1) & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 \\
+radix4\_par (2) & 86,6 & 62,4 & 61,2 & 62,5 & 60,0 & 63,8 & 62,7 & 61,7 & 63,7 & 61,7 & 60,8 \\
+radix4\_par (4) & 61,9 & 32,0 & 30,9 & 31,5 & 30,3 & 32,6 & 31,3 & 30,3 & 31,6 & 31,9 & 30,8 \\
+radix4\_par (8) & 24,7 & 14,0 & 13,3 & 13,7 & 13,0 & 13,5 & 13,5 & 13,2 & 13,6 & 13,6 & 13,2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%============================================================================
+% Tabela 1.80   (etykieta: tab:par-cyk-instr-gcc-1M)
+% Liczba cykli procesora, wykonanych instrukcji oraz IPC dla GCC i 1048576 próbek, wersja współbieżna. Cykle i~instrukcje podano w~milionach.
+%============================================================================
+\begin{table}[H]
+\centering
+\caption{Liczba cykli procesora, wykonanych instrukcji oraz IPC dla GCC i 1048576 próbek, wersja współbieżna. Cykle i~instrukcje podano w~milionach.}
+\label{tab:par-cyk-instr-gcc-1M}
+\scriptsize
+\setlength{\tabcolsep}{3.0pt}
+\begin{tabular}{lrrrrrrrrrrr}
+\toprule
+Algorytm (wątki) & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
+\midrule
+\multicolumn{12}{l}{\textit{Cykle procesora}} \\[2pt]
+radix2\_par (1) & 1149,1 & 392,9 & 388,3 & 384,7 & 398,5 & 399,8 & 393,6 & 386,4 & 393,4 & 403,1 & 389,7 \\
+radix2\_par (2) & 1298,4 & 614,6 & 619,0 & 610,1 & 613,0 & 613,4 & 615,7 & 618,2 & 618,3 & 632,9 & 621,7 \\
+radix2\_par (4) & 1352,3 & 1007,4 & 1017,9 & 980,8 & 1048,0 & 1017,3 & 1064,3 & 1008,3 & 901,0 & 1007,8 & 997,4 \\
+radix2\_par (8) & 1425,6 & 1047,4 & 1035,6 & 1041,5 & 1075,4 & 1057,8 & 1084,5 & 1079,1 & 1051,1 & 1028,5 & 1052,4 \\
+\addlinespace
+radix2\_par\_v2 (1) & 1287,3 & 382,3 & 384,0 & 400,6 & 384,5 & 401,4 & 382,3 & 378,9 & 380,4 & 394,5 & 388,5 \\
+radix2\_par\_v2 (2) & 1286,8 & 635,1 & 635,5 & 628,0 & 631,9 & 642,6 & 633,9 & 653,6 & 636,8 & 645,8 & 653,6 \\
+radix2\_par\_v2 (4) & 1312,5 & 1153,7 & 1045,7 & 1059,4 & 1077,3 & 1082 & 1051,3 & 1056,1 & 1042,4 & 1083,7 & 1065,9 \\
+radix2\_par\_v2 (8) & 1314,0 & 1003,7 & 1049,4 & 1018,4 & 1018,8 & 998,4 & 1020,5 & 1024,7 & 1016,3 & 1032,3 & 1029,4 \\
+\addlinespace
+radix4\_par (1) & 1100,7 & 542,5 & 512,8 & 515,0 & 536,9 & 492,7 & 551,6 & 509,8 & 560,7 & 559,5 & 515,5 \\
+radix4\_par (2) & 1130,1 & 642,2 & 647,6 & 641,1 & 660,3 & 602,5 & 661,7 & 657,7 & 661,4 & 680,6 & 644,8 \\
+radix4\_par (4) & 1216,0 & 924,1 & 916,4 & 1027,5 & 959,8 & 919,3 & 928,9 & 944,8 & 955,3 & 944,7 & 908,0 \\
+radix4\_par (8) & 1258,2 & 915,1 & 915,0 & 1013,2 & 920,2 & 900,7 & 960,8 & 936,1 & 970,7 & 965,1 & 907,7 \\
+\addlinespace
+\multicolumn{12}{l}{\textit{Wykonane instrukcje}} \\[2pt]
+radix2\_par (1) & 1345,3 & 332,3 & 224,3 & 224,2 & 315,5 & 226,3 & 308,2 & 308,6 & 308,7 & 308,7 & 224,2 \\
+radix2\_par (2) & 1443,1 & 396,6 & 224,6 & 224,6 & 327,4 & 226,7 & 308,5 & 309,0 & 309,0 & 309,1 & 224,7 \\
+radix2\_par (4) & 1443,6 & 397,3 & 225,2 & 225,2 & 328,1 & 227,4 & 309,2 & 309,8 & 309,6 & 309,7 & 225,3 \\
+radix2\_par (8) & 1445,1 & 398,7 & 226,8 & 226,7 & 329,5 & 228,7 & 310,7 & 311,2 & 311,2 & 311,2 & 226,8 \\
+\addlinespace
+radix2\_par\_v2 (1) & 1425,1 & 398,3 & 260,0 & 260,0 & 388,8 & 249,4 & 375,2 & 375,7 & 375,8 & 375,8 & 261,0 \\
+radix2\_par\_v2 (2) & 1425,4 & 398,8 & 260,4 & 260,3 & 389,3 & 250,0 & 375,7 & 376,3 & 376,3 & 376,2 & 261,5 \\
+radix2\_par\_v2 (4) & 1425,7 & 399,4 & 261,0 & 261,0 & 390,1 & 250,8 & 376,3 & 376,8 & 377,0 & 377,1 & 262,1 \\
+radix2\_par\_v2 (8) & 1427,3 & 400,9 & 262,3 & 262,3 & 391,3 & 251,9 & 377,6 & 378,1 & 378,2 & 378,2 & 263,4 \\
+\addlinespace
+radix4\_par (1) & 1080,4 & 307,3 & 284,1 & 284,0 & 291,4 & 257,9 & 294,6 & 297,7 & 308,2 & 308,2 & 284,1 \\
+radix4\_par (2) & 1080,6 & 307,4 & 284,4 & 284,4 & 291,8 & 258,2 & 294,9 & 298,0 & 308,5 & 308,5 & 284,4 \\
+radix4\_par (4) & 1080,9 & 307,9 & 284,9 & 284,9 & 292,2 & 258,6 & 295,3 & 298,5 & 309,0 & 309,2 & 284,8 \\
+radix4\_par (8) & 1082,0 & 308,8 & 285,8 & 285,9 & 293,2 & 259,5 & 296,4 & 299,5 & 310,0 & 310,0 & 285,8 \\
+\addlinespace
+\multicolumn{12}{l}{\textit{Liczba instrukcji na cykl (IPC)}} \\[2pt]
+radix2\_par (1) & 1,171 & 0,846 & 0,578 & 0,583 & 0,792 & 0,566 & 0,783 & 0,799 & 0,785 & 0,766 & 0,575 \\
+radix2\_par (2) & 1,111 & 0,645 & 0,363 & 0,368 & 0,534 & 0,370 & 0,501 & 0,500 & 0,500 & 0,488 & 0,361 \\
+radix2\_par (4) & 1,067 & 0,394 & 0,221 & 0,230 & 0,313 & 0,223 & 0,291 & 0,307 & 0,344 & 0,307 & 0,226 \\
+radix2\_par (8) & 1,014 & 0,381 & 0,219 & 0,218 & 0,306 & 0,216 & 0,286 & 0,288 & 0,296 & 0,303 & 0,216 \\
+\addlinespace
+radix2\_par\_v2 (1) & 1,107 & 1,042 & 0,677 & 0,649 & 1,011 & 0,621 & 0,981 & 0,991 & 0,988 & 0,953 & 0,672 \\
+radix2\_par\_v2 (2) & 1,108 & 0,628 & 0,410 & 0,415 & 0,616 & 0,389 & 0,593 & 0,576 & 0,591 & 0,583 & 0,400 \\
+radix2\_par\_v2 (4) & 1,086 & 0,346 & 0,250 & 0,246 & 0,362 & 0,170 & 0,358 & 0,357 & 0,362 & 0,288 & 0,246 \\
+radix2\_par\_v2 (8) & 1,086 & 0,399 & 0,250 & 0,258 & 0,384 & 0,252 & 0,370 & 0,369 & 0,372 & 0,366 & 0,256 \\
+\addlinespace
+radix4\_par (1) & 0,982 & 0,566 & 0,554 & 0,551 & 0,543 & 0,523 & 0,534 & 0,584 & 0,550 & 0,551 & 0,551 \\
+radix4\_par (2) & 0,956 & 0,479 & 0,439 & 0,444 & 0,442 & 0,428 & 0,446 & 0,453 & 0,466 & 0,453 & 0,441 \\
+radix4\_par (4) & 0,889 & 0,333 & 0,311 & 0,277 & 0,304 & 0,281 & 0,318 & 0,316 & 0,323 & 0,327 & 0,314 \\
+radix4\_par (8) & 0,860 & 0,338 & 0,312 & 0,282 & 0,319 & 0,288 & 0,309 & 0,320 & 0,319 & 0,321 & 0,315 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%============================================================================
+% Tabela 1.57   (etykieta: tab:par-med-gcc-1M)
+% Mediana czasu wykonania transformaty dla GCC i 1048576 próbek, wersja współbieżna. Wartości w~milisekundach.
+%============================================================================
+\begin{table}[H]
+\centering
+\caption{Mediana czasu wykonania transformaty dla GCC i 1048576 próbek, wersja współbieżna. Wartości w~milisekundach.}
+\label{tab:par-med-gcc-1M}
+\scriptsize
+\setlength{\tabcolsep}{3.0pt}
+\begin{tabular}{lrrrrrrrrrrr}
+\toprule
+Algorytm (wątki) & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
+\midrule
+radix2\_par (1) & 637,42 & 211,43 & 209,69 & 211,15 & 212,29 & 212,82 & 209,59 & 211,09 & 209,59 & 211,45 & 210,77 \\
+radix2\_par (2) & 415,02 & 197,09 & 196,34 & 196,99 & 198,30 & 196,15 & 199,48 & 197,21 & 195,69 & 196,75 & 197,49 \\
+radix2\_par (4) & 288,64 & 182,77 & 182,70 & 181,09 & 183,14 & 182,01 & 181,97 & 182,29 & 182,42 & 182,42 & 181,37 \\
+radix2\_par (8) & 312,27 & 204,87 & 203,18 & 202,12 & 204,69 & 201,27 & 202,64 & 204,96 & 204,12 & 203,77 & 202,07 \\
+\addlinespace
+radix2\_par\_v2 (1) & 709,30 & 213,34 & 210,20 & 210,46 & 211,23 & 209,57 & 208,53 & 210,26 & 208,95 & 210,87 & 210,78 \\
+radix2\_par\_v2 (2) & 397,30 & 202,39 & 204,92 & 203,84 & 205,25 & 203,54 & 203,71 & 204,52 & 204,42 & 204,86 & 204,91 \\
+radix2\_par\_v2 (4) & 245,13 & 179,38 & 178,99 & 178,37 & 181,66 & 179,40 & 179,22 & 179,37 & 180,69 & 181,30 & 179,91 \\
+radix2\_par\_v2 (8) & 268,34 & 188,42 & 187,55 & 186,44 & 189,79 & 185,36 & 187,31 & 188,90 & 188,74 & 188,35 & 188,76 \\
+\addlinespace
+radix4\_par (1) & 654,86 & 301,52 & 279,47 & 283,32 & 294,55 & 270,43 & 298,29 & 279,77 & 307,36 & 306,00 & 283,99 \\
+radix4\_par (2) & 383,40 & 217,00 & 211,01 & 215,11 & 218,61 & 195,09 & 217,98 & 216,45 & 221,98 & 223,15 & 210,99 \\
+radix4\_par (4) & 276,50 & 182,69 & 182,53 & 183,74 & 187,90 & 166,68 & 184,60 & 186,89 & 188,05 & 189,99 & 180,58 \\
+radix4\_par (8) & 286,94 & 190,93 & 189,87 & 192,42 & 193,49 & 177,01 & 194,49 & 190,89 & 200,64 & 198,21 & 187,17 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%============================================================================
+% Tabela 1.88   (etykieta: tab:par-ratio-gcc-1M)
+% Stosunek czasu procesora do czasu ściany dla GCC i 1048576 próbek, wersja współbieżna. Wartości bezwymiarowe.
+%============================================================================
+\begin{table}[H]
+\centering
+\caption{Stosunek czasu procesora do czasu ściany dla GCC i 1048576 próbek, wersja współbieżna. Wartości bezwymiarowe.}
+\label{tab:par-ratio-gcc-1M}
+\scriptsize
+\setlength{\tabcolsep}{3.0pt}
+\begin{tabular}{lrrrrrrrrrrr}
+\toprule
+Algorytm (wątki) & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
+\midrule
+radix2\_par (1) & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 \\
+radix2\_par (2) & 1,73 & 1,71 & 1,72 & 1,72 & 1,71 & 1,73 & 1,71 & 1,71 & 1,73 & 1,72 & 1,71 \\
+radix2\_par (4) & 2,62 & 3,05 & 3,06 & 3,07 & 3,05 & 3,07 & 3,07 & 3,06 & 3,06 & 3,04 & 3,07 \\
+radix2\_par (8) & 2,53 & 2,87 & 2,87 & 2,88 & 2,86 & 2,89 & 2,88 & 2,87 & 2,84 & 2,84 & 2,91 \\
+\addlinespace
+radix2\_par\_v2 (1) & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 \\
+radix2\_par\_v2 (2) & 1,79 & 1,71 & 1,71 & 1,72 & 1,72 & 1,73 & 1,72 & 1,72 & 1,71 & 1,71 & 1,71 \\
+radix2\_par\_v2 (4) & 2,94 & 3,26 & 3,27 & 3,28 & 3,24 & 3,27 & 3,27 & 3,27 & 3,25 & 3,25 & 3,27 \\
+radix2\_par\_v2 (8) & 2,71 & 3,00 & 3,02 & 3,01 & 3,00 & 3,05 & 3,01 & 3,04 & 3,02 & 3,04 & 2,99 \\
+\addlinespace
+radix4\_par (1) & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 \\
+radix4\_par (2) & 1,65 & 1,65 & 1,66 & 1,66 & 1,65 & 1,70 & 1,66 & 1,65 & 1,66 & 1,65 & 1,66 \\
+radix4\_par (4) & 2,45 & 2,78 & 2,79 & 2,81 & 2,80 & 2,92 & 2,80 & 2,77 & 2,79 & 2,78 & 2,78 \\
+radix4\_par (8) & 2,39 & 2,70 & 2,67 & 2,73 & 2,72 & 2,82 & 2,70 & 2,67 & 2,70 & 2,72 & 2,70 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%============================================================================
+% Tabela 1.69   (etykieta: tab:par-skal-gcc-1M)
+% Przyspieszenie i efektywność zrównoleglenia względem jednego wątku dla GCC i 1048576 próbek, wersja współbieżna.
+%============================================================================
+\begin{table}[H]
+\centering
+\caption{Przyspieszenie i efektywność zrównoleglenia względem jednego wątku dla GCC i 1048576 próbek, wersja współbieżna.}
+\label{tab:par-skal-gcc-1M}
+\scriptsize
+\setlength{\tabcolsep}{3.0pt}
+\begin{tabular}{lrrrrrrrrrrr}
+\toprule
+Algorytm (wątki) & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
+\midrule
+\multicolumn{12}{l}{\textit{Przyspieszenie względem jednego wątku [$\times$]}} \\[2pt]
+radix2\_par (1) & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 \\
+radix2\_par (2) & 1,54 & 1,07 & 1,07 & 1,07 & 1,07 & 1,08 & 1,05 & 1,07 & 1,07 & 1,07 & 1,07 \\
+radix2\_par (4) & 2,21 & 1,16 & 1,15 & 1,17 & 1,16 & 1,17 & 1,15 & 1,16 & 1,15 & 1,16 & 1,16 \\
+radix2\_par (8) & 2,04 & 1,03 & 1,03 & 1,04 & 1,04 & 1,06 & 1,03 & 1,03 & 1,03 & 1,04 & 1,04 \\
+\addlinespace
+radix2\_par\_v2 (1) & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 \\
+radix2\_par\_v2 (2) & 1,79 & 1,05 & 1,03 & 1,03 & 1,03 & 1,03 & 1,02 & 1,03 & 1,02 & 1,03 & 1,03 \\
+radix2\_par\_v2 (4) & 2,89 & 1,19 & 1,17 & 1,18 & 1,16 & 1,17 & 1,16 & 1,17 & 1,16 & 1,16 & 1,17 \\
+radix2\_par\_v2 (8) & 2,64 & 1,13 & 1,12 & 1,13 & 1,11 & 1,13 & 1,11 & 1,11 & 1,11 & 1,12 & 1,12 \\
+\addlinespace
+radix4\_par (1) & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 \\
+radix4\_par (2) & 1,71 & 1,39 & 1,32 & 1,32 & 1,35 & 1,39 & 1,37 & 1,29 & 1,38 & 1,37 & 1,35 \\
+radix4\_par (4) & 2,37 & 1,65 & 1,53 & 1,54 & 1,57 & 1,62 & 1,62 & 1,50 & 1,63 & 1,61 & 1,57 \\
+radix4\_par (8) & 2,28 & 1,58 & 1,47 & 1,47 & 1,52 & 1,53 & 1,53 & 1,47 & 1,53 & 1,54 & 1,52 \\
+\addlinespace
+\multicolumn{12}{l}{\textit{Efektywność zrównoleglenia [\%]}} \\[2pt]
+radix2\_par (1) & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 \\
+radix2\_par (2) & 76,8 & 53,6 & 53,4 & 53,6 & 53,5 & 54,2 & 52,5 & 53,5 & 53,6 & 53,7 & 53,4 \\
+radix2\_par (4) & 55,2 & 28,9 & 28,7 & 29,2 & 29,0 & 29,2 & 28,8 & 28,9 & 28,7 & 29,0 & 29,1 \\
+radix2\_par (8) & 25,5 & 12,9 & 12,9 & 13,1 & 13,0 & 13,2 & 12,9 & 12,9 & 12,8 & 13,0 & 13,0 \\
+\addlinespace
+radix2\_par\_v2 (1) & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 \\
+radix2\_par\_v2 (2) & 89,3 & 52,7 & 51,3 & 51,6 & 51,5 & 51,5 & 51,2 & 51,4 & 51,1 & 51,5 & 51,4 \\
+radix2\_par\_v2 (4) & 72,3 & 29,7 & 29,4 & 29,5 & 29,1 & 29,2 & 29,1 & 29,3 & 28,9 & 29,1 & 29,3 \\
+radix2\_par\_v2 (8) & 33,0 & 14,2 & 14,0 & 14,1 & 13,9 & 14,1 & 13,9 & 13,9 & 13,8 & 14,0 & 14,0 \\
+\addlinespace
+radix4\_par (1) & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 \\
+radix4\_par (2) & 85,4 & 69,5 & 66,2 & 65,9 & 67,4 & 69,3 & 68,4 & 64,6 & 69,2 & 68,6 & 67,3 \\
+radix4\_par (4) & 59,2 & 41,3 & 38,3 & 38,6 & 39,2 & 40,6 & 40,4 & 37,4 & 40,9 & 40,3 & 39,3 \\
+radix4\_par (8) & 28,5 & 19,7 & 18,4 & 18,4 & 19,0 & 19,1 & 19,2 & 18,3 & 19,1 & 19,3 & 19,0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%============================================================================
+% Tabela 1.67   (etykieta: tab:par-skal-gcc-4k)
+% Przyspieszenie i efektywność zrównoleglenia względem jednego wątku dla GCC i 4096 próbek, wersja współbieżna.
+%============================================================================
+\begin{table}[H]
+\centering
+\caption{Przyspieszenie i efektywność zrównoleglenia względem jednego wątku dla GCC i 4096 próbek, wersja współbieżna.}
+\label{tab:par-skal-gcc-4k}
+\scriptsize
+\setlength{\tabcolsep}{3.0pt}
+\begin{tabular}{lrrrrrrrrrrr}
+\toprule
+Algorytm (wątki) & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
+\midrule
+\multicolumn{12}{l}{\textit{Przyspieszenie względem jednego wątku [$\times$]}} \\[2pt]
+radix2\_par (1) & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 \\
+radix2\_par (2) & 1,30 & 0,59 & 0,58 & 0,58 & 0,63 & 0,59 & 0,61 & 0,63 & 0,61 & 0,61 & 0,57 \\
+radix2\_par (4) & 1,63 & 0,47 & 0,45 & 0,44 & 0,51 & 0,47 & 0,48 & 0,48 & 0,49 & 0,49 & 0,44 \\
+radix2\_par (8) & 0,94 & 0,22 & 0,20 & 0,19 & 0,23 & 0,20 & 0,21 & 0,22 & 0,21 & 0,21 & 0,19 \\
+\addlinespace
+radix2\_par\_v2 (1) & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 \\
+radix2\_par\_v2 (2) & 1,56 & 0,75 & 0,64 & 0,63 & 0,74 & 0,62 & 0,73 & 0,74 & 0,74 & 0,74 & 0,63 \\
+radix2\_par\_v2 (4) & 2,17 & 0,61 & 0,51 & 0,50 & 0,62 & 0,49 & 0,58 & 0,62 & 0,60 & 0,60 & 0,50 \\
+radix2\_par\_v2 (8) & 1,16 & 0,26 & 0,20 & 0,20 & 0,27 & 0,20 & 0,25 & 0,26 & 0,26 & 0,26 & 0,21 \\
+\addlinespace
+radix4\_par (1) & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 \\
+radix4\_par (2) & 1,36 & 0,73 & 0,71 & 0,73 & 0,73 & 0,71 & 0,74 & 0,73 & 0,73 & 0,75 & 0,70 \\
+radix4\_par (4) & 1,61 & 0,54 & 0,54 & 0,57 & 0,55 & 0,54 & 0,57 & 0,58 & 0,60 & 0,57 & 0,54 \\
+radix4\_par (8) & 0,88 & 0,25 & 0,24 & 0,25 & 0,26 & 0,24 & 0,26 & 0,26 & 0,27 & 0,26 & 0,25 \\
+\addlinespace
+\multicolumn{12}{l}{\textit{Efektywność zrównoleglenia [\%]}} \\[2pt]
+radix2\_par (1) & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 \\
+radix2\_par (2) & 64,9 & 29,5 & 29,0 & 29,2 & 31,3 & 29,3 & 30,5 & 31,6 & 30,4 & 30,7 & 28,7 \\
+radix2\_par (4) & 40,7 & 11,8 & 11,2 & 10,9 & 12,7 & 11,7 & 12,0 & 12,1 & 12,3 & 12,2 & 11,0 \\
+radix2\_par (8) & 11,7 & 2,8 & 2,5 & 2,4 & 2,8 & 2,5 & 2,7 & 2,8 & 2,6 & 2,6 & 2,4 \\
+\addlinespace
+radix2\_par\_v2 (1) & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 \\
+radix2\_par\_v2 (2) & 77,8 & 37,5 & 31,8 & 31,3 & 37,2 & 31,0 & 36,7 & 37,1 & 37,0 & 37,1 & 31,7 \\
+radix2\_par\_v2 (4) & 54,1 & 15,3 & 12,7 & 12,4 & 15,5 & 12,4 & 14,5 & 15,5 & 15,0 & 15,1 & 12,5 \\
+radix2\_par\_v2 (8) & 14,5 & 3,3 & 2,6 & 2,5 & 3,3 & 2,5 & 3,1 & 3,3 & 3,3 & 3,2 & 2,6 \\
+\addlinespace
+radix4\_par (1) & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 & 100,0 \\
+radix4\_par (2) & 68,0 & 36,3 & 35,7 & 36,7 & 36,5 & 35,6 & 36,9 & 36,7 & 36,7 & 37,4 & 35,1 \\
+radix4\_par (4) & 40,2 & 13,6 & 13,5 & 14,2 & 13,6 & 13,5 & 14,3 & 14,4 & 15,0 & 14,3 & 13,6 \\
+radix4\_par (8) & 11,0 & 3,1 & 3,1 & 3,1 & 3,3 & 3,0 & 3,2 & 3,2 & 3,3 & 3,2 & 3,1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
 \subsection{Skalowanie z liczbą wątków}
 \subsection{Wpływ flag kompilacji na warianty równoległe}

@@ -28,13 +28,13 @@ przeprowadzonych pomiarów, wraz z stosowanymi metrykami pomiarowymi.
 
 Platformą sprzętową, na której zrealizowano opisywany system testowy, jest
 Raspberry Pi 4 Model B~\cite{RaspberryPi4Product}.Na płytce znajduje się układ SoC (system na chipie, ang. \textit{System on Chip}) Broadcom BCM2711,
-zawierający cztery rdzenie ARM Cortex-A72 taktowane zegarem do 1,5~GHz~\cite{RaspberryPi4Product}. W celu zapewnienia odpowiednich temperatur dla pomiarów zastosowano również 
+zawierający cztery rdzenie ARM Cortex-A72 taktowane zegarem do 1,8~GHz~\cite{RaspberryPi4Product}. W celu zapewnienia odpowiednich temperatur dla pomiarów zastosowano również 
 dedykowaną obudowę na płytke z wentylatorami i radiator do rozpraszania ciepła z układu SoC.
 Podstawowe parametry techniczne przedstawiono poniżej:
 \begin{itemize}
     \item \textbf{SoC:} Broadcom BCM2711~\cite{RaspberryPi4Product}
     \item \textbf{Rdzenie CPU:} 4× ARM Cortex-A72, architektura ARMv8-A~\cite{ArmCortexA72TRM}
-    \item \textbf{Taktowanie:} 1,5~GHz~\cite{RaspberryPi4Product}
+    \item \textbf{Taktowanie:} 1,8~GHz~\cite{RaspberryPi4Product}
     \item \textbf{Pamięć podręczna L1:} 48~kB instrukcji (z kontrolą parzystości) + 32~kB danych (z korekcją ECC) na rdzeń~\cite{ArmCortexA72TRM}
     \item \textbf{Pamięć podręczna L2:} współdzielona, z korekcją ECC~\cite{ArmCortexA72TRM}
     \item \textbf{Pamięć operacyjna:} 1~GB ~\cite{RaspberryPi4Product}
@@ -748,7 +748,7 @@ Weryfikacja odbywa się w osobnej fazie, przed pomiarami czasu i liczników
 sprzętowych. Wariant, którego błąd przekracza przyjęty próg, jest odrzucany
 i nie bierze udziału w dalszych pomiarach. Wyniki porównania są
 zapisywane do pliku wraz z informacją o werdykcie.
-\section{Metodyka przeprowadzonych pomiarów}
+\section{Metodyka przeprowadzonych pomiarów}\label{sec:metodykaBadan}
 Badanie prowadzone jest wzdłuż trzech osi porównań. Pierwsza to wpływ flag
 kompilacji: ten sam wariant kodu budowany jest z różnymi zestawami flag,
 a punktem odniesienia jest poziom \texttt{-O0}, przy którym kompilator nie
@@ -771,10 +771,11 @@ Przyjęto następujące parametry pomiaru:
 
 \begin{itemize}
     \item kompilatory: GCC oraz Clang, z odpowiadajacymi zestawami flag,
-    \item rozmiary transformaty: 4096, 16384, 65536, 262144 oraz 1048576
-          próbek,
-    \item liczby wątków: 1, 2, 4, 8 oraz 16 (dla wariantów wielowątkowych),
-    \item sygnał wejściowy: ten sam dla każdego algorytmu,
+    \item rozmiary danych wejściowych: 1024, 16384 oraz 1048576 próbek dla wariantów
+      sekwencyjnych, a 4096, 65536 oraz 1048576 próbek dla wariantów
+      wielowątkowych,
+    \item liczby wątków: 1, 2, 4 oraz 8 (dla wariantów wielowątkowych),
+    \item sygnał wejściowy: multitonowy ten sam dla każdego algorytmu,
     \item liczba rund pomiarowych: 6, po 5 powtórzeń w rundzie, co daje
           30 powtórzeń na każdą komórkę macierzy,
     \item liczba przebiegów rozgrzewających: 3 przed każdą serią powtórzeń,
