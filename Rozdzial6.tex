@@ -1,4 +1,54 @@
 \chapter{Podsumowanie i wnioski}
 \section{Wnioski koncowe}
+NA RAZIE ROBOCZE
+\begin{enumerate}
+    \item Największy pojedynczy zysk daje przejście z \texttt{-O0} na \texttt{-O1}.
+          Zysk ten zależy jednak od rozmiaru danych - wynosi 5,11 przy
+          $N=16384$ i tylko 2,18 przy $N=1048576$. Nawet skrajna różnica
+          w~jakości kodu przestaje mieć znaczenie, gdy o~czasie wykonania decyduje
+          dostęp do pamięci.
 
+    \item Ręczna wektoryzacja z~użyciem instrukcji NEON dała wyraźną przewagę nad
+          pozostałymi wariantami radix2 dla rozmiarów do $N=16384$, ale przy
+          $N=1048576$ zysk zanika całkowicie.
+          DO UZUPEŁNIENIA: potwierdzenie przyczyny w~kodzie wynikowym
+
+    \item GCC i~Clang nie dają jednakowego kodu. Clang generuje szybszy kod przy rozmiarach
+          mieszczących się w~pamięci podręcznej, kosztem istotnie większej sekcji
+          \texttt{.text}, natomiast GCC gorzej radzi sobie z~częścią zestawów flag,
+          tracąc wektoryzację włączoną wcześniej przez \texttt{-O2}.
+          DO UZUPEŁNIENIA: wskazać, które zestawy flag
+
+    \item Kompilator nie naprawia błędów numerycznych tkwiących w~algorytmie. Flagi
+          uznawane za niebezpieczne dla dokładności kosztują ułamek decybela,
+          podczas gdy wybór wariantu algorytmu decyduje o~kilkudziesięciu.
+
+    \item Powyżej poziomu \texttt{-O1} wpływ flag nie ma jednoznacznego kierunku -
+          bywa nieco lepiej, bywa nieco gorzej, a~efekt zależy od konkretnej
+          implementacji. Dobór flag należy przeprowadzić pomiarowo i~potwierdzić
+          analizą kodu wynikowego oraz metryk optymalizacji.
+
+    \item Dla dużych rozmiarów danych zdecydowanie najszybszy okazał się schemat
+          Stockhama.
+          DO UZUPEŁNIENIA: potwierdzenie dlaczego w~kodzie asemblera
+
+    \item Rozmiar przetwarzanych danych warunkuje dobór schematu algorytmu.
+          Kryterium oparte na liczbie operacji arytmetycznych zachowuje ważność
+          wyłącznie wtedy, gdy zbiór roboczy mieści się w~pamięci podręcznej
+          pierwszego poziomu - przy $N=1024$ oba bufory zajmują 16~KB wobec 32~KB
+          pojemności L1D i~najszybszy jest \texttt{splitradix}, schemat
+          o~najmniejszej liczbie mnożeń.
+
+    \item Zrównoleglenie opłaca się dopiero wtedy, gdy praca przypadająca na jeden
+          etap istotnie przekracza koszt bariery synchronizacyjnej. W~badanej
+          konfiguracji granica ta leży między $N=4096$ a~$N=65536$.
+
+    \item Schemat wybrany jako najlepszy dla wersji jednowątkowej nie musi być
+          najlepszy po zrównolegleniu - decyduje liczba punktów synchronizacji,
+          a~nie sama wydajność sekwencyjna.
+
+    \item Nie istnieje uniwersalnie najlepszy zestaw flag. Pewne jest jedynie, że
+          \texttt{-O0} daje najgorszy wynik, powyżej tego poziomu wybór zależy od
+          algorytmu, rozmiaru przetwarzanych danych 
+\end{enumerate}
 \section{Kierunek dalszych badan}
