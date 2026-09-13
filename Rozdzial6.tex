@@ -1,62 +1,149 @@
+
 \chapter{Podsumowanie i wnioski}
-\section{Wnioski koncowe}
-NA RAZIE ROBOCZE
+\section{Wnioski końcowe}
+Przedstawione poniżej wnioski opierają się na pomiarach wykonanych na systemie
+Linux ogólnego przeznaczenia, który z~założenia nie daje możliwości pracy w twardym systemie wbudowanym czasu rzeczywistego.
+Stosowana konfiguracja systemu oraz metodyka pomiarowa pozwoliły
+uzyskać rozstęp międzykwartylowy względny poniżej 4\%, co może sugerować
+możliwość interpretacji różnic na poziomie 5-7\%. Warto jednak zaznaczyć, że uzyskany rozstęp nie pozwala określić badanego systemu jako takiego, który 
+mógłby pracować pod rygorem czasu rzeczywistego.
+
+Najważniejsze wnioski z przeprowadzonych badań prezentują się następująco:
+
 \begin{enumerate}
-    \item Największy pojedynczy zysk daje przejście z \texttt{-O0} na \texttt{-O1}.
-          Zysk ten zależy jednak od rozmiaru danych - wynosi 5,11 przy
-          $N=16384$ i tylko 2,18 przy $N=1048576$. Nawet skrajna różnica
-          w~jakości kodu przestaje mieć znaczenie, gdy o~czasie wykonania decyduje
-          dostęp do pamięci.
+    \item Największy pojedynczy zysk dało przejście z~\texttt{-O0} na
+          \texttt{-O1}. Skala tego zysku zależała od rozmiaru danych - wyniosła
+          5,11 przy $N=16384$ i~tylko 2,18 przy $N=1048576$. Różnica ta może
+          sugerować, że nawet skrajna różnica w~jakości kodu przestawała mieć
+          znaczenie, gdy o~czasie wykonania decydował dostęp do pamięci. Warto
+          przy tym wniosku nadmienić, że kompilatory GCC i~Clang przyjmują poziom
+          \texttt{-O0} jako domyślną opcję.
 
     \item Ręczna wektoryzacja z~użyciem instrukcji NEON dała wyraźną przewagę nad
-          pozostałymi wariantami radix2 dla rozmiarów do $N=16384$, ale przy
-          $N=1048576$ zysk zanika całkowicie.
-          DO UZUPEŁNIENIA: potwierdzenie przyczyny w~kodzie wynikowym
+          pozostałymi wariantami radix-2 dla rozmiarów do $N=16384$, ale przy
+          $N=1048576$ zysk zanikł całkowicie. Powyżej pojemności pamięci L2
+          cztery implementacje radix-2 dzieliło już tylko 2,1\% wobec 65\% przy
+          $N=16384$, co oznaczało, że o~wydajności decydowała wtedy organizacja
+          dostępu do pamięci, a~nie jakość wygenerowanego kodu. Wyniki te
+          pozwoliły uznać jawne użycie instrukcji specyficznych dla architektury
+          za skuteczną metodę optymalizacji, wymagającą jednak wiedzy
+          wykraczającej poza znajomość samej listy instrukcji. Układ danych
+          konieczny do efektywnego wykorzystania rejestrów wektorowych pogarszał
+          bowiem lokalność dostępów: wariant NEON notował 5,43\% chybień L1D
+          wobec 1,08\% dla \texttt{radix2\_v0}.
 
-    \item GCC i~Clang nie dają jednakowego kodu. Clang generuje szybszy kod przy rozmiarach
-          mieszczących się w~pamięci podręcznej, kosztem istotnie większej sekcji
-          \texttt{.text}, natomiast GCC gorzej radzi sobie z~częścią zestawów flag,
-          tracąc wektoryzację włączoną wcześniej przez \texttt{-O2}.
-          DO UZUPEŁNIENIA: wskazać, które zestawy flag
+    \item Kompilatory GCC i~Clang nie tłumaczyły kodu w~języku C na jednakowy
+          program wykonalny. W~wykonanych badaniach Clang generował kod, który
+          miał niższą medianę czasów wykonania przy rozmiarach danych wejściowych
+          mieszczących się w~pamięci podręcznej, kosztem istotnie większej
+          wielkości programu. GCC tracił wektoryzację włączoną wcześniej przez
+          \texttt{-O2} po dodaniu pewnej grupy innych flag - dla
+          \texttt{radix2\_v1} usuwało ją \texttt{-ffast-math} lub \texttt{-mcpu},
+          co wydłużało czas z~0,7562 do~0,8442~ms. Clang zachowywał ją we
+          wszystkich zestawach. Sama automatyczna wektoryzacja okazała się
+          zjawiskiem rzadkim: wystąpiła w~30 z~80 konfiguracji pod GCC i~w~38 pod
+          Clang, a~poziomy \texttt{-O1} oraz \texttt{-Os} nie włączały jej
+          w~ogóle. Decydowała o~niej pojedyncza flaga, a~nie poziom optymalizacji.
 
-    \item Kompilator nie naprawia błędów numerycznych tkwiących w~algorytmie. Flagi
-          uznawane za niebezpieczne dla dokładności kosztują ułamek decybela,
-          podczas gdy wybór wariantu algorytmu decyduje o~kilkudziesięciu.
+    \item Kompilator nie naprawiał samodzielnie błędów numerycznych tkwiących
+          w~algorytmie. Obserwacja ta była szczególnie widoczna przy zestawieniu
+          dokładności dla 16384~próbek. Dla jednej implementacji kompilowanej na
+          jedenaście sposobów wartości SNR rozchodziły się najwyżej o~1,31~dB,
+          a~zestawy zawierające \texttt{-ffast-math} obniżały wynik o~nie więcej
+          niż 0,45~dB. Porównanie między wariantami algorytmu pokazało zupełnie
+          inną tendencję. Siedem wariantów osiągnęło 134,89--138,48~dB, natomiast
+          \texttt{radix2\_v0} tylko 91,52~dB, czyli o~44~dB mniej, co wskazywało
+          na znaczące niedokładności wyników. Żaden poziom optymalizacji ani
+          zestaw flag tej różnicy nie zmniejszył, poprawa nastąpiła dopiero po
+          zmianie implementacji.
 
-    \item Powyżej poziomu \texttt{-O1} wpływ flag nie ma jednoznacznego kierunku -
-          bywa nieco lepiej, bywa nieco gorzej, a~efekt zależy od konkretnej
-          implementacji. Dobór flag należy przeprowadzić pomiarowo i~potwierdzić
-          analizą kodu wynikowego oraz metryk optymalizacji.
+    \item Powyżej poziomu \texttt{-O1} zyski były niesystematyczne. Najlepszy
+          zestaw flag skracał czas względem \texttt{-O1} o~kolejne 0,5-29\%, przy
+          medianie około 12\%, jednak w~szesnastu badanych konfiguracjach
+          najkrótszy czas osiągało osiem różnych zestawów, a~\texttt{-O3} nie
+          wygrał w~żadnej z~nich. Podniesienie poziomu optymalizacji potrafiło
+          przy tym zaszkodzić - dla \texttt{radix4\_naive} pod GCC poziomy
+          \texttt{-O2} i~\texttt{-O3} okazały się o~około 40\% wolniejsze od
+          \texttt{-O1}. Uniwersalnie najlepszy zestaw flag zatem nie istniał:
+          pewne było jedynie, że \texttt{-O0} dawał najgorszy wynik, a~powyżej
+          tego poziomu o~wyniku decydowały konkretna implementacja i~rozmiar
+          przetwarzanych danych. Dobór flag był więc zadaniem pomiarowym,
+          a~uzyskany wynik należy potwierdzić analizą kodu wynikowego oraz metryk
+          optymalizacji.
 
-    \item Dla dużych rozmiarów danych zdecydowanie najszybszy okazał się schemat
-          Stockhama.
-          DO UZUPEŁNIENIA: potwierdzenie dlaczego w~kodzie asemblera
+    \item Rozmiar przetwarzanych danych warunkował dobór schematu algorytmu.
+          Kryterium oparte na liczbie operacji arytmetycznych zachowywało ważność
+          wyłącznie wtedy, gdy zbiór roboczy mieścił się w~pamięci podręcznej
+          pierwszego poziomu - przy $N=1024$ oba bufory zajmowały 16~kB wobec
+          32~kB pojemności L1D i~najszybszy był \texttt{splitradix}, schemat
+          o~najmniejszej liczbie mnożeń. Przy $N=1048576$ ten sam schemat wypadł
+          najgorzej, a~zdecydowanie najszybszy okazał się \texttt{stockham},
+          przechodzący przez tablicę liniowo - koszt pojedynczej operacji
+          motylkowej wyniósł dla niego 8,13~ns wobec 28,50~ns dla
+          \texttt{splitradix}. Jak wywnioskowano z~analizy plików asemblera, zysk
+          zaobserwowany dla wariantu Stockhama wynikał prawdopodobnie ze sposobu
+          dostępu do pamięci, a~nie, jakby sugerowała intuicja, z~liczby
+          wykonywanych działań. Opisywany wariant, jako jedyny z~badanych, nie
+          wymagał wstępnej permutacji bitowej, a~więc dodatkowego przebiegu po
+          całej szesnastomegabajtowej tablicy. Działając na dwóch buforach,
+          w~każdym etapie czytał i~zapisywał kolejne komórki obu tablic, podczas
+          gdy warianty działające w~miejscu odwoływały się do znacznie oddalonych
+          elementów. Skutkiem tego rozwiązania było prawie dwukrotnie większe
+          zapotrzebowanie na pamięć, co tłumaczyło, dlaczego ten sam schemat nie
+          okazał się najszybszy przy $N=1024$.
 
-    \item Rozmiar przetwarzanych danych warunkuje dobór schematu algorytmu.
-          Kryterium oparte na liczbie operacji arytmetycznych zachowuje ważność
-          wyłącznie wtedy, gdy zbiór roboczy mieści się w~pamięci podręcznej
-          pierwszego poziomu - przy $N=1024$ oba bufory zajmują 16~KB wobec 32~KB
-          pojemności L1D i~najszybszy jest \texttt{splitradix}, schemat
-          o~najmniejszej liczbie mnożeń.
-
-    \item Zrównoleglenie opłaca się dopiero wtedy, gdy praca przypadająca na jeden
-          etap istotnie przekracza koszt bariery synchronizacyjnej. W~badanej
-          konfiguracji granica ta leży między $N=4096$ a~$N=65536$.
-
-    \item Schemat wybrany jako najlepszy dla wersji jednowątkowej nie musi być
-          najlepszy po zrównolegleniu - decyduje liczba punktów synchronizacji,
-          a~nie sama wydajność sekwencyjna.
-
-    \item Nie istnieje uniwersalnie najlepszy zestaw flag. Pewne jest jedynie, że
-          \texttt{-O0} daje najgorszy wynik, powyżej tego poziomu wybór zależy od
-          algorytmu, rozmiaru przetwarzanych danych 
-
-      \item Linux jest niedeterministyczny jesli chodzi o czasy wykonania, sa przerwania itp itd, nie daje
-            gwarancji dotrzymania terminu. To sie zgadza z założeniami tego systemu, jednakże w tych badaniach 
-            To potwierdzono.
-
-      \item Kompilator cudów nie zrobi, ale jest to realne narzędzie, którego warto używać, złaszcza ze bazowa konfiguracja to
-      O0. Najpierw napisz dobry kod potem optymalizuj, pamietajac, ze program komputerowy nie jest ograniczony tylko przez czas wykonywania obliczen,
-      ale w wielu przypadkach też o dostep do pamieci.
+    \item Zrównoleglenie opłacało się dopiero wtedy, gdy praca przypadająca na
+          jeden etap przekraczała koszt mechanizmu synchronizacyjnego
+          (w~przypadku niniejszej pracy bariery). Przy $N=4096$, gdzie na jedną
+          transformatę przypadało dwanaście barier, żaden (wyłączając warianty
+          z~flagą \texttt{-O0}) z~wariantów nie osiągnął przyspieszenia. Przy
+          $N=65536$ przyspieszenie sięgnęło natomiast 1,94. W~stosowanej
+          platformie sprzętowej najniższe czasy wykonania uzyskiwano przy
+          stosowaniu czterech wątków, zgodnie z~liczbą rdzeni platformy. Sam
+          podział pracy między wątki okazał się równie istotny jak wybór
+          schematu: przy niezmienionym algorytmie radix-2 podział płaskiej
+          przestrzeni motylków dawał 1,94 wobec 1,51 dla podziału po blokach,
+          który zmniejszał się znacząco w~końcowych etapach, gdy liczba bloków
+          transformaty spadała poniżej liczby wątków. Schemat najlepszy dla
+          wersji jednowątkowej nie musiał być najlepszy po zrównolegleniu -
+          \texttt{radix4\_par}, najsłabszy przy $N=65536$ z~wynikiem 1,28, okazał
+          się najlepszy przy $N=1048576$ z~wynikiem 1,65, dzięki o~połowę
+          mniejszej liczbie etapów, a~więc i~barier. Przy analizie
+          zaimplementowanych algorytmów wielowątkowych zauważono, że dobór flag
+          dawał mniejsze korzyści. Dla obu wariantów radix-2 rozrzut czasów
+          między zestawami nie przekraczał 2,4\%, a~więc pozostawał poniżej progu
+          istotności, a~jedynym wyjątkiem był \texttt{radix4\_par} z~zestawem
+          \texttt{unroll}, dla którego przewaga wyniosła 8,3\%. Wniosek ten mógł
+          być zgodny z~przewidywaniami teoretycznymi, ponieważ stosowane flagi
+          kompilacji nie miały bezpośredniej możliwości optymalizacji komunikacji
+          międzywątkowej, czyli barier.
 \end{enumerate}
-\section{Kierunek dalszych badan}
+
+Uzyskane wyniki pozwoliły porównać metody na zwiększenie wydajności co do rzędu
+wielkości. Dobór schematu obliczeń dopasowanego do rozmiaru danych oraz
+odejście od poziomu \texttt{-O0} dały efekty tego samego rzędu - odpowiednio
+około 3,5 raza między najlepszym a~najgorszym schematem przy $N=1048576$ oraz
+od 2,18 do~5,11 raza przy zmianie poziomu optymalizacji. Warto zaznaczyć przy
+tym, że drugi z~nich nie wymagał zmiany ani jednej linii kodu programu
+źródłowego. Wyraźnie mniej wniosło strojenie flag powyżej poziomu \texttt{-O1},
+warte zwykle około 12\%.
+
+Kompilator można w~takim razie traktować jako realne narzędzie, lecz nie
+zastępuje on kluczowych decyzji projektowych. Praktyczny wniosek
+z~przeprowadzonych badań jest taki, że optymalizację należy zaczynać od doboru
+algorytmu i~odpowiedniej organizacji danych, ponieważ o~czasie działania
+programu nie decyduje wyłącznie liczba wykonywanych działań arytmetycznych,
+lecz w~porównywalnym stopniu wzorzec dostępu do pamięci.
+
+\section{Kierunek dalszych badań}
+Największy potencjał do dalszych badań ma jawne użycie instrukcji specyficznych
+dla stosowanej architektury sprzętowej. W~pracy zastosowano je tylko w~jednym wariancie i~przy jednym
+układzie danych, co ujawniło konflikt między wektoryzacją a~lokalnością dostępów do pamięci.
+Wartościowym kierunkiem badań może być sprawdzenie połączenia instrukcji wektorowych ze schematem
+obliczeń o~korzystnym wzorcu dostępu do pamięci, z potencjalnym sprawdzeniem działania proponowanego schematu 
+w~wariantach wielowątkowych.
+
+Na uwagę zasługują również badania samego mechanizmu 
+synchronizacji wariantów wielowątkowych, zwłaszcza w kotekście stosowania flag optymalizajci. Istotną informacją byłoby w tym przypadku
+ wyznaczonenie prógów opłacalności stosowania wariantów wielowątkowych. Przy okazji realizacji proponowanych badań możnaby sprawdzić opłacalność blokowania obliczeń pod
+rozmiar pamięci podręcznej, stosowane w~bibliotece FFTW \cite{FFTWPaper}.
