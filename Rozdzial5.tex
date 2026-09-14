@@ -98,19 +98,20 @@ podlegała badanym ustawieniom kompilacji.
 
 Zróżnicowanie reakcji poszczególnych algorytmów na przejście z~\texttt{-O0}
 wynikać możę z tego, że poziom ten, dla ułatwienia debbugowania kodu, ogranicza znacząco przydział rejestrów  procesora dla zmiennych, w 
-taki sposób, aby można je było prosto podejrzeć ze stosu.
+taki sposób, aby można je było prosto podejrzeć ze stosu \cite{Kompilatory_Aho}.
 Z tego powodu, przy użyciu wyższego poziomu optymalizacji zyskują najbardziej warianty o~zwartej pętli
 wewnętrznej i~niewielkiej liczbie zmiennych żywych - pojedynczy etap
 algorytmu, takie jak radix-2, który operuje na kilku wartościach, które po włączeniu
 \texttt{-O1} mogą być trzymane bezpośrednio w rejestrach. Warianty \texttt{splitradix}
 i~\texttt{radix4\_naive}, o~bardziej rozbudowanej strukturze algorytmu,
 spędzają poza właściwymi obliczeniami, większą część czasu, którego
-przydział rejestrów nie skraca. Osobnego wyjaśnienia wymaga marginalny wpływ \texttt{-O3}: poziom
+przydział rejestrów nie skraca. Osobnego wyjaśnienia wymaga marginalny wpływ \texttt{-O3}, poziom
 ten dodaje względem \texttt{-O2} przede wszystkim automatyczną wektoryzację,
 a~ta powiodła się jedynie dla dwóch z~ośmiu algorytmów pod GCC i~jednego pod
 Clang, co widać w tabeli \cref{tab:simd-skal-gcc}. W~pozostałych
-przypadkach kod wynikowy jest niemal identyczny jak przy \texttt{-O2}, więc
-obserwowane różnice mogą nie mieć źródła w procesie kompilacji.
+przypadkach kod wynikowy jest niemal identyczny jak przy \texttt{-O2}, a~różnice
+w~czasie wykonania mieszczą się poniżej progu istotności przyjętego
+w~\cref{sec:prog-istotnosci}.
 
 %============================================================================
 % Tabela 1.2+1.5 -- tab:med-merged-16k
@@ -475,8 +476,9 @@ pojemność L2.
 
 Skutek widać w~\cref{tab:cache-gcc-16k} i~\cref{tab:cache-gcc-1M}. Współczynnik
 chybień L2 rośnie z~wartości nieprzekraczających 0,7\% przy 16384~próbkach do
-23--35\% przy 1048576, co oznacza, że co trzecie odwołanie kończy się sięgnięciem
-do pamięci operacyjnej. Przekłada się to bezpośrednio na stosunek czasu wykonania do wielkości danych wejsciowych.
+23--35\% przy 1048576. Ponieważ miara ta odnosi się do odwołań, które chybiły już
+w~L1, oznacza to, że co trzecie z~nich kończy się sięgnięciem do pamięci
+operacyjnej. Przekłada się to bezpośrednio na stosunek czasu wykonania do wielkości danych wejsciowych.
 Miara ta uwzględnia już wzrost liczby etapów z~14 do 20,
 zatem pojedyncza operacja motylkowa kosztuje przy większym rozmiarze danych
 ponad dwukrotnie więcej czasu, mimo że wykonuje dokładnie tyle samo działań
@@ -617,6 +619,20 @@ stockham & 0,39 & 0,14 & 0,41 & 0,45 & 0,43 & 0,32 & 0,32 & 0,46 & 0,48 & 0,34 &
 
 
 \section{Analiza wpływu optymalizacji programu wielowątkowego}
+Znaczna część wniosków z~analizy wariantów sekwencyjnych pozostaje prawidłowa również 
+dla wersji wielowątkowych.
+Mechanizmy działania poszczególnych flag opisano już przy wariantach
+sekwencyjnych i~pozostają one bardzo zbliżone. Mechanizm ten może występować, ponieważ kompilator przetwarza
+identyczny kod obliczeniowy niezależnie od liczby wątków. Dalsza analiza skupia się więc na zjawiskach specyficznych dla programów
+zrównoleglonych.
+
+Bardzo podobne wnioski uzyskano przy porównaniu kompilatorów. Clang ponownie uzyskał nieco krótsze
+czasy wykonania niż GCC w~większości konfiguracji, jednak przewaga ta ma tę samą
+naturę co w~części sekwencyjnej. Jednocześnie GCC uzyskał mniejsze kody programu, podobnie jak w porównaniu wersji sekwencyjnych. Z~tego powodu tabele
+omawiane w prezentowanej sekcji dotyczą GCC, a odpowiadające im wyniki dla Clanga znajdują się
+w załaczniku do niniejszej pracy. Wyniki te nie zmieniają formułowanych wniosków.
+Wybór GCC jako podstawy analizy wynika
+z~jego roli. Jest on domyślnym kompilatorem dla użytej dystrybucji systemu.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Mediana czasu wykonania -- podstawowa tabela sekcji
@@ -649,12 +665,67 @@ radix4\_par (8) & 286,94 & 190,93 & 189,87 & 192,42 & 193,49 & \textbf{177,01} &
 \end{tabular}
 \end{table}
 
+
+\subsection{Wpływ flag kompilacji na warianty równoległe}
+Wyniki z~przeprowadzonych badań nad wariantami równoległymi, zaprezentowane
+w~\cref{tab:par-skal-gcc-merged}, pokazują, że korzyść ze zrównoleglenia nie
+zmienia się drastycznie w~zależności od poziomu optymalizacji powyżej
+\texttt{-O0}. Dla 1048576~próbek i~czterech wątków \texttt{radix2\_par\_v2}
+osiąga od 1,16 do 1,19 we wszystkich jedenastu zestawach flag, przy 2,89 dla
+\texttt{-O0}. Ten sam układ powtarza się w~pozostałych algorytmach i~przy
+mniejszych rozmiarach danych, gdzie przy 4096~próbkach wartości spadają poniżej
+jedności - wersja czterowątkowa jest wtedy wolniejsza od jednowątkowej. Wynik ten
+nie jest jednak zadziwiający, ponieważ przy tak niewielkich danych wejściowych
+czas wykonania jest krótki, a~udział czasu koniecznego do tworzenia
+i~synchronizacji wątków stanowi znaczną część całości.
+
+Bezwzględne czasy wykonania z~\cref{tab:par-med-gcc-1M} ilustrują przyczynę
+omawianej różnicy. Dla \texttt{radix2\_par} przy \texttt{-O2} czas przetwarzania
+spada z~209,69~ms dla jednego wątku do 182,70~ms dla czterech. Przy \texttt{-O0}
+ten sam algorytm potrzebuje 637,42~ms na jednym wątku i~288,64~ms na czterech.
+W~obu przypadkach rozdzielenie pracy między cztery rdzenie skraca czas o~podobną
+wartość, ale wersja bez optymalizacji jest ponad trzykrotnie wolniejsza, więc ta
+sama oszczędność daje wyższe przyspieszenia. Warianty ośmiowątkowe są wolniejsze
+od czterowątkowych w~każdej konfiguracji, co wynika prawdopodobnie z~faktu, że
+platforma sprzętowa jest wyposażona w~cztery rdzenie procesora.
+
+Brak zauważalnego wpływu poziomu optymalizacji na zysk ze zrównoleglenia skłonił
+do zbadania różnic w~kodzie wynikowym sekcji \texttt{.text} obu wariantów.
+Porównanie plików obiektowych analogicznego wariantu sekwencyjnego
+\texttt{radix2\_v1} i~jego odpowiednika współbieżnego \texttt{radix2\_par},
+skompilowanych przez Clang z~\texttt{-O3}, wykazuje bardzo zbliżony schemat
+obliczeń - tę samą sekwencję instrukcji zmiennoprzecinkowych oraz ten sam blok
+zwektoryzowany, oparty na instrukcjach \texttt{ld2} i~\texttt{st2}. Wariant
+równoległy zawiera dodatkowo wywołania biblioteki \texttt{pthreads},
+odpowiadające za utworzenie wątków, ich synchronizację barierą po każdym etapie
+transformaty oraz oczekiwanie na ich zakończenie. Przyjmują one postać instrukcji
+skoku \texttt{bl} do symboli zewnętrznych, rozwiązywanych dopiero na etapie
+linkowania, a~ich treść znajduje się w~prekompilowanej bibliotece systemowej.
+Koszt ich wykonania pozostaje zatem niezależny od badanych flag kompilacji.
+
+
+\subsection{Skalowanie z liczbą wątków i wpływ rozmiaru danych}
+Z przeprowadzonych badań można zauważyć, że przyśpieszenie względem wariantu jednowątkowego osiąga maksimum przy czterech wątkach
+ i~maleje dla większej ich liczby.  Dla 1048576~próbek i~poziomu \texttt{-O2} wariant
+\texttt{radix2\_par\_v2} uzyskuje 1,03 na dwóch wątkach, 1,17 na czterech
+i~1,12 na ośmiu, co zaprezenowano w  \cref{tab:par-skal-gcc-merged}. 
+Rozmiar danych wejściowych zmienia  wyniki silniej niż liczba wątków: ten sam wariant na czterech wątkach
+osiąga 0,51 przy 4096~próbkach, 1,63 przy 65536 oraz 1,17 przy 1048576. 
+
+Stopień wykorzystania rdzeni opisuje stosunek czasu procesora do czasu ściany (oznaczony jako R),
+zestawiony w~\cref{tab:par-wykorzystanie-gcc-1M}. Dla \texttt{radix2\_par\_v2}
+przy \texttt{-O2} wynosi on 3,27 na czterech wątkach i~3,02 na ośmiu, mimo
+dwukrotnie większej liczby wątków. Zwiększenie ich liczby ponad liczbę rdzeni
+fizycznych nie podnosi zatem w bardzo znaczący sposób tej metryki. Liczba wykonanych
+instrukcji pozostaje niemal stała, w obrębie tych samych flag, we wszystkich konfiguracjach
+wątkowych, co wskazuje, że podział pracy nie zmienia objętości obliczeń,
+a~jedynie  ich organizację.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Skalowanie: 4k / 64k / 1M scalone, samo przyspieszenie
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{table}[H]
 \centering
-\caption{Przyspieszenie względem jednego wątku dla GCC i~trzech rozmiarów danych, wersja współbieżna. Wartości w~krotnościach [$\times$].}
+\caption{Przyspieszenie względem jednego wątku dla GCC i~trzech rozmiarów danych, wersja współbieżna. Wartości w~krotnościach.}
 \label{tab:par-skal-gcc-merged}
 \scriptsize
 \setlength{\tabcolsep}{3.0pt}
@@ -703,7 +774,21 @@ radix4\_par (8) & 2,28 & 1,58 & 1,47 & 1,47 & 1,52 & 1,53 & 1,53 & 1,47 & 1,53 &
 \bottomrule
 \end{tabular}
 \end{table}
+\subsection{Wpływ sposobu podziału pracy i schematu algorytmu}
+Przy zwiększaniu rozmiarów danych wejściowych coraz lepsze przyśpieszenie uzyskuje wariant
+ \texttt{radix4\_par}. Dla 1048576~próbek i~poziomu \texttt{-O2} osiąga 1,53 na
+czterech wątkach, wobec 1,15 i~1,17 dla wariantów radix-2
+(\cref{tab:par-skal-gcc-merged}). Przy 4096~próbkach relacja ta zanika -
+wszystkie trzy implementacje pozostają poniżej jedności.
 
+Zysk w stosowaniu \texttt{radix4\_par} można wiązać z~mniejszą liczbą etapów transformaty,
+a~tym samym z~mniejszą liczbą synchronizacji wykorzystujących barierę.
+Potwierdzają to czasy bezwzględne z~\cref{tab:par-med-gcc-1M},
+na jednym wątku wariant ten pozostaje najwolniejszy (279,47~ms wobec 209,69~ms
+dla \texttt{radix2\_par} przy \texttt{-O2}), natomiast na czterech wątkach
+różnica względem wariantów radix-2 niemal zanika. Schemat podziału pracy między
+wątki, pozostał przy tym identyczny we wszystkich trzech implementacjach, co pozwala przypisać
+obserwowane różnice właściwościom samego algorytmu.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Wykorzystanie procesora: instrukcje, IPC, R
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -768,88 +853,3 @@ radix4\_par (8) & 2,39 & 2,70 & 2,67 & 2,73 & 2,72 & 2,82 & 2,70 & 2,67 & 2,70 &
 \end{tabular}
 \end{table}
 
-\subsection{Skalowanie z liczbą wątków i wpływ rozmiaru danych}
-
-\subsection{Wpływ sposobu podziału pracy i schematu algorytmu}
-
-\subsection{Wpływ flag kompilacji na warianty równoległe}
-Mediany czasów wykonania dla poszczególnych zestawów flag zestawiono
-w~\cref{tab:par-med-gcc-1M}, w~której pogrubiono najkrótszy czas w~każdym
-wierszu. Obraz jest wyraźnie odmienny od tego, który zaobserwowano dla wersji
-sekwencyjnych. W~obu zaimplementowanych wariantach radix-2, to jest
-\texttt{radix2\_par} oraz \texttt{radix2\_par\_v2}, rozrzut czasów między
-zestawami od \texttt{-O1} do~\texttt{lto} nie przekracza 2,4\%, niezależnie od
-liczby wątków. Dla \texttt{radix2\_par} przy czterech wątkach wszystkie
-dziesięć zestawów mieści się w~przedziale od~181,09 do~183,14~ms. Jest to
-wartość mniejsza od progu istotności przyjętego
-w~\cref{sec:prog-istotnosci}, więc pogrubione w~tych wierszach minima nie
-wskazują zwycięzcy, a~jedynie najniższy odczyt. Potwierdza to ich
-rozmieszczenie - w~ośmiu wierszach wariantów radix-2 minimum wypada na sześciu
-różnych zestawach flag, a~dla \texttt{radix2\_par} przy jednym wątku ten sam
-czas 209,59~ms osiągają dwa zestawy jednocześnie.
-
-Odmiennie zachowuje się \texttt{radix4\_par}. Rozrzut czasów między zestawami
-wynosi tam od~13,3 do~14,4\%, a~zwycięzca jest jednoznaczny - zestaw
-\texttt{unroll}, czyli \texttt{-O3 -funroll-loops}, osiąga najkrótszy czas we
-wszystkich czterech wierszach. Przy czterech wątkach daje 166,68~ms wobec
-180,58~ms dla drugiego w~kolejności zestawu \texttt{lto}, co odpowiada
-skróceniu czasu o~8,3\%. Przy dwóch wątkach przewaga nad kolejnym zestawem
-wynosi 8,2\%, przy ośmiu 5,7\%, a~jedynie dla wersji jednowątkowej spada
-do~3,3\%, a~więc poniżej progu istotności. Kierunek tej zależności nie jest
-przy tym cechą samego zrównoleglenia - w~\cref{tab:med-merged-16k} sekwencyjny
-\texttt{radix4} pod GCC również osiąga najlepszy czas w~zestawie
-\texttt{unroll}, choć jego przewaga nad kolejnym zestawem wynosi tam około
-1\% i~mieści się w~granicach szumu pomiarowego.
-
-Granicę działania flag pokazuje zestawienie powyższych czasów
-z~\cref{tab:par-wykorzystanie-gcc-1M}. Dla \texttt{radix2\_par} przy
-\texttt{-O2} liczba wykonanych instrukcji rośnie z~224,3~mln przy jednym
-wątku do~225,2~mln przy czterech, czyli o~0,4\%, podczas gdy IPC spada w~tym
-samym przejściu z~0,578 do~0,221. Pracy do wykonania nie przybywa, zmienia się
-natomiast tempo, w~jakim rdzeń jest w~stanie ją wykonać. Flagi optymalizacyjne
-oddziałują na liczbę i~postać instrukcji, a~nie na przyczyny przestojów
-rdzenia, więc w~konfiguracji, w~której rdzeń i~tak oczekuje, nie mają na co
-oddziaływać.
-
-Zaobserwowanej przewagi zestawu \texttt{unroll} dla \texttt{radix4\_par} nie
-tłumaczą ani pomiary czasu, ani liczniki sprzętowe. Zgodnie z~metodyką opisaną
-w~\cref{sec:metodykaBadan} w~takim przypadku porównywany jest kod wynikowy
-samego algorytmu. Na jego podstawie można wskazać dwa prawdopodobne mechanizmy,
-przy czym poniższe wyjaśnienie należy traktować jako hipotezę, a~nie jako
-zależność potwierdzoną pomiarem.
-
-Pierwszym z~nich jest rozmiar ciała pętli. Wpływ flagi \texttt{-funroll-loops}
-na statyczną liczbę instrukcji widoczny jest już w~wariantach sekwencyjnych,
-zestawionych w~\cref{tab:simd-skal-gcc} - dla \texttt{radix2\_v0} pod GCC
-liczba instrukcji skalarnych rośnie z~13 przy \texttt{-O2} do~36 w~zestawie
-\texttt{unroll}, a~dla \texttt{stockham} z~8 do~64. Motyl radix-4 przetwarza
-cztery próbki i~wymaga trzech współczynników obrotu, jest więc od początku
-znacznie obszerniejszy od motyla radix-2. Rozwinięcie pętli udostępnia wtedy
-procesorowi kilka kolejnych, wzajemnie niezależnych motyli naraz, co zwiększa
-liczbę operacji nadających się do równoległego wykonania, zgodnie z~opisem
-tego przekształcenia w~\cref{section:TechnikiOptymalizacji}, i~pozwala
-przeplatać ich odczyty z~pamięci.
-
-Drugim mechanizmem może być sposób odtwarzania indeksów. W~\texttt{radix4\_par}
-każdy motyl wyznacza trzy przesunięcia współczynników obrotu jako kolejne
-wielokrotności iloczynu \texttt{j*stride}, maskowane następnie
-do~zakresu tablicy, co przedstawiono w~\cref{lst:radix4par}. Przy
-rozwiniętej pętli kompilator może zastąpić te mnożenia dodawaniem stałego
-przyrostu między kolejnymi iteracjami, czyli zastosować redukcję siły operacji.
-W~wariantach radix-2 na jeden motyl przypada jeden współczynnik obrotu, więc
-pole do takiej zamiany jest odpowiednio mniejsze.
-
-Na podstawie przedstawionych obserwacji można sformułować dwa ostrożne wnioski,
-ograniczone do trzech wariantów współbieżnych zaimplementowanych w~niniejszej
-pracy oraz do użytej platformy sprzętowej. Po pierwsze, dobór zestawu flag
-przestaje mieć znaczenie wtedy, gdy o~czasie wykonania decyduje oczekiwanie,
-a~nie przepustowość rdzenia; nie jest to jednak własność zrównoleglenia jako
-takiego, lecz konkretnej konfiguracji algorytmu, rozmiaru danych i~liczby
-wątków. Po drugie, zestaw flag najlepszy dla wersji sekwencyjnej nie musi być
-najlepszy dla wersji współbieżnej tego samego algorytmu, co przemawia za
-powtarzaniem doboru flag osobno dla każdej z~nich. Rozstrzygnięcie, czy
-zaobserwowane zachowanie \texttt{radix4\_par} wynika ze schematu radix-4, czy
-też z~przyjętego sposobu odtwarzania indeksów, wymagałoby zbadania większej
-liczby wariantów współbieżnych.
-
-\subsection{Przyczyny ograniczenia skalowalności}
