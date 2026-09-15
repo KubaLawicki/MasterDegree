@@ -1,10 +1,40 @@
 \chapter*{Streszczenie}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec odio sapien, egestas a ullamcorper a, volutpat tempor felis. Proin vel laoreet augue, a tincidunt ex. Nam maximus massa nibh, ac convallis nunc viverra ac. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Maecenas felis mi, venenatis id iaculis eget, aliquam sit amet purus. Ut vehicula convallis finibus. Nam vulputate commodo magna, eu dapibus odio laoreet in. Phasellus tempus bibendum elementum. Pellentesque dapibus pulvinar orci nec sodales. Etiam eu augue non ex sodales sollicitudin vitae quis mi. Nulla vitae elit ac nisl egestas tempor. Nam ut nisl gravida, convallis purus sed, dapibus augue.
+Kompilator jest niezbędnym narzędziem przy tworzeniu programów komputerowych,
+które efektywnie wykorzystują zasoby sprzętowe systemu. Bywa on jednak
+traktowany jedynie jako tłumacz kodu, z~pominięciem jego możliwości
+optymalizacyjnych, choć sposób tłumaczenia kodu źródłowego na instrukcje
+maszynowe wpływa bezpośrednio na wydajność programu.
+
+Zagadnienie to ma szczególne znaczenie w~systemach
+wbudowanych, w~których poprawa wydajności oznacza często niższy
+koszt i~mniejszy pobór energii. W~prezentowanej pracy zaprojektowano system
+wbudowany oparty na platformie Raspberry Pi 4B z~systemem Linux, przeznaczony do
+badania możliwości optymalizacyjnych kompilatorów GCC i~Clang. Jako algorytm
+testowy wybrano szybką transformatę Fouriera, dla której zaimplementowano
+w~języku C jedenaście wariantów, zarówno sekwencyjnych jaki~wielowątkowych. 
+
+W~pracy zawarto również opis systemów operacyjnych w~zastosowaniach wbudowanych, podstaw
+transformaty Fouriera oraz budowy kompilatora i~stosowanych przez niego
+optymalizacji. Badania objęły jedenaście zestawów flag kompilacji i~trzy
+rozmiary danych wejściowych, a~oprócz czasu wykonania analizowano liczniki
+sprzętowe, rozmiar kodu wynikowego oraz dokładność obliczeń.
+
+Największy zysk
+przyniosło odejście od domyślnego poziomu \texttt{-O0}, które skróciło czas
+wykonania od 2,18 do 5,11 raza, podczas gdy dalszy dobór flag dawał zwykle
+około 12\%. Dla dużych zbiorów danych o~czasie wykonania decydował przede
+wszystkim wzorzec dostępu do pamięci, dlatego wybór schematu obliczeń okazał
+się równie istotny jak poziom optymalizacji. Ręczna wektoryzacja z~użyciem
+instrukcji NEON oraz zrównoleglenie obliczeń przynosiły wyraźne korzyści tylko
+w~określonych zakresach rozmiaru danych. Kompilator nie skorygował przy tym
+błędów numerycznych wynikających z~konstrukcji algorytmu. Uzyskane wyniki
+wskazują, że optymalizację programu należy zaczynać od doboru algorytmu
+i~organizacji danych, a~ustawienia kompilacji traktować jako ich uzupełnienie.
 
 \bigskip
 
-\noindent\textbf{Słowa kluczowe:}  Optymalizacja algorytmów, systemy wbudowane, system operacyjny Linux
+\noindent\textbf{Słowa kluczowe:} optymalizacja kompilacji, kompilatory GCC i~Clang, szybka transformata Fouriera, systemy wbudowane, system operacyjny Linux
 
 \bigskip
 
-\noindent\textbf{Dziedzina nauki i techniki zgodna z OECD} Nauki inżynieryjne i techniczne, Elektrotechnika, elektronika i inżynieria informatyczna, 
+\noindent\textbf{Dziedzina nauki i techniki zgodna z OECD} Nauki inżynieryjne i techniczne, Elektrotechnika, elektronika i inżynieria informatyczna,

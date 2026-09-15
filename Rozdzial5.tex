@@ -1,19 +1,19 @@
-\chapter{Analiza wyników przeprowadzonych badan}
-Program kompilatora jest niezbędnym narzędziem pracy, dla każdgo inżyniera 
+\chapter{Analiza wyników przeprowadzonych badań}
+Program kompilatora jest niezbędnym narzędziem pracy dla każdego inżyniera 
 wytwarzającego oprogramowanie, który zwraca uwagę na zużycie zasobów maszyny wykonującej jego program.
 W wielu przypadkach narzędzie to jest traktowane jako czarna
-skrzynka - kod źródłowy jest wejściem, na wyjściu otrzymujemy plik wykonywalny , a to, co dzieje
+skrzynka - kod źródłowy jest wejściem, na wyjściu otrzymujemy plik wykonywalny, a to, co dzieje
 się pomiędzy, pozostaje poza uwagą programisty. Przy próbie optymalizacji programu zwykle to logika i przebieg algorytmu 
 jest modyfikowana jako pierwsza, pomijając wpływ, jaki na wydajność ma proces tłumaczenia kodu na instrukcje maszynowe.
 
-Celem przeprowadzonych badań było sprawdzenie na ile możliwa jest poprawa wydajności implementacji FFT z użyciem różnych zabiegów.
-Jednym z nich była weryfikacja ile daje sama zmiana flag optymalizacji kompialatora przy niezmienionym
-kodzie algorytmu. Weryfikowano również czy jawne użycie instrukcji wykorzystania sprzętu fizycznego, nawet w ograniczonej skali takiej jak 
-zmiana układu danych wejściowych czy ręczne użycie instrukcji wektorowych, może dać realny wpływ na optymalizacje. 
+Celem przeprowadzonych badań było sprawdzenie, na ile możliwa była poprawa wydajności implementacji FFT z użyciem różnych zabiegów.
+Jednym z nich była weryfikacja, ile dawała sama zmiana flag optymalizacji kompilatora przy niezmienionym
+kodzie algorytmu. Weryfikowano również, czy jawne użycie instrukcji wykorzystania sprzętu fizycznego, nawet w ograniczonej skali takiej jak 
+zmiana układu danych wejściowych czy ręczne użycie instrukcji wektorowych, mogło dać realny wpływ na optymalizację. 
 
 Wyniki i wnioski z przeprowadzonych badań mogą mieć aspekt praktyczny, zwłaszcza w systemach wbudowanych, które często mają ograniczone
 zasoby. W ich przypadku większa wydajność, bez droższego sprzętu fizycznego, oznacza niższy koszt
-i pobór energii,co może realnie poprawić działanie, stabilność i rentowność całego systemu.
+i pobór energii, co może realnie poprawić działanie, stabilność i rentowność całego systemu.
 
 Celem niniejszego rozdziału jest przedstawienie uzyskanych wyników oraz próba
 ich wyjaśnienia poprzez analizę przyczyn stojących za zmianą poszczególnych
@@ -29,16 +29,16 @@ mechanizmy zaobserwowane w trakcie badań.
 
 Jakość środowiska pomiarowego dla wersji sekwencyjnej, z danymi wejściowymi o 1048576 próbkach  ilustruje
 \cref{tab:iqr-gcc-1M}. Rozstęp względny większości wariantów nie
-przekracza 3\%.
-W załaczonych wynikach tabela dla wersji współbieżnej pokazuje bardzo zbliżony wzorzec.
-Rozstęp względny między pomiarami nie przekracza tam 4\%, co potwierdza, że wysoka
-powtarzalność pomiarów nie jest cechą specyficzną dla wariantów
+przekraczał 3\%.
+W załączonych wynikach tabela dla wersji współbieżnej pokazała bardzo zbliżony wzorzec.
+Rozstęp względny między pomiarami nie przekraczał tam 4\%, co potwierdziło, że wysoka
+powtarzalność pomiarów nie była cechą specyficzną dla wariantów
 sekwencyjnych, lecz efektem zastosowanej metodyki.
 
 Na tej podstawie można pokusić się o stwierdzenie, że różnice w czasie
-wykonania przekraczające 5\% wynikają z rzeczywistego wpływu flag
+wykonania przekraczające \textbf{5\%} wynikały z rzeczywistego wpływu flag
 kompilacji lub decyzji implementacyjnych, a nie z szumu pomiarowego. Należy brać jednak pod uwagę, że w innych konfiguracjach macierzy
-testów, na przykład przy mniejszych rozmiarach danych wejściowych rozstęp względny bywa wyższy (ale wciąż nie przekraczający 7\%), co należy uwzględnić przy
+testów, na przykład przy mniejszych rozmiarach danych wejściowych rozstęp względny bywał wyższy (ale wciąż nieprzekraczający 7\%), co należy uwzględnić przy
 interpretacji różnic bliskich granicy.
 %============================================================================
 % Tabela 1.15   (etykieta: tab:iqr-gcc-1M)
@@ -47,7 +47,7 @@ interpretacji różnic bliskich granicy.
 
 \begin{table}[H]
 \centering
-\caption{Rozstęp międzykwartylowy bezwzględny i względny dla GCC i 1048576 próbek, wersja sekwencyjna.}\label{tab:iqr-gcc-1M}
+\caption{Rozstęp międzykwartylowy bezwzględny i względny dla GCC i 1048576 próbek, wersja sekwencyjna. Pogrubiono najmniejszą wartość w~każdym wierszu.}\label{tab:iqr-gcc-1M}
 \scriptsize
 \setlength{\tabcolsep}{3.0pt}
 \begin{tabular}{lrrrrrrrrrrr}
@@ -55,24 +55,24 @@ interpretacji różnic bliskich granicy.
 Algorytm & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
 \midrule
 \multicolumn{12}{l}{\textit{Rozstęp międzykwartylowy IQR [ms]}} \\[2pt]
-radix2\_v0 & 1,197 & 3,271 & 2,567 & 2,570 & 3,411 & 2,688 & 3,129 & 3,684 & 1,575 & 2,685 & 1,051 \\
-radix2\_v1 & 15,923 & 1,872 & 0,540 & 1,279 & 1,603 & 1,593 & 1,415 & 1,197 & 1,634 & 1,720 & 1,336 \\
-radix2\_v2\_soa & 5,861 & 2,353 & 3,665 & 2,685 & 8,621 & 3,282 & 3,947 & 2,987 & 3,155 & 2,241 & 2,272 \\
-radix2\_v3\_neon & 4,969 & 5,419 & 4,200 & 4,928 & 5,496 & 6,389 & 3,962 & 1,507 & 2,235 & 3,438 & 6,759 \\
-radix4 & 5,112 & 3,821 & 4,789 & 6,146 & 4,149 & 3,889 & 4,990 & 3,929 & 3,847 & 2,535 & 3,556 \\
-radix4\_naive & 4,731 & 1,170 & 1,175 & 1,252 & 1,365 & 1,374 & 1,333 & 1,441 & 0,343 & 0,224 & 1,298 \\
-splitradix & 11,586 & 6,939 & 5,438 & 10,603 & 12,877 & 4,317 & 7,192 & 7,439 & 4,638 & 3,148 & 11,708 \\
-stockham & 4,809 & 0,706 & 0,432 & 0,729 & 1,280 & 0,223 & 0,826 & 0,952 & 0,240 & 0,493 & 0,172 \\
+radix2\_v0 & 1,197 & 3,271 & 2,567 & 2,570 & 3,411 & 2,688 & 3,129 & 3,684 & 1,575 & 2,685 & \textbf{1,051} \\
+radix2\_v1 & 15,923 & 1,872 & \textbf{0,540} & 1,279 & 1,603 & 1,593 & 1,415 & 1,197 & 1,634 & 1,720 & 1,336 \\
+radix2\_v2\_soa & 5,861 & 2,353 & 3,665 & 2,685 & 8,621 & 3,282 & 3,947 & 2,987 & 3,155 & \textbf{2,241} & 2,272 \\
+radix2\_v3\_neon & 4,969 & 5,419 & 4,200 & 4,928 & 5,496 & 6,389 & 3,962 & \textbf{1,507} & 2,235 & 3,438 & 6,759 \\
+radix4 & 5,112 & 3,821 & 4,789 & 6,146 & 4,149 & 3,889 & 4,990 & 3,929 & 3,847 & \textbf{2,535} & 3,556 \\
+radix4\_naive & 4,731 & 1,170 & 1,175 & 1,252 & 1,365 & 1,374 & 1,333 & 1,441 & 0,343 & \textbf{0,224} & 1,298 \\
+splitradix & 11,586 & 6,939 & 5,438 & 10,603 & 12,877 & 4,317 & 7,192 & 7,439 & 4,638 & \textbf{3,148} & 11,708 \\
+stockham & 4,809 & 0,706 & 0,432 & 0,729 & 1,280 & 0,223 & 0,826 & 0,952 & 0,240 & 0,493 & \textbf{0,172} \\
 \addlinespace
 \multicolumn{12}{l}{\textit{Rozstęp względny IQR/mediana [\%]}} \\[2pt]
-radix2\_v0 & 0,14 & 1,54 & 1,24 & 1,24 & 1,63 & 1,30 & 1,52 & 1,78 & 0,76 & 1,29 & 0,50 \\
-radix2\_v1 & 2,49 & 0,88 & 0,26 & 0,61 & 0,76 & 0,77 & 0,68 & 0,58 & 0,78 & 0,82 & 0,63 \\
-radix2\_v2\_soa & 1,24 & 1,11 & 1,75 & 1,29 & 4,15 & 1,55 & 1,82 & 1,43 & 1,46 & 1,04 & 1,07 \\
-radix2\_v3\_neon & 1,18 & 2,55 & 1,99 & 2,34 & 2,56 & 3,06 & 1,86 & 0,71 & 1,05 & 1,60 & 3,18 \\
-radix4 & 0,79 & 1,26 & 1,71 & 2,20 & 1,51 & 1,47 & 1,62 & 1,45 & 1,28 & 0,84 & 1,25 \\
-radix4\_naive & 0,75 & 0,46 & 0,46 & 0,42 & 0,54 & 0,56 & 0,53 & 0,55 & 0,14 & 0,09 & 0,50 \\
-splitradix & 1,55 & 1,09 & 0,91 & 1,78 & 2,14 & 0,72 & 1,14 & 1,34 & 0,77 & 0,52 & 1,95 \\
-stockham & 1,55 & 0,41 & 0,25 & 0,80 & 0,76 & 0,24 & 0,91 & 1,04 & 0,26 & 0,54 & 0,19 \\
+radix2\_v0 & \textbf{0,14} & 1,54 & 1,24 & 1,24 & 1,63 & 1,30 & 1,52 & 1,78 & 0,76 & 1,29 & 0,50 \\
+radix2\_v1 & 2,49 & 0,88 & \textbf{0,26} & 0,61 & 0,76 & 0,77 & 0,68 & 0,58 & 0,78 & 0,82 & 0,63 \\
+radix2\_v2\_soa & 1,24 & 1,11 & 1,75 & 1,29 & 4,15 & 1,55 & 1,82 & 1,43 & 1,46 & \textbf{1,04} & 1,07 \\
+radix2\_v3\_neon & 1,18 & 2,55 & 1,99 & 2,34 & 2,56 & 3,06 & 1,86 & \textbf{0,71} & 1,05 & 1,60 & 3,18 \\
+radix4 & \textbf{0,79} & 1,26 & 1,71 & 2,20 & 1,51 & 1,47 & 1,62 & 1,45 & 1,28 & 0,84 & 1,25 \\
+radix4\_naive & 0,75 & 0,46 & 0,46 & 0,42 & 0,54 & 0,56 & 0,53 & 0,55 & 0,14 & \textbf{0,09} & 0,50 \\
+splitradix & 1,55 & 1,09 & 0,91 & 1,78 & 2,14 & 0,72 & 1,14 & 1,34 & 0,77 & \textbf{0,52} & 1,95 \\
+stockham & 1,55 & 0,41 & 0,25 & 0,80 & 0,76 & 0,24 & 0,91 & 1,04 & 0,26 & 0,54 & \textbf{0,19} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -81,36 +81,36 @@ stockham & 1,55 & 0,41 & 0,25 & 0,80 & 0,76 & 0,24 & 0,91 & 1,04 & 0,26 & 0,54 &
 
 \subsection{Wpływ poziomów optymalizacji kompilatora}
 Wyniki pomiarów czasu zestawiono w~\cref{tab:med-merged-16k}. Największy
-i~zarazem jedyny konsekwentny efekt daje odejście od poziomu \texttt{-O0}: samo
-przejście na \texttt{-O1} skraca czas wykonania o~62-88\% pod GCC
-i~o~46-87\% pod Clang, co odpowiada przyspieszeniu od 2,6 do 8,2~razy, zilustrowanego w tabeli \cref{tab:speedup-gcc-16k}.
-Najsilniej reagują warianty radix-2, najsłabiej \texttt{splitradix}
-i~\texttt{radix4\_naive}. Dalsze podnoszenie poziomu optymalizacji przynosi już
-wyraźnie mniej - najlepszy zestaw flag skraca czas względem \texttt{-O1}
-o~kolejne 0,5-29\%, przy medianie około 12\%. Nie ma przy tym zestawu, który
+i~zarazem jedyny konsekwentny efekt dało odejście od poziomu \texttt{-O0}: samo
+przejście na \texttt{-O1} skracało czas wykonania o~\textbf{62-88\%} pod GCC
+i~o~\textbf{46-87\%} pod Clang, co odpowiada przyspieszeniu od 2,6 do 8,2~razy (\cref{tab:speedup-gcc-16k}).
+Najsilniej reagowały warianty radix-2, najsłabiej \texttt{splitradix}
+i~\texttt{radix4\_naive}. Dalsze podnoszenie poziomu optymalizacji przyniosło już
+wyraźnie mniej - najlepszy zestaw flag skracał czas względem \texttt{-O1}
+o~kolejne 0,5-29\%, przy medianie około \textbf{12\%}. Nie było przy tym zestawu, który
 byłby najlepszy dla wszystkich algorytmów: w~szesnastu wierszach tabeli
-najkrótszy czas osiąga osiem różnych zestawów flag, a~\texttt{-O3} nie wygrywa
-w~żadnym z~nich. Wyjątkiem od ogólnego obrazu jest \texttt{radix4\_naive}, dla
-którego pod GCC poziomy \texttt{-O2} i~\texttt{-O3} okazują się o~około 40\%
-wolniejsze od \texttt{-O1}. Wiersz \texttt{fftw} pozostaje płaski w~zakresie
-0,3470-0,3764~ms, ponieważ biblioteka pochodzi z~gotowego pakietu i~nie
+najkrótszy czas osiągało osiem różnych zestawów flag, a~\texttt{-O3} nie wygrał
+w~żadnym z~nich. Wyjątkiem od ogólnego obrazu był \texttt{radix4\_naive}, dla
+którego pod GCC poziomy \texttt{-O2} i~\texttt{-O3} okazały się o~około \textbf{40\%}
+wolniejsze od \texttt{-O1}. Wiersz \texttt{fftw} pozostał płaski w~zakresie
+0,3470-0,3764~ms, ponieważ biblioteka pochodziła z~gotowego pakietu i~nie
 podlegała badanym ustawieniom kompilacji.
 
 Zróżnicowanie reakcji poszczególnych algorytmów na przejście z~\texttt{-O0}
-wynikać możę z tego, że poziom ten, dla ułatwienia debbugowania kodu, ogranicza znacząco przydział rejestrów  procesora dla zmiennych, w 
+wynikać mogło z tego, że poziom ten, dla ułatwienia debugowania kodu, znacząco ogranicza przydział rejestrów procesora dla zmiennych, w 
 taki sposób, aby można je było prosto podejrzeć ze stosu \cite{Kompilatory_Aho}.
-Z tego powodu, przy użyciu wyższego poziomu optymalizacji zyskują najbardziej warianty o~zwartej pętli
+Z tego powodu, przy użyciu wyższego poziomu optymalizacji zyskały najbardziej warianty o~zwartej pętli
 wewnętrznej i~niewielkiej liczbie zmiennych żywych - pojedynczy etap
-algorytmu, takie jak radix-2, który operuje na kilku wartościach, które po włączeniu
+algorytmu, taki jak radix-2, który operuje na kilku wartościach, które po włączeniu
 \texttt{-O1} mogą być trzymane bezpośrednio w rejestrach. Warianty \texttt{splitradix}
 i~\texttt{radix4\_naive}, o~bardziej rozbudowanej strukturze algorytmu,
-spędzają poza właściwymi obliczeniami, większą część czasu, którego
+spędzały poza właściwymi obliczeniami większą część czasu, którego
 przydział rejestrów nie skraca. Osobnego wyjaśnienia wymaga marginalny wpływ \texttt{-O3}, poziom
 ten dodaje względem \texttt{-O2} przede wszystkim automatyczną wektoryzację,
 a~ta powiodła się jedynie dla dwóch z~ośmiu algorytmów pod GCC i~jednego pod
-Clang, co widać w tabeli \cref{tab:simd-skal-gcc}. W~pozostałych
-przypadkach kod wynikowy jest niemal identyczny jak przy \texttt{-O2}, a~różnice
-w~czasie wykonania mieszczą się poniżej progu istotności przyjętego
+Clang, co widać w~\cref{tab:simd-skal-gcc}. W~pozostałych
+przypadkach kod wynikowy był niemal identyczny jak przy \texttt{-O2}, a~różnice
+w~czasie wykonania mieściły się poniżej progu istotności przyjętego
 w~\cref{sec:prog-istotnosci}.
 
 %============================================================================
@@ -120,7 +120,8 @@ w~\cref{sec:prog-istotnosci}.
 \begin{table}[H]
 \centering
 \caption{Mediana czasu wykonania transformaty dla GCC i~Clang, 16384 próbek,
-         wersja sekwencyjna. Wartości w~milisekundach.}
+         wersja sekwencyjna. Wartości w~milisekundach.
+         Pogrubiono najmniejszą wartość w~każdym wierszu.}
 \label{tab:med-merged-16k}
 \scriptsize
 \setlength{\tabcolsep}{3.0pt}
@@ -170,61 +171,61 @@ Algorytm & Kompilator & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & 
 
 
 \subsection{Wpływ celowych modyfikacji kodu programu, w tym wybór algorytmu}
-Wpływ celowych modyfikacji kodu przy niezmienionym schemacie, dla algorytmu radix-2 zestawiono
+Wpływ celowych modyfikacji kodu przy niezmienionym schemacie dla algorytmu radix-2 zestawiono
 w~\cref{tab:med-merged-16k}. Zastąpienie przeliczanych na bieżąco współczynników
-obrotu tablicą przekazaną jako argument, w przypadku (\texttt{radix2\_v1}), skraca czas wobec
-\texttt{radix2\_v0} o~18\% pod GCC i~24\% pod Clang, a~jednocześnie podnosi
+obrotu tablicą przekazaną jako argument, w przypadku (\texttt{radix2\_v1}), skróciło czas wobec
+\texttt{radix2\_v0} o~18\% pod GCC i~24\% pod Clang, a~jednocześnie podniosło
 stosunek sygnału do szumu, co omówiono w~\cref{sec:WplywBledyNumeryczne}. Zmiana
-układu danych na strukturę tablic (\texttt{radix2\_v2\_soa}) daje wynik zależny
-od kompilatora: pod Clang skraca czas do 0,6758~ms, czyli poniżej wariantu
-\texttt{radix2\_v1}, natomiast pod GCC zatrzymuje się na 0,8427~ms i~pozostaje
-wolniejsza od niego. Przyczyną jest to, że sam układ danych nie przyspiesza
+układu danych na strukturę tablic (\texttt{radix2\_v2\_soa}) dała wynik zależny
+od kompilatora: pod Clang skróciła czas do 0,6758~ms, czyli poniżej wariantu
+\texttt{radix2\_v1}, natomiast pod GCC zatrzymała się na 0,8427~ms i~pozostała
+wolniejsza od niego. Przyczyną było to, że sam układ danych nie przyspiesza
 obliczeń - umożliwia jedynie wektoryzację, którą w~badanych warunkach
-przeprowadził skuteczniej kompilator Clang. Tłumaczy to również
+przeprowadził skuteczniej kompilator Clang. Tłumaczyło to również
 zachowanie tego wariantu przy poziomach \texttt{-O1} i~\texttt{-Os}, przy
-których czas rośnie do 0,8651 i~0,8528~ms, a~więc do wartości bliskiej
-\texttt{radix2\_v0}: oba poziomy nie włączają wektoryzacji, więc korzyść
-z~przebudowy układu danych zanika. Najszybszy w~tej grupie jest wariant
+których czas wzrósł do 0,8651 i~0,8528~ms, a~więc do wartości bliskiej
+\texttt{radix2\_v0}: oba poziomy nie włączały wektoryzacji, więc korzyść
+z~przebudowy układu danych zanikła. Najszybszy w~tej grupie był wariant
 z~jawnym użyciem instrukcji NEON (\texttt{radix2\_v3\_neon}) - 0,5624~ms pod
 GCC, czyli o~39\% mniej niż \texttt{radix2\_v0} i~o~26\% mniej niż
 \texttt{radix2\_v1}. Warto jednak zauważyć, że pod Clang jego przewaga nad
-\texttt{radix2\_v2\_soa} wynosi już tylko 11\%, ponieważ kompilator ten
-wektoryzuje układ SoA samodzielnie.
-Zestawienie wyników dla rodziny algorytmów radix-2 pokazuje, że same modyfikacje kodu,
-przy niezmienionym schemacie obliczeń, skróciły czas wykonania o~39\%.
+\texttt{radix2\_v2\_soa} wynosiła już tylko 11\%, ponieważ kompilator ten
+wektoryzował układ SoA samodzielnie.
+Zestawienie wyników dla rodziny algorytmów radix-2 pokazało, że same modyfikacje kodu,
+przy niezmienionym schemacie obliczeń, skróciły czas wykonania o~\textbf{39\%}.
 Pozostałe badane warianty, takie jak \texttt{radix4},
 \texttt{splitradix} oraz \texttt{stockham},  zaimplementowano wyłącznie
 w postaci bazowej, bez przebudowy układu danych, bez jawnego użycia instrukcji
-wektorowych czy innych technik wewnątrz programowych do optymalizacji. 
-Korzyść uzyskana dla radix2 może budzić nadziję, że zastosowanie wobec nich analogicznych
+wektorowych czy innych technik optymalizacji wewnątrz programu.
+Korzyść uzyskana dla radix-2 może budzić nadziję, że zastosowanie wobec nich analogicznych
 technik przyniosłoby wymierne efekty, a~zmierzone tu czasy wykonania należy traktować
 jako punkt wyjścia, a~nie jako granicę możliwości tych schematów. Weryfikacja
 tego przypuszczenia wykracza poza zakres niniejszej pracy i~stanowi naturalny
 kierunek dalszych badań.
 
-Skala zmian uzyskanych za pomocną jawnych technik optymalizacji w programie,
-pozostaje mniejsza niż skala wynikająca z~wyboru samego
-schematu obliczeń. W~obrębie algorytmów radix-2, z pominięciem programów skompilowanych z flagą O0, różnica między najlepszym a~najgorszym wariantem nie
-przekracza 65\%. Dla algorytmów niestosujących założeń Radix2 uzyskany za to zysk przekracza 24\%, względem najszybszego wariantu. Zysk ten osiągnięto dla 
-dla algorytmu \texttt{stockham}, którego najmniejszy czas wykonania to 0,4296~ms pod Clang.
+Skala zmian uzyskanych za pomocą jawnych technik optymalizacji w~programie
+pozostała mniejsza niż skala wynikająca z~wyboru samego
+schematu obliczeń. W~obrębie algorytmów radix-2, z pominięciem programów skompilowanych z~flagą \texttt{-O0}, różnica między najlepszym a~najgorszym wariantem nie
+przekraczała 65\%. Dla algorytmów niestosujących schematu radix-2 uzyskany za to zysk przekroczył 24\%, względem najszybszego wariantu. Zysk ten osiągnięto dla
+algorytmu \texttt{stockham}, którego najmniejszy czas wykonania wyniósł 0,4296~ms pod Clang.
 
-Należy się również pochylić nad rozmiarami kodu wynikowego zestawiono
+Należy się również pochylić nad rozmiarami kodu wynikowego, zestawionymi
 w~\cref{tab:text-merged}. W~jedenastu z~szesnastu wierszy najmniejszą sekcję
-\texttt{.text} daje poziom \texttt{-Os}, przy czym różnice bywają znaczne:
-dla \texttt{stockham} pod Clang jest to 216~bajtów wobec 1080 przy \texttt{-O2},
-czyli pięciokrotnie mniej. Rozrost kodu towarzyszy wektoryzacji i~rozwijaniu
+\texttt{.text} dawał poziom \texttt{-Os}, przy czym różnice bywały znaczne:
+dla \texttt{stockham} pod Clang było to 216~bajtów wobec 1080 przy \texttt{-O2},
+czyli pięciokrotnie mniej. Rozrost kodu towarzyszył wektoryzacji i~rozwijaniu
 pętli, nie zawsze przynosząc korzyść w~czasie - dla \texttt{stockham} pod GCC
-zestaw \texttt{unroll} powiększa sekcję z~320 do 1544~bajtów, pozostawiając czas
-na poziomie 0,6218~ms wobec 0,6060~ms przy \texttt{-O2}. Zdarza się też
-przeciwnie: dla \texttt{radix4\_naive} pod Clang zestaw \texttt{ffast} powiększa
-kod z~560 do 2208~bajtów i~skraca czas o~21\%.
+zestaw \texttt{unroll} powiększył sekcję z~320 do 1544~bajtów, pozostawiając czas
+na poziomie 0,6218~ms wobec 0,6060~ms przy \texttt{-O2}. Zdarzało się też
+przeciwnie: dla \texttt{radix4\_naive} pod Clang zestaw \texttt{ffast} powiększył
+kod z~560 do 2208~bajtów i~skrócił czas o~21\%.
 %============================================================================
 % Tabela 1.8   (etykieta: tab:speedup-gcc-1M)
 % Przyspieszenie względem -O0 dla GCC i 16384 próbek, wersja sekwencyjna. Wartości bezwymiarowe, poziom \texttt{-O0} przyjęto za~1,00.
 %============================================================================
 \begin{table}[H]
 \centering
-\caption{Przyspieszenie względem -O0 dla GCC i 16384 próbek, wersja sekwencyjna. Wartości bezwymiarowe, poziom \texttt{-O0} przyjęto za~1,00.}
+\caption{Przyspieszenie względem \texttt{-O0} dla GCC i~16384 próbek, wersja sekwencyjna. Wartości bezwymiarowe, poziom \texttt{-O0} przyjęto za~1,00. Pogrubiono największą wartość w~każdym wierszu.}
 \label{tab:speedup-gcc-16k}
 \scriptsize
 \setlength{\tabcolsep}{3.0pt}
@@ -232,47 +233,47 @@ kod z~560 do 2208~bajtów i~skraca czas o~21\%.
 \toprule
 Algorytm & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
 \midrule
-radix2\_v0 & 1,00 & 8,19 & 9,30 & 9,15 & 8,99 & 9,61 & 9,31 & 9,25 & 9,41 & 9,43 & 9,16 \\
-radix2\_v1 & 1,00 & 7,15 & 8,52 & 8,52 & 7,10 & 8,29 & 7,63 & 7,26 & 7,60 & 7,62 & 8,20 \\
-radix2\_v2\_soa & 1,00 & 4,43 & 5,03 & 4,94 & 4,44 & 4,93 & 4,96 & 4,80 & 4,81 & 5,97 & 4,38 \\
-radix2\_v3\_neon & 1,00 & 6,32 & 6,51 & 6,48 & 5,98 & 6,49 & 6,47 & 6,40 & 6,27 & 5,63 & 6,23 \\
-radix4 & 1,00 & 4,70 & 5,08 & 5,15 & 4,84 & 5,20 & 4,69 & 4,95 & 4,65 & 4,67 & 4,95 \\
-radix4\_naive & 1,00 & 2,81 & 2,02 & 2,01 & 2,75 & 2,02 & 3,00 & 2,00 & 3,06 & 3,06 & 2,80 \\
-splitradix & 1,00 & 2,64 & 2,93 & 2,92 & 2,80 & 2,88 & 2,77 & 3,00 & 2,81 & 2,81 & 2,86 \\
-stockham & 1,00 & 5,52 & 5,79 & 5,65 & 6,33 & 5,65 & 5,83 & 5,67 & 5,71 & 5,66 & 5,62 \\
+radix2\_v0 & 1,00 & 8,19 & 9,30 & 9,15 & 8,99 & \textbf{9,61} & 9,31 & 9,25 & 9,41 & 9,43 & 9,16 \\
+radix2\_v1 & 1,00 & 7,15 & \textbf{8,52} & \textbf{8,52} & 7,10 & 8,29 & 7,63 & 7,26 & 7,60 & 7,62 & 8,20 \\
+radix2\_v2\_soa & 1,00 & 4,43 & 5,03 & 4,94 & 4,44 & 4,93 & 4,96 & 4,80 & 4,81 & \textbf{5,97} & 4,38 \\
+radix2\_v3\_neon & 1,00 & 6,32 & \textbf{6,51} & 6,48 & 5,98 & 6,49 & 6,47 & 6,40 & 6,27 & 5,63 & 6,23 \\
+radix4 & 1,00 & 4,70 & 5,08 & 5,15 & 4,84 & \textbf{5,20} & 4,69 & 4,95 & 4,65 & 4,67 & 4,95 \\
+radix4\_naive & 1,00 & 2,81 & 2,02 & 2,01 & 2,75 & 2,02 & 3,00 & 2,00 & \textbf{3,06} & \textbf{3,06} & 2,80 \\
+splitradix & 1,00 & 2,64 & 2,93 & 2,92 & 2,80 & 2,88 & 2,77 & \textbf{3,00} & 2,81 & 2,81 & 2,86 \\
+stockham & 1,00 & 5,52 & 5,79 & 5,65 & \textbf{6,33} & 5,65 & 5,83 & 5,67 & 5,71 & 5,66 & 5,62 \\
 \bottomrule
 \end{tabular}
 \end{table}
 %tutaj o instrukcjach SIMD, ulozenie danych 
 
 \subsection{Porównanie kompilatorów GCC i Clang}
-Zestawienie kompilatorów GCC i Clang prowadzi do czytelnego podziału ról. Pod względem
-rozmiaru kodu przewagę ma GCC: choć mniejszą sekcję \texttt{.text} generuje
-w~45 z~88 przypadków, a~Clang w~42 (\cref{tab:text-merged}), o~wyniku decyduje
-skala różnic w~pozostałych komórkach - średni rozmiar wynosi 518~B dla GCC
-i~724~B dla Clang, czyli o~40\% więcej. Największe rozbieżności dotyczą
-wariantów używających wektoryzacji : dla \texttt{radix2\_v1} przy \texttt{-O2} jest to
+Zestawienie kompilatorów GCC i Clang prowadziło do czytelnego podziału ról. Pod względem
+rozmiaru kodu przewagę miał GCC: choć mniejszą sekcję \texttt{.text} generował
+w~45 z~88 przypadków, a~Clang w~42 (\cref{tab:text-merged}), o~wyniku decydowała
+skala różnic w~pozostałych komórkach - średni rozmiar wynosił 518~B dla GCC
+i~724~B dla Clang, czyli o~40\% więcej. Największe rozbieżności dotyczyły
+wariantów używających wektoryzacji: dla \texttt{radix2\_v1} przy \texttt{-O2} było to
 224~B wobec 840~B, a~dla \texttt{stockham} 320~B wobec 1080~B.
 
-Pod względem czasu wykonania relacja jest znacząco inna. Clang osiąga krótszy czas w~63 z~80 konfiguracji przy 1024 i~przy 16384
-próbkach danych wejściowych, skracając go średnio o około ~8,5\%
-(\cref{tab:med-merged-16k}). Przewaga ta zanika jednak przy 1048576 próbkach wektora wejściowego,
-gdzie mediana skrócenia spada do 0,5\%, a~liczba wygranych do 44 z~80. Wynikać to może, z faktu, że przy rozmiarze tego rzędu
-o~czasie wykonania decyduje dostęp do pamięci, a~nie jakość
+Pod względem czasu wykonania relacja była znacząco inna. Clang osiągał krótszy czas w~63 z~80 konfiguracji przy 1024 i~przy 16384
+próbkach danych wejściowych, skracając go średnio o~około \textbf{8,5\%}
+(\cref{tab:med-merged-16k}). Przewaga ta zanikała jednak przy 1048576 próbkach wektora wejściowego,
+gdzie mediana skrócenia spadała do 0,5\%, a~liczba wygranych do 44 z~80. Wynikać to mogło z~faktu, że przy rozmiarze tego rzędu
+o~czasie wykonania decydował dostęp do pamięci, a~nie jakość
 wygenerowanego kodu.
 
-Źródłem przewagi Clang jest skuteczniejsza wektoryzacja automatyczna.
-W~\cref{tab:simd-skal-gcc} instrukcje SIMD występują w~38 z~80 konfiguracji dla
-Clang wobec 30 dla GCC, a~różnica dotyczy przede wszystkim wariantów, w~których
-GCC nie wektoryzuje w~ogóle: dla \texttt{radix2\_v2\_soa} generuje zero
+Źródłem przewagi Clang była skuteczniejsza wektoryzacja automatyczna.
+W~\cref{tab:simd-skal-gcc} instrukcje SIMD występowały w~38 z~80 konfiguracji dla
+Clang wobec 30 dla GCC, a~różnica dotyczyła przede wszystkim wariantów, w~których
+GCC nie wektoryzował w~ogóle: dla \texttt{radix2\_v2\_soa} generował zero
 instrukcji wektorowych w~dziewięciu z~dziesięciu zestawów flag, podczas gdy
-Clang emituje ich osiem lub dziewięć w~ośmiu zestawach. Clang zachowuje przy tym
-wektoryzację niezależnie od zestawu flag, natomiast GCC traci ją po dodaniu
+Clang emitował ich osiem lub dziewięć w~ośmiu zestawach. Clang zachowywał przy tym
+wektoryzację niezależnie od zestawu flag, natomiast GCC tracił ją po dodaniu
 \texttt{-ffast-math} lub \texttt{-mcpu} do poziomu \texttt{-O2}. Zagadnienie to
 omówiono szerzej w~\cref{sec:WplywFlagWektoryzacja}.
 
 Wybór między kompilatorami sprowadza się zatem do kompromisu między rozmiarem
-kodu a~czasem wykonania. W~systemach wbudowanych, wybór ten możę być szczególnie kluczony, ponieważ
+kodu a~czasem wykonania. W~systemach wbudowanych wybór ten może być szczególnie istotny, ponieważ
 często pojemność pamięci
 programu bywa ograniczeniem twardszym niż wydajność.
 %============================================================================
@@ -330,26 +331,26 @@ Algorytm & Kompilator & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & 
 
 \subsection{Wpływ kompilatora na błędy numeryczne wybranych algorytmów}\label{sec:WplywBledyNumeryczne}
 Dokładność wyników dla 16384 próbek zestawiono w~\cref{tab:dokl-gcc-16k}. Zakres,
-w~jakim kompilator wpływa na wynik, jest wąski - pomijając zestawy
-z~\texttt{-ffast-math}, rozpiętość SNR w~obrębie wiersza nie przekracza 1,31~dB,
-a~same te zestawy zmieniają go najwyżej o~0,45~dB, przy czym dla
-\texttt{splitradix} i~\texttt{radix4\_naive} nieznacznie go podnoszą.
+w~jakim kompilator wpływał na wynik, był wąski - pomijając zestawy
+z~\texttt{-ffast-math}, rozpiętość SNR w~obrębie wiersza nie przekraczała 1,31~dB,
+a~same te zestawy zmieniały go najwyżej o~0,45~dB, przy czym dla
+\texttt{splitradix} i~\texttt{radix4\_naive} nieznacznie go podnosiły.
 
-Wyjątkiem jest \texttt{radix2\_v0}, który osiąga 91,52~dB wobec 134,89-138,48~dB
-dla pozostałych wariantów. Różnica wynika ze sposobu wyznaczania współczynników
+Wyjątkiem był \texttt{radix2\_v0}, który osiągał \textbf{91,52~dB} wobec 134,89-138,48~dB
+dla pozostałych wariantów. Różnica wynikała ze sposobu wyznaczania współczynników
 obrotu w~tej implementacji, opisanego
 w~\cref{subsection:WersjeJednowatkowe}. Kolejne
 współczynniki powstają przez mnożenie poprzedniej wartości przez stały czynnik,
 więc błąd zaokrąglenia każdego kroku wchodzi do kroku następnego i~narasta wraz
-z~liczbą etapów. Potwierdza to porównanie rozmiarów - SNR spada ze 113,41~dB
-przy 1024~próbkach do 75,14~dB przy 1048576, podczas gdy pozostałe warianty tracą
+z~liczbą etapów. Potwierdziło to porównanie rozmiarów - SNR spadał ze 113,41~dB
+przy 1024~próbkach do 75,14~dB przy 1048576, podczas gdy pozostałe warianty traciły
 w~tym zakresie najwyżej 4~dB.
 
-Wynik ten pokazuje, że kompilator jest narzędziem tłumaczącym kod, a~nie
+Wynik ten pokazał, że kompilator jest narzędziem tłumaczącym kod, a~nie
 mechanizmem korygującym jego wady. Żaden poziom optymalizacji ani zestaw flag nie
 zmniejszył błędu wynikającego z~konstrukcji algorytmu; skuteczna okazała się
 dopiero zmiana implementacji - \texttt{radix2\_v1} przy tym samym schemacie
-obliczeń osiąga 136,71~dB. Obserwacja ta jest istotna dla codziennej praktyki w pracy z oprogramowaniem. 
+obliczeń osiągał 136,71~dB. Obserwacja ta jest istotna dla codziennej praktyki w pracy z oprogramowaniem. 
 Kompilator nie poprawi błędów merytorycznych w kodzie programu komputerowego i nie zwiększy jego jakości.
 %============================================================================
 % Tabela 1.44   (etykieta: tab:dokl-gcc-1M)
@@ -357,7 +358,7 @@ Kompilator nie poprawi błędów merytorycznych w kodzie programu komputerowego 
 %============================================================================
 \begin{table}[H]
 \centering
-\caption{Błąd średniokwadratowy i stosunek sygnału do szumu dla GCC i 16384 próbek, wersja sekwencyjna.}
+\caption{Błąd średniokwadratowy i~stosunek sygnału do szumu dla GCC i~16384 próbek, wersja sekwencyjna. Pogrubiono najmniejszy błąd i~największy SNR w~każdym wierszu.}
 \label{tab:dokl-gcc-16k}
 \scriptsize
 \setlength{\tabcolsep}{3.0pt}
@@ -366,24 +367,24 @@ Kompilator nie poprawi błędów merytorycznych w kodzie programu komputerowego 
 Algorytm & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
 \midrule
 \multicolumn{12}{l}{\textit{Błąd średniokwadratowy RMSE}} \\[2pt]
-radix2\_v0 $(\cdot 10^{-3})$ & 1,714 & 1,714 & 2,595 & 2,595 & 2,595 & 2,595 & 2,594 & 2,595 & 2,594 & 2,594 & 2,595 \\
-radix2\_v1 $(\cdot 10^{-5})$ & 1,377 & 1,377 & 1,429 & 1,429 & 1,429 & 1,429 & 1,444 & 1,429 & 1,444 & 1,444 & 1,429 \\
-radix2\_v2\_soa $(\cdot 10^{-5})$ & 1,377 & 1,377 & 1,429 & 1,429 & 1,429 & 1,429 & 1,444 & 1,429 & 1,444 & 1,444 & 1,429 \\
-radix2\_v3\_neon $(\cdot 10^{-5})$ & 1,445 & 1,445 & 1,467 & 1,467 & 1,467 & 1,467 & 1,542 & 1,467 & 1,542 & 1,542 & 1,467 \\
-radix4 $(\cdot 10^{-5})$ & 1,365 & 1,365 & 1,174 & 1,174 & 1,174 & 1,174 & 1,236 & 1,174 & 1,236 & 1,236 & 1,174 \\
-radix4\_naive $(\cdot 10^{-5})$ & 1,760 & 1,760 & 1,610 & 1,610 & 1,610 & 1,610 & 1,571 & 1,610 & 1,571 & 1,571 & 1,610 \\
-splitradix $(\cdot 10^{-5})$ & 1,276 & 1,276 & 1,280 & 1,280 & 1,280 & 1,280 & 1,165 & 1,280 & 1,165 & 1,165 & 1,280 \\
-stockham $(\cdot 10^{-5})$ & 1,342 & 1,342 & 1,387 & 1,387 & 1,387 & 1,387 & 1,429 & 1,387 & 1,429 & 1,429 & 1,387 \\
+radix2\_v0 $(\cdot 10^{-3})$ & \textbf{1,714} & \textbf{1,714} & 2,595 & 2,595 & 2,595 & 2,595 & 2,594 & 2,595 & 2,594 & 2,594 & 2,595 \\
+radix2\_v1 $(\cdot 10^{-5})$ & \textbf{1,377} & \textbf{1,377} & 1,429 & 1,429 & 1,429 & 1,429 & 1,444 & 1,429 & 1,444 & 1,444 & 1,429 \\
+radix2\_v2\_soa $(\cdot 10^{-5})$ & \textbf{1,377} & \textbf{1,377} & 1,429 & 1,429 & 1,429 & 1,429 & 1,444 & 1,429 & 1,444 & 1,444 & 1,429 \\
+radix2\_v3\_neon $(\cdot 10^{-5})$ & \textbf{1,445} & \textbf{1,445} & 1,467 & 1,467 & 1,467 & 1,467 & 1,542 & 1,467 & 1,542 & 1,542 & 1,467 \\
+radix4 $(\cdot 10^{-5})$ & 1,365 & 1,365 & \textbf{1,174} & \textbf{1,174} & \textbf{1,174} & \textbf{1,174} & 1,236 & \textbf{1,174} & 1,236 & 1,236 & \textbf{1,174} \\
+radix4\_naive $(\cdot 10^{-5})$ & 1,760 & 1,760 & 1,610 & 1,610 & 1,610 & 1,610 & \textbf{1,571} & 1,610 & \textbf{1,571} & \textbf{1,571} & 1,610 \\
+splitradix $(\cdot 10^{-5})$ & 1,276 & 1,276 & 1,280 & 1,280 & 1,280 & 1,280 & \textbf{1,165} & 1,280 & \textbf{1,165} & \textbf{1,165} & 1,280 \\
+stockham $(\cdot 10^{-5})$ & \textbf{1,342} & \textbf{1,342} & 1,387 & 1,387 & 1,387 & 1,387 & 1,429 & 1,387 & 1,429 & 1,429 & 1,387 \\
 \addlinespace
 \multicolumn{12}{l}{\textit{Stosunek sygnału do szumu SNR [dB]}} \\[2pt]
-radix2\_v0 & 95,12 & 95,12 & 91,52 & 91,52 & 91,52 & 91,52 & 91,53 & 91,52 & 91,53 & 91,53 & 91,52 \\
-radix2\_v1 & 137,03 & 137,03 & 136,71 & 136,71 & 136,71 & 136,71 & 136,61 & 136,71 & 136,61 & 136,61 & 136,71 \\
-radix2\_v2\_soa & 137,03 & 137,03 & 136,71 & 136,71 & 136,71 & 136,71 & 136,61 & 136,71 & 136,61 & 136,61 & 136,71 \\
-radix2\_v3\_neon & 136,61 & 136,61 & 136,48 & 136,48 & 136,48 & 136,48 & 136,04 & 136,48 & 136,04 & 136,04 & 136,48 \\
-radix4 & 137,10 & 137,10 & 138,41 & 138,41 & 138,41 & 138,41 & 137,96 & 138,41 & 137,96 & 137,96 & 138,41 \\
-radix4\_naive & 134,89 & 134,89 & 135,67 & 135,67 & 135,67 & 135,67 & 135,88 & 135,67 & 135,88 & 135,88 & 135,67 \\
-splitradix & 137,69 & 137,69 & 137,66 & 137,66 & 137,66 & 137,66 & 138,48 & 137,66 & 138,48 & 138,48 & 137,66 \\
-stockham & 137,25 & 137,25 & 136,96 & 136,96 & 136,96 & 136,96 & 136,70 & 136,96 & 136,70 & 136,70 & 136,96 \\
+radix2\_v0 & \textbf{95,12} & \textbf{95,12} & 91,52 & 91,52 & 91,52 & 91,52 & 91,53 & 91,52 & 91,53 & 91,53 & 91,52 \\
+radix2\_v1 & \textbf{137,03} & \textbf{137,03} & 136,71 & 136,71 & 136,71 & 136,71 & 136,61 & 136,71 & 136,61 & 136,61 & 136,71 \\
+radix2\_v2\_soa & \textbf{137,03} & \textbf{137,03} & 136,71 & 136,71 & 136,71 & 136,71 & 136,61 & 136,71 & 136,61 & 136,61 & 136,71 \\
+radix2\_v3\_neon & \textbf{136,61} & \textbf{136,61} & 136,48 & 136,48 & 136,48 & 136,48 & 136,04 & 136,48 & 136,04 & 136,04 & 136,48 \\
+radix4 & 137,10 & 137,10 & \textbf{138,41} & \textbf{138,41} & \textbf{138,41} & \textbf{138,41} & 137,96 & \textbf{138,41} & 137,96 & 137,96 & \textbf{138,41} \\
+radix4\_naive & 134,89 & 134,89 & 135,67 & 135,67 & 135,67 & 135,67 & \textbf{135,88} & 135,67 & \textbf{135,88} & \textbf{135,88} & 135,67 \\
+splitradix & 137,69 & 137,69 & 137,66 & 137,66 & 137,66 & 137,66 & \textbf{138,48} & 137,66 & \textbf{138,48} & \textbf{138,48} & 137,66 \\
+stockham & \textbf{137,25} & \textbf{137,25} & 136,96 & 136,96 & 136,96 & 136,96 & 136,70 & 136,96 & 136,70 & 136,70 & 136,96 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -397,22 +398,22 @@ Liczbę instrukcji zmiennoprzecinkowych w~kodzie wynikowym zestawiono
 w~\cref{tab:simd-skal-gcc}; są to statyczne wystąpienia instrukcji, a~nie liczba
 ich wykonań. Automatyczna wektoryzacja przez kompilator nie okazała się zjawiskiem powszechnym -
 pomijając \texttt{-O0}, wystąpiła tylko  w~30 z~80 konfiguracji pod GCC i~w~38 pod
-Clang, a~poziomy \texttt{-O1} oraz \texttt{-Os} nie włączają jej w~ogóle.
+Clang, a~poziomy \texttt{-O1} oraz \texttt{-Os} nie włączały jej w~ogóle.
 
-Decyduje o~niej nie poziom optymalizacji, lecz pojedyncza flaga. Pod GCC
-\texttt{radix2\_v2\_soa} zostaje zwektoryzowany wyłącznie w~zestawie
+Decydowała o~niej nie poziom optymalizacji, lecz pojedyncza flaga. Pod GCC wariant
+\texttt{radix2\_v2\_soa} został zwektoryzowany wyłącznie w~zestawie
 \texttt{+alias}, znoszącym założenie o~możliwym nakładaniu się buforów, i~właśnie
-tam osiąga najlepszy czas - 0,7111~ms wobec 0,8427~ms przy \texttt{-O2}
-(\cref{tab:med-merged-16k}). Zależność działa też odwrotnie: dla
+tam osiągnął najlepszy czas - 0,7111~ms wobec 0,8427~ms przy \texttt{-O2}
+(\cref{tab:med-merged-16k}). Zależność działała też odwrotnie: dla
 \texttt{radix2\_v1} pod GCC dodanie \texttt{-ffast-math} lub \texttt{-mcpu}
-usuwa wektoryzację obecną przy \texttt{-O2}, wydłużając czas z~0,7562 do
+usuwało wektoryzację obecną przy \texttt{-O2}, wydłużając czas z~0,7562 do
 0,8442~ms.
 
-Tłumaczy to znikomy zysk z~użycia flagi \texttt{-O3}. W~użytej wersji GCC
-wektoryzacja działa już przy \texttt{-O2}, a~\texttt{-O3} zmienia jedynie model
-kosztu na mniej zachowawczy, więc skutek widać tylko tam, gdzie decyzja
-o~opłacalności była graniczna, na przykład dla algorytmu dla \texttt{stockham} liczba instrukcji SIMD
-rośnie wtedy z~zera do siedmiu, a~w~pozostałych ich liczba pozostaje bez zmian.
+Tłumaczyło to znikomy zysk z~użycia flagi \texttt{-O3}. W~użytej wersji GCC
+wektoryzacja działała już przy \texttt{-O2}, a~\texttt{-O3} zmieniał jedynie model
+kosztu na mniej zachowawczy, więc skutek widać było tylko tam, gdzie decyzja
+o~opłacalności była graniczna, na przykład dla algorytmu \texttt{stockham} liczba instrukcji SIMD
+rosła wtedy z~zera do siedmiu, a~w~pozostałych ich liczba pozostawała bez zmian.
 %============================================================================
 % Tabela 1.51 i 1,52  (etykieta: tab:simd-skal-gcc)
 % Liczba instrukcji wektorowych i skalarnych dla GCC i clang, wersja sekwencyjna. Liczba statycznych instrukcji zmiennoprzecinkowych w~kodzie wynikowym.
@@ -469,48 +470,48 @@ Algorytm & Komp. & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \text
 
 Rozmiary danych wejściowych dobrano tak, aby ich wielkość pozwoliła na sprawdzenie dostępu do
 kolejnych poziomów pamięci podręcznej badanej platformy sprzętowej. Przy 1024~próbkach oba
-bufory zajmują 16~kB i~mieszczą się w~pamięci L1D o~pojemności 32~kB; przy
-16384~próbkach jest to 256~kB, a~więc powyżej L1D, lecz w~granicach 1~MB
+bufory zajmowały 16~kB i~mieściły się w~pamięci L1D o~pojemności 32~kB; przy
+16384~próbkach było to 256~kB, a~więc powyżej L1D, lecz w~granicach 1~MB
 pamięci L2; przy 1048576~próbkach --- 16~MB, czyli szesnastokrotnie ponad
 pojemność L2.
 
 Skutek widać w~\cref{tab:cache-gcc-16k} i~\cref{tab:cache-gcc-1M}. Współczynnik
-chybień L2 rośnie z~wartości nieprzekraczających 0,7\% przy 16384~próbkach do
-23--35\% przy 1048576. Ponieważ miara ta odnosi się do odwołań, które chybiły już
-w~L1, oznacza to, że co trzecie z~nich kończy się sięgnięciem do pamięci
-operacyjnej. Przekłada się to bezpośrednio na stosunek czasu wykonania do wielkości danych wejsciowych.
+chybień L2 rósł z~wartości nieprzekraczających 0,7\% przy 16384~próbkach do
+\textbf{23--35\%} przy 1048576. Ponieważ miara ta odnosi się do odwołań, które chybiły już
+w~L1, oznaczało to, że co trzecie z~nich kończyło się sięgnięciem do pamięci
+operacyjnej. Przełożyło się to bezpośrednio na stosunek czasu wykonania do wielkości danych wejściowych.
 Miara ta uwzględnia już wzrost liczby etapów z~14 do 20,
-zatem pojedyncza operacja motylkowa kosztuje przy większym rozmiarze danych
-ponad dwukrotnie więcej czasu, mimo że wykonuje dokładnie tyle samo działań
-arytmetycznych. Obserwowane wydłużenie wynika więc z~czasu dostępu do
+zatem pojedyncza operacja motylkowa kosztowała przy większym rozmiarze danych
+ponad dwukrotnie więcej czasu, mimo że wykonywała dokładnie tyle samo działań
+arytmetycznych. Obserwowane wydłużenie wynikało więc z~czasu dostępu do
 danych.
 
-Skala chybień w pamięci podręcznej zależy od wzorca dostępu do danych. Najgorzej wypada
-\texttt{splitradix}: 19,10\% chybień L1D i~koszt jednostkowy 28,50~ns wobec
+Skala chybień w pamięci podręcznej zależała od wzorca dostępu do danych. Najgorzej wypadł
+\texttt{splitradix}: 19,10\% chybień L1D i~koszt jednostkowy \textbf{28,50~ns} wobec
 4,71~ns przy 16384~próbkach. Dla porównania \texttt{stockham}, przechodzący
-przez tablicę liniowo, notuje 1,47\% chybień i~8,13~ns.
+przez tablicę liniowo, notował 1,47\% chybień i~\textbf{8,13~ns}.
 
-Zachowanie \texttt{splitradix} pokazuje, że o~czasie wykonania decyduje nie liczba chybień,
-lecz ich koszt. Wariant ten notuje wysokie chybienia L1D niezależnie od rozmiaru
+Zachowanie \texttt{splitradix} pokazało, że o~czasie wykonania decydowała nie liczba chybień,
+lecz ich koszt. Wariant ten notował wysokie chybienia L1D niezależnie od rozmiaru
 danych - 15,52\% przy 16384~próbkach i~19,10\% przy 1048576, wobec 1,42\%
-i~1,08\% dla \texttt{radix2\_v0}. Wynikać to może,  z~samego schematu obliczeń,
+i~1,08\% dla \texttt{radix2\_v0}. Wynikać to mogło z~samego schematu obliczeń,
 opartego na podciągach o~indeksach $4k+1$ i~$4k+3$, a~więc na odwołaniach
-z~krokiem co cztery. Przy 16384~próbkach obsługuje je jednak pamięć L2 i~strata
-wobec \texttt{radix2\_v0} wynosi 17\%; przy 1048576, gdy chybienia L2 sięgają
-26,75\%, te same odwołania kierowane są do pamięci operacyjnej, a~strata zdecydowanie rośnie.
+z~krokiem co cztery. Przy 16384~próbkach obsługiwała je jednak pamięć L2 i~strata
+wobec \texttt{radix2\_v0} wynosiła 17\%; przy 1048576, gdy chybienia L2 sięgały
+26,75\%, te same odwołania kierowane były do pamięci operacyjnej, a~strata zdecydowanie rosła.
 
-Jednocześnie zanikają różnice między wariantami tego samego schematu. Cztery
-implementacje radix-2 dzieli 65\% przy 16384~próbkach i~zaledwie 2,1\% przy
+Jednocześnie zanikały różnice między wariantami tego samego schematu. Cztery
+implementacje radix-2 dzieliło \textbf{65\%} przy 16384~próbkach i~zaledwie \textbf{2,1\%} przy
 1048576 (\cref{tab:med-merged-16k}, \cref{tab:med-gcc-1M}). Powyżej pojemności
-L2 o~wydajności decyduje zatem organizacja dostępu do pamięci, a~nie jakość
-wygenerowanego kodu. Wniosek ten może być niezwykle istotny przy organizjacji systemów, których zadaniem jest przetwarzanie
+L2 o~wydajności decydowała zatem organizacja dostępu do pamięci, a~nie jakość
+wygenerowanego kodu. Wniosek ten może być niezwykle istotny przy organizacji systemów, których zadaniem jest przetwarzanie
 bardzo dużych zbiorów danych.
 
 Odczytując \cref{tab:cache-gcc-1M}, należy zachować ostrożność wobec kolumny
-\texttt{-O0}. Chybienia L1D wynoszą tam 0,14--2,69\%, czyli kilkukrotnie mniej
-niż na wyższych poziomach optymalizacji, co nie świadczy o~lepszej organizacji dostępu do pamięci.
-Kod programu bez optymalizacji wykonuje wiele nadmiarowych odwołań do pamięci trafiających
-do L1D, które powiększają mianownik współczynnika badanego stosunku.
+\texttt{-O0}. Chybienia L1D wynosiły tam 0,14--2,69\%, czyli kilkukrotnie mniej
+niż na wyższych poziomach optymalizacji, co nie świadczyło o~lepszej organizacji dostępu do pamięci.
+Kod programu bez optymalizacji wykonywał wiele nadmiarowych odwołań do pamięci trafiających
+do L1D, które powiększały mianownik współczynnika badanego stosunku.
 
 %============================================================================
 % Tabela 1.3   (etykieta: tab:med-gcc-1M)
@@ -518,7 +519,7 @@ do L1D, które powiększają mianownik współczynnika badanego stosunku.
 %============================================================================
 \begin{table}[H]
 \centering
-\caption{Mediana czasu wykonania transformaty dla GCC i 1048576 próbek, wersja sekwencyjna. Wartości w~milisekundach.}
+\caption{Mediana czasu wykonania transformaty dla GCC i~1048576 próbek, wersja sekwencyjna. Wartości w~milisekundach. Pogrubiono najmniejszą wartość w~każdym wierszu.}
 \label{tab:med-gcc-1M}
 \scriptsize
 \setlength{\tabcolsep}{3.0pt}
@@ -526,16 +527,16 @@ do L1D, które powiększają mianownik współczynnika badanego stosunku.
 \toprule
 Algorytm & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
 \midrule
-radix2\_v0 & 834,30 & 212,17 & 206,54 & 206,60 & 209,55 & 207,53 & 206,52 & 207,13 & 207,44 & 207,72 & 208,17 \\
-radix2\_v1 & 638,30 & 211,61 & 208,53 & 208,09 & 212,02 & 207,28 & 209,20 & 207,36 & 209,96 & 210,51 & 212,75 \\
-radix2\_v2\_soa & 473,97 & 211,86 & 209,70 & 208,33 & 207,83 & 212,03 & 216,72 & 208,50 & 216,78 & 215,87 & 212,16 \\
-radix2\_v3\_neon & 419,65 & 212,35 & 210,82 & 210,87 & 214,28 & 208,78 & 212,63 & 211,66 & 213,72 & 214,83 & 212,40 \\
-radix4 & 647,67 & 304,00 & 280,17 & 279,04 & 275,54 & 263,93 & 307,58 & 271,54 & 301,06 & 301,80 & 283,62 \\
-radix4\_naive & 632,95 & 254,73 & 257,96 & 254,87 & 254,23 & 246,92 & 251,88 & 256,21 & 246,13 & 245,51 & 258,40 \\
-splitradix & 745,81 & 634,16 & 597,59 & 596,89 & 602,57 & 601,41 & 630,62 & 553,78 & 605,62 & 600,52 & 600,61 \\
-stockham & 310,10 & 171,62 & 170,54 & 91,42 & 167,89 & 92,67 & 90,69 & 91,51 & 91,50 & 91,78 & 91,27 \\
+radix2\_v0 & 834,30 & 212,17 & 206,54 & 206,60 & 209,55 & 207,53 & \textbf{206,52} & 207,13 & 207,44 & 207,72 & 208,17 \\
+radix2\_v1 & 638,30 & 211,61 & 208,53 & 208,09 & 212,02 & \textbf{207,28} & 209,20 & 207,36 & 209,96 & 210,51 & 212,75 \\
+radix2\_v2\_soa & 473,97 & 211,86 & 209,70 & 208,33 & \textbf{207,83} & 212,03 & 216,72 & 208,50 & 216,78 & 215,87 & 212,16 \\
+radix2\_v3\_neon & 419,65 & 212,35 & 210,82 & 210,87 & 214,28 & \textbf{208,78} & 212,63 & 211,66 & 213,72 & 214,83 & 212,40 \\
+radix4 & 647,67 & 304,00 & 280,17 & 279,04 & 275,54 & \textbf{263,93} & 307,58 & 271,54 & 301,06 & 301,80 & 283,62 \\
+radix4\_naive & 632,95 & 254,73 & 257,96 & 254,87 & 254,23 & 246,92 & 251,88 & 256,21 & 246,13 & \textbf{245,51} & 258,40 \\
+splitradix & 745,81 & 634,16 & 597,59 & 596,89 & 602,57 & 601,41 & 630,62 & \textbf{553,78} & 605,62 & 600,52 & 600,61 \\
+stockham & 310,10 & 171,62 & 170,54 & 91,42 & 167,89 & 92,67 & \textbf{90,69} & 91,51 & 91,50 & 91,78 & 91,27 \\
 \addlinespace
-fftw & 52,34 & 52,36 & 52,73 & 52,69 & 52,42 & 52,52 & 52,41 & 53,04 & 52,45 & 52,56 & 52,40 \\
+fftw & \textbf{52,34} & 52,36 & 52,73 & 52,69 & 52,42 & 52,52 & 52,41 & 53,04 & 52,45 & 52,56 & 52,40 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -548,7 +549,7 @@ fftw & 52,34 & 52,36 & 52,73 & 52,69 & 52,42 & 52,52 & 52,41 & 53,04 & 52,45 & 5
 %============================================================================
 \begin{table}[H]
 \centering
-\caption{Współczynnik chybień pamięci podręcznej L1D i L2 dla GCC i 1048576 próbek, wersja sekwencyjna.}
+\caption{Współczynnik chybień pamięci podręcznej L1D i~L2 dla GCC i~1048576 próbek, wersja sekwencyjna. Pogrubiono najmniejszą wartość w~każdym wierszu z~pominięciem \texttt{-O0}.}
 \label{tab:cache-gcc-1M}
 \scriptsize
 \setlength{\tabcolsep}{3.0pt}
@@ -557,24 +558,24 @@ fftw & 52,34 & 52,36 & 52,73 & 52,69 & 52,42 & 52,52 & 52,41 & 53,04 & 52,45 & 5
 Algorytm & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
 \midrule
 \multicolumn{12}{l}{\textit{Chybienia L1D [\%]}} \\[2pt]
-radix2\_v0 & 0,14 & 1,06 & 1,08 & 1,06 & 1,07 & 1,07 & 1,08 & 1,08 & 1,07 & 1,09 & 1,08 \\
-radix2\_v1 & 0,26 & 1,12 & 1,94 & 2,01 & 1,10 & 2,00 & 1,11 & 1,14 & 1,12 & 1,14 & 2,17 \\
-radix2\_v2\_soa & 0,52 & 2,09 & 2,15 & 1,98 & 2,13 & 1,87 & 1,90 & 1,98 & 1,84 & 4,52 & 2,53 \\
-radix2\_v3\_neon & 0,85 & 4,76 & 5,43 & 4,87 & 4,94 & 5,03 & 5,03 & 5,08 & 5,21 & 5,09 & 6,03 \\
-radix4 & 1,33 & 10,83 & 10,91 & 11,24 & 11,32 & 10,81 & 11,06 & 11,82 & 10,87 & 10,85 & 11,78 \\
-radix4\_naive & 0,43 & 1,82 & 2,37 & 1,74 & 2,55 & 2,12 & 1,72 & 1,63 & 1,82 & 1,60 & 1,82 \\
-splitradix & 2,69 & 18,06 & 19,10 & 18,97 & 18,93 & 18,97 & 18,70 & 18,86 & 18,88 & 19,04 & 19,07 \\
-stockham & 0,76 & 3,24 & 3,18 & 1,51 & 5,63 & 1,57 & 1,47 & 1,44 & 1,57 & 1,39 & 1,41 \\
+radix2\_v0 & 0,14 & \textbf{1,06} & 1,08 & \textbf{1,06} & 1,07 & 1,07 & 1,08 & 1,08 & 1,07 & 1,09 & 1,08 \\
+radix2\_v1 & 0,26 & 1,12 & 1,94 & 2,01 & \textbf{1,10} & 2,00 & 1,11 & 1,14 & 1,12 & 1,14 & 2,17 \\
+radix2\_v2\_soa & 0,52 & 2,09 & 2,15 & 1,98 & 2,13 & 1,87 & 1,90 & 1,98 & \textbf{1,84} & 4,52 & 2,53 \\
+radix2\_v3\_neon & 0,85 & \textbf{4,76} & 5,43 & 4,87 & 4,94 & 5,03 & 5,03 & 5,08 & 5,21 & 5,09 & 6,03 \\
+radix4 & 1,33 & 10,83 & 10,91 & 11,24 & 11,32 & \textbf{10,81} & 11,06 & 11,82 & 10,87 & 10,85 & 11,78 \\
+radix4\_naive & 0,43 & 1,82 & 2,37 & 1,74 & 2,55 & 2,12 & 1,72 & 1,63 & 1,82 & \textbf{1,60} & 1,82 \\
+splitradix & 2,69 & \textbf{18,06} & 19,10 & 18,97 & 18,93 & 18,97 & 18,70 & 18,86 & 18,88 & 19,04 & 19,07 \\
+stockham & 0,76 & 3,24 & 3,18 & 1,51 & 5,63 & 1,57 & 1,47 & 1,44 & 1,57 & \textbf{1,39} & 1,41 \\
 \addlinespace
-\multicolumn{12}{l}{\textit{Chybienia L2D [\%]}} \\[2pt]
-radix2\_v0 & 33,71 & 34,74 & 34,89 & 35,25 & 34,94 & 34,90 & 34,70 & 34,86 & 34,87 & 34,85 & 34,90 \\
-radix2\_v1 & 31,46 & 31,38 & 31,15 & 30,77 & 31,53 & 31,03 & 31,34 & 30,99 & 31,49 & 31,29 & 30,76 \\
-radix2\_v2\_soa & 26,39 & 30,00 & 29,04 & 29,29 & 29,25 & 30,86 & 30,95 & 30,38 & 31,90 & 30,56 & 26,82 \\
-radix2\_v3\_neon & 24,48 & 31,44 & 29,53 & 31,23 & 31,08 & 30,34 & 31,02 & 30,72 & 30,62 & 30,54 & 28,10 \\
-radix4 & 27,55 & 25,42 & 27,98 & 27,35 & 26,01 & 27,73 & 28,52 & 25,63 & 27,83 & 28,77 & 26,59 \\
-radix4\_naive & 23,01 & 25,40 & 24,23 & 26,53 & 23,82 & 24,28 & 26,15 & 23,16 & 24,95 & 26,41 & 25,85 \\
-splitradix & 27,73 & 28,77 & 26,75 & 25,19 & 25,56 & 26,01 & 26,94 & 26,17 & 25,72 & 25,48 & 28,34 \\
-stockham & 28,89 & 32,79 & 33,09 & 26,19 & 32,65 & 26,24 & 26,20 & 26,29 & 26,03 & 26,24 & 26,34 \\
+\multicolumn{12}{l}{\textit{Chybienia L2 [\%]}} \\[2pt]
+radix2\_v0 & 33,71 & 34,74 & 34,89 & 35,25 & 34,94 & 34,90 & \textbf{34,70} & 34,86 & 34,87 & 34,85 & 34,90 \\
+radix2\_v1 & 31,46 & 31,38 & 31,15 & 30,77 & 31,53 & 31,03 & 31,34 & 30,99 & 31,49 & 31,29 & \textbf{30,76} \\
+radix2\_v2\_soa & 26,39 & 30,00 & 29,04 & 29,29 & 29,25 & 30,86 & 30,95 & 30,38 & 31,90 & 30,56 & \textbf{26,82} \\
+radix2\_v3\_neon & 24,48 & 31,44 & 29,53 & 31,23 & 31,08 & 30,34 & 31,02 & 30,72 & 30,62 & 30,54 & \textbf{28,10} \\
+radix4 & 27,55 & \textbf{25,42} & 27,98 & 27,35 & 26,01 & 27,73 & 28,52 & 25,63 & 27,83 & 28,77 & 26,59 \\
+radix4\_naive & 23,01 & 25,40 & 24,23 & 26,53 & 23,82 & 24,28 & 26,15 & \textbf{23,16} & 24,95 & 26,41 & 25,85 \\
+splitradix & 27,73 & 28,77 & 26,75 & \textbf{25,19} & 25,56 & 26,01 & 26,94 & 26,17 & 25,72 & 25,48 & 28,34 \\
+stockham & 28,89 & 32,79 & 33,09 & 26,19 & 32,65 & 26,24 & 26,20 & 26,29 & \textbf{26,03} & 26,24 & 26,34 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -585,7 +586,7 @@ stockham & 28,89 & 32,79 & 33,09 & 26,19 & 32,65 & 26,24 & 26,20 & 26,29 & 26,03
 %============================================================================
 \begin{table}[H]
 \centering
-\caption{Współczynnik chybień pamięci podręcznej L1D i L2 dla GCC i 16384 próbek, wersja sekwencyjna.}
+\caption{Współczynnik chybień pamięci podręcznej L1D i~L2 dla GCC i~16384 próbek, wersja sekwencyjna. Pogrubiono najmniejszą wartość w~każdym wierszu z~pominięciem \texttt{-O0}.}
 \label{tab:cache-gcc-16k}
 \scriptsize
 \setlength{\tabcolsep}{3.0pt}
@@ -594,24 +595,24 @@ stockham & 28,89 & 32,79 & 33,09 & 26,19 & 32,65 & 26,24 & 26,20 & 26,29 & 26,03
 Algorytm & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
 \midrule
 \multicolumn{12}{l}{\textit{Chybienia L1D [\%]}} \\[2pt]
-radix2\_v0 & 0,19 & 1,44 & 1,42 & 1,46 & 1,42 & 1,48 & 1,43 & 1,47 & 1,45 & 1,38 & 1,47 \\
-radix2\_v1 & 0,30 & 1,45 & 2,68 & 2,71 & 1,36 & 2,63 & 1,35 & 1,32 & 1,45 & 1,43 & 2,35 \\
-radix2\_v2\_soa & 0,84 & 2,17 & 2,83 & 1,97 & 2,70 & 2,65 & 2,28 & 2,15 & 2,57 & 4,33 & 2,73 \\
-radix2\_v3\_neon & 0,79 & 4,99 & 4,88 & 5,27 & 5,68 & 4,93 & 5,20 & 5,45 & 5,19 & 4,73 & 5,63 \\
-radix4 & 0,83 & 6,59 & 7,51 & 6,95 & 6,87 & 6,80 & 6,96 & 7,29 & 7,25 & 6,29 & 6,94 \\
-radix4\_naive & 0,24 & 1,33 & 1,44 & 1,96 & 1,48 & 1,20 & 1,49 & 1,05 & 1,54 & 1,57 & 1,64 \\
-splitradix & 2,07 & 14,12 & 15,52 & 15,46 & 14,19 & 15,02 & 14,85 & 15,49 & 14,39 & 15,48 & 15,72 \\
-stockham & 0,73 & 2,75 & 2,91 & 1,62 & 4,73 & 1,56 & 1,86 & 1,42 & 1,64 & 1,58 & 1,46 \\
+radix2\_v0 & 0,19 & 1,44 & 1,42 & 1,46 & 1,42 & 1,48 & 1,43 & 1,47 & 1,45 & \textbf{1,38} & 1,47 \\
+radix2\_v1 & 0,30 & 1,45 & 2,68 & 2,71 & 1,36 & 2,63 & 1,35 & \textbf{1,32} & 1,45 & 1,43 & 2,35 \\
+radix2\_v2\_soa & 0,84 & 2,17 & 2,83 & \textbf{1,97} & 2,70 & 2,65 & 2,28 & 2,15 & 2,57 & 4,33 & 2,73 \\
+radix2\_v3\_neon & 0,79 & 4,99 & 4,88 & 5,27 & 5,68 & 4,93 & 5,20 & 5,45 & 5,19 & \textbf{4,73} & 5,63 \\
+radix4 & 0,83 & 6,59 & 7,51 & 6,95 & 6,87 & 6,80 & 6,96 & 7,29 & 7,25 & \textbf{6,29} & 6,94 \\
+radix4\_naive & 0,24 & 1,33 & 1,44 & 1,96 & 1,48 & 1,20 & 1,49 & \textbf{1,05} & 1,54 & 1,57 & 1,64 \\
+splitradix & 2,07 & \textbf{14,12} & 15,52 & 15,46 & 14,19 & 15,02 & 14,85 & 15,49 & 14,39 & 15,48 & 15,72 \\
+stockham & 0,73 & 2,75 & 2,91 & 1,62 & 4,73 & 1,56 & 1,86 & \textbf{1,42} & 1,64 & 1,58 & 1,46 \\
 \addlinespace
-\multicolumn{12}{l}{\textit{Chybienia L2D [\%]}} \\[2pt]
-radix2\_v0 & 0,07 & 0,23 & 0,22 & 0,00 & 0,16 & 0,14 & 0,04 & 0,07 & 0,24 & 0,26 & 0,22 \\
-radix2\_v1 & 0,55 & 0,35 & 0,31 & 0,25 & 0,54 & 0,61 & 0,58 & 0,31 & 0,19 & 0,64 & 0,29 \\
-radix2\_v2\_soa & 0,23 & 0,42 & 0,13 & 0,42 & 0,59 & 0,28 & 0,27 & 0,31 & 0,17 & 0,30 & 0,32 \\
-radix2\_v3\_neon & 0,22 & 0,47 & 0,12 & 0,27 & 0,04 & 0,11 & 0,17 & 0,27 & 0,17 & 0,25 & 0,37 \\
-radix4 & 0,18 & 0,16 & 0,17 & 0,27 & 0,18 & 0,12 & 0,11 & 0,20 & 0,08 & 0,05 & 0,47 \\
-radix4\_naive & 0,17 & 0,10 & 0,10 & 0,11 & 0,30 & 0,15 & 0,12 & 0,17 & 0,12 & 0,16 & 0,28 \\
-splitradix & 0,17 & 0,09 & 0,21 & 0,02 & 0,11 & 0,07 & 0,11 & 0,28 & 0,14 & 0,13 & 0,21 \\
-stockham & 0,39 & 0,14 & 0,41 & 0,45 & 0,43 & 0,32 & 0,32 & 0,46 & 0,48 & 0,34 & 0,67 \\
+\multicolumn{12}{l}{\textit{Chybienia L2 [\%]}} \\[2pt]
+radix2\_v0 & 0,07 & 0,23 & 0,22 & \textbf{0,00} & 0,16 & 0,14 & 0,04 & 0,07 & 0,24 & 0,26 & 0,22 \\
+radix2\_v1 & 0,55 & 0,35 & 0,31 & 0,25 & 0,54 & 0,61 & 0,58 & 0,31 & \textbf{0,19} & 0,64 & 0,29 \\
+radix2\_v2\_soa & 0,23 & 0,42 & \textbf{0,13} & 0,42 & 0,59 & 0,28 & 0,27 & 0,31 & 0,17 & 0,30 & 0,32 \\
+radix2\_v3\_neon & 0,22 & 0,47 & 0,12 & 0,27 & \textbf{0,04} & 0,11 & 0,17 & 0,27 & 0,17 & 0,25 & 0,37 \\
+radix4 & 0,18 & 0,16 & 0,17 & 0,27 & 0,18 & 0,12 & 0,11 & 0,20 & 0,08 & \textbf{0,05} & 0,47 \\
+radix4\_naive & 0,17 & \textbf{0,10} & \textbf{0,10} & 0,11 & 0,30 & 0,15 & 0,12 & 0,17 & 0,12 & 0,16 & 0,28 \\
+splitradix & 0,17 & 0,09 & 0,21 & \textbf{0,02} & 0,11 & 0,07 & 0,11 & 0,28 & 0,14 & 0,13 & 0,21 \\
+stockham & 0,39 & \textbf{0,14} & 0,41 & 0,45 & 0,43 & 0,32 & 0,32 & 0,46 & 0,48 & 0,34 & 0,67 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -619,18 +620,18 @@ stockham & 0,39 & 0,14 & 0,41 & 0,45 & 0,43 & 0,32 & 0,32 & 0,46 & 0,48 & 0,34 &
 
 
 \section{Analiza wpływu optymalizacji programu wielowątkowego}
-Znaczna część wniosków z~analizy wariantów sekwencyjnych pozostaje prawidłowa również 
+Znaczna część wniosków z~analizy wariantów sekwencyjnych pozostała prawidłowa również 
 dla wersji wielowątkowych.
 Mechanizmy działania poszczególnych flag opisano już przy wariantach
-sekwencyjnych i~pozostają one bardzo zbliżone. Mechanizm ten może występować, ponieważ kompilator przetwarza
+sekwencyjnych i~pozostały one bardzo zbliżone. Mechanizm ten mógł występować, ponieważ kompilator przetwarzał
 identyczny kod obliczeniowy niezależnie od liczby wątków. Dalsza analiza skupia się więc na zjawiskach specyficznych dla programów
 zrównoleglonych.
 
 Bardzo podobne wnioski uzyskano przy porównaniu kompilatorów. Clang ponownie uzyskał nieco krótsze
-czasy wykonania niż GCC w~większości konfiguracji, jednak przewaga ta ma tę samą
+czasy wykonania niż GCC w~większości konfiguracji, jednak przewaga ta miała tę samą
 naturę co w~części sekwencyjnej. Jednocześnie GCC uzyskał mniejsze kody programu, podobnie jak w porównaniu wersji sekwencyjnych. Z~tego powodu tabele
 omawiane w prezentowanej sekcji dotyczą GCC, a odpowiadające im wyniki dla Clanga znajdują się
-w załaczniku do niniejszej pracy. Wyniki te nie zmieniają formułowanych wniosków.
+w~załączniku do niniejszej pracy. Wyniki te nie zmieniły formułowanych wniosków.
 Wybór GCC jako podstawy analizy wynika
 z~jego roli. Jest on domyślnym kompilatorem dla użytej dystrybucji systemu.
 
@@ -639,7 +640,7 @@ z~jego roli. Jest on domyślnym kompilatorem dla użytej dystrybucji systemu.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{table}[H]
 \centering
-\caption{Mediana czasu wykonania transformaty dla GCC i~1048576 próbek, wersja współbieżna. Wartości w~milisekundach.}
+\caption{Mediana czasu wykonania transformaty dla GCC i~1048576 próbek, wersja współbieżna. Wartości w~milisekundach. Pogrubiono najmniejszą wartość w~każdym wierszu.}
 \label{tab:par-med-gcc-1M}
 \scriptsize
 \setlength{\tabcolsep}{3.0pt}
@@ -668,64 +669,64 @@ radix4\_par (8) & 286,94 & 190,93 & 189,87 & 192,42 & 193,49 & \textbf{177,01} &
 
 \subsection{Wpływ flag kompilacji na warianty równoległe}
 Wyniki z~przeprowadzonych badań nad wariantami równoległymi, zaprezentowane
-w~\cref{tab:par-skal-gcc-merged}, pokazują, że korzyść ze zrównoleglenia nie
-zmienia się drastycznie w~zależności od poziomu optymalizacji powyżej
+w~\cref{tab:par-skal-gcc-merged}, pokazały, że korzyść ze zrównoleglenia nie
+zmieniała się drastycznie w~zależności od poziomu optymalizacji powyżej
 \texttt{-O0}. Dla 1048576~próbek i~czterech wątków \texttt{radix2\_par\_v2}
-osiąga od 1,16 do 1,19 we wszystkich jedenastu zestawach flag, przy 2,89 dla
-\texttt{-O0}. Ten sam układ powtarza się w~pozostałych algorytmach i~przy
-mniejszych rozmiarach danych, gdzie przy 4096~próbkach wartości spadają poniżej
-jedności - wersja czterowątkowa jest wtedy wolniejsza od jednowątkowej. Wynik ten
-nie jest jednak zadziwiający, ponieważ przy tak niewielkich danych wejściowych
-czas wykonania jest krótki, a~udział czasu koniecznego do tworzenia
-i~synchronizacji wątków stanowi znaczną część całości.
+osiągał od 1,16 do 1,19 we wszystkich jedenastu zestawach flag, przy 2,89 dla
+\texttt{-O0}. Ten sam układ powtarzał się w~pozostałych algorytmach i~przy
+mniejszych rozmiarach danych, gdzie przy 4096~próbkach wartości spadały poniżej
+jedności - wersja czterowątkowa była wtedy wolniejsza od jednowątkowej. Wynik ten
+nie był jednak zadziwiający, ponieważ przy tak niewielkich danych wejściowych
+czas wykonania był krótki, a~udział czasu koniecznego do tworzenia
+i~synchronizacji wątków stanowił znaczną część całości.
 
 Bezwzględne czasy wykonania z~\cref{tab:par-med-gcc-1M} ilustrują przyczynę
 omawianej różnicy. Dla \texttt{radix2\_par} przy \texttt{-O2} czas przetwarzania
-spada z~209,69~ms dla jednego wątku do 182,70~ms dla czterech. Przy \texttt{-O0}
-ten sam algorytm potrzebuje 637,42~ms na jednym wątku i~288,64~ms na czterech.
-W~obu przypadkach rozdzielenie pracy między cztery rdzenie skraca czas o~podobną
-wartość, ale wersja bez optymalizacji jest ponad trzykrotnie wolniejsza, więc ta
-sama oszczędność daje wyższe przyspieszenia. Warianty ośmiowątkowe są wolniejsze
-od czterowątkowych w~każdej konfiguracji, co wynika prawdopodobnie z~faktu, że
+spadał z~209,69~ms dla jednego wątku do 182,70~ms dla czterech. Przy \texttt{-O0}
+ten sam algorytm potrzebował 637,42~ms na jednym wątku i~288,64~ms na czterech.
+W~obu przypadkach rozdzielenie pracy między cztery rdzenie skracało czas o~podobną
+wartość, ale wersja bez optymalizacji była ponad trzykrotnie wolniejsza, więc ta
+sama oszczędność dawała wyższe przyspieszenia. Warianty ośmiowątkowe były wolniejsze
+od czterowątkowych w~każdej konfiguracji, co wynikało prawdopodobnie z~faktu, że
 platforma sprzętowa jest wyposażona w~cztery rdzenie procesora.
 
 Brak zauważalnego wpływu poziomu optymalizacji na zysk ze zrównoleglenia skłonił
 do zbadania różnic w~kodzie wynikowym sekcji \texttt{.text} obu wariantów.
 Porównanie plików obiektowych analogicznego wariantu sekwencyjnego
 \texttt{radix2\_v1} i~jego odpowiednika współbieżnego \texttt{radix2\_par},
-skompilowanych przez Clang z~\texttt{-O3}, wykazuje bardzo zbliżony schemat
+skompilowanych przez Clang z~\texttt{-O3}, wykazało bardzo zbliżony schemat
 obliczeń - tę samą sekwencję instrukcji zmiennoprzecinkowych oraz ten sam blok
 zwektoryzowany, oparty na instrukcjach \texttt{ld2} i~\texttt{st2}. Wariant
-równoległy zawiera dodatkowo wywołania biblioteki \texttt{pthreads},
+równoległy zawierał dodatkowo wywołania biblioteki \texttt{pthreads},
 odpowiadające za utworzenie wątków, ich synchronizację barierą po każdym etapie
-transformaty oraz oczekiwanie na ich zakończenie. Przyjmują one postać instrukcji
+transformaty oraz oczekiwanie na ich zakończenie. Przyjmowały one postać instrukcji
 skoku \texttt{bl} do symboli zewnętrznych, rozwiązywanych dopiero na etapie
-linkowania, a~ich treść znajduje się w~prekompilowanej bibliotece systemowej.
-Koszt ich wykonania pozostaje zatem niezależny od badanych flag kompilacji.
+linkowania, a~ich treść znajdowała się w~prekompilowanej bibliotece systemowej.
+Koszt ich wykonania pozostawał zatem niezależny od badanych flag kompilacji.
 
 
 \subsection{Skalowanie z liczbą wątków i wpływ rozmiaru danych}
-Z przeprowadzonych badań można zauważyć, że przyśpieszenie względem wariantu jednowątkowego osiąga maksimum przy czterech wątkach
- i~maleje dla większej ich liczby.  Dla 1048576~próbek i~poziomu \texttt{-O2} wariant
-\texttt{radix2\_par\_v2} uzyskuje 1,03 na dwóch wątkach, 1,17 na czterech
-i~1,12 na ośmiu, co zaprezenowano w  \cref{tab:par-skal-gcc-merged}. 
-Rozmiar danych wejściowych zmienia  wyniki silniej niż liczba wątków: ten sam wariant na czterech wątkach
-osiąga 0,51 przy 4096~próbkach, 1,63 przy 65536 oraz 1,17 przy 1048576. 
+Z przeprowadzonych badań można zauważyć, że przyspieszenie względem wariantu jednowątkowego osiągało maksimum przy czterech wątkach
+ i~malało dla większej ich liczby.  Dla 1048576~próbek i~poziomu \texttt{-O2} wariant
+\texttt{radix2\_par\_v2} uzyskał 1,03 na dwóch wątkach, 1,17 na czterech
+i~1,12 na ośmiu, co zaprezentowano w~\cref{tab:par-skal-gcc-merged}. 
+Rozmiar danych wejściowych zmieniał wyniki silniej niż liczba wątków: ten sam wariant na czterech wątkach
+osiągał 0,51 przy 4096~próbkach, 1,63 przy 65536 oraz 1,17 przy 1048576. 
 
 Stopień wykorzystania rdzeni opisuje stosunek czasu procesora do czasu ściany (oznaczony jako R),
 zestawiony w~\cref{tab:par-wykorzystanie-gcc-1M}. Dla \texttt{radix2\_par\_v2}
-przy \texttt{-O2} wynosi on 3,27 na czterech wątkach i~3,02 na ośmiu, mimo
+przy \texttt{-O2} wynosił on 3,27 na czterech wątkach i~3,02 na ośmiu, mimo
 dwukrotnie większej liczby wątków. Zwiększenie ich liczby ponad liczbę rdzeni
-fizycznych nie podnosi zatem w bardzo znaczący sposób tej metryki. Liczba wykonanych
-instrukcji pozostaje niemal stała, w obrębie tych samych flag, we wszystkich konfiguracjach
-wątkowych, co wskazuje, że podział pracy nie zmienia objętości obliczeń,
+fizycznych nie podniosło zatem w bardzo znaczący sposób tej metryki. Liczba wykonanych
+instrukcji pozostawała niemal stała, w obrębie tych samych flag, we wszystkich konfiguracjach
+wątkowych, co wskazywało, że podział pracy nie zmieniał objętości obliczeń,
 a~jedynie  ich organizację.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Skalowanie: 4k / 64k / 1M scalone, samo przyspieszenie
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{table}[H]
 \centering
-\caption{Przyspieszenie względem jednego wątku dla GCC i~trzech rozmiarów danych, wersja współbieżna. Wartości w~krotnościach.}
+\caption{Przyspieszenie względem jednego wątku dla GCC i~trzech rozmiarów danych, wersja współbieżna. Wartości w~krotnościach. Pogrubiono największą wartość w~każdym wierszu z~pominięciem \texttt{-O0}.}
 \label{tab:par-skal-gcc-merged}
 \scriptsize
 \setlength{\tabcolsep}{3.0pt}
@@ -734,67 +735,67 @@ a~jedynie  ich organizację.
 Algorytm (wątki) & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
 \midrule
 \multicolumn{12}{l}{\textit{4096 próbek}} \\[2pt]
-radix2\_par (2) & 1,30 & 0,59 & 0,58 & 0,58 & 0,63 & 0,59 & 0,61 & 0,63 & 0,61 & 0,61 & 0,57 \\
-radix2\_par (4) & 1,63 & 0,47 & 0,45 & 0,44 & 0,51 & 0,47 & 0,48 & 0,48 & 0,49 & 0,49 & 0,44 \\
-radix2\_par (8) & 0,94 & 0,22 & 0,20 & 0,19 & 0,23 & 0,20 & 0,21 & 0,22 & 0,21 & 0,21 & 0,19 \\
+radix2\_par (2) & 1,30 & 0,59 & 0,58 & 0,58 & \textbf{0,63} & 0,59 & 0,61 & \textbf{0,63} & 0,61 & 0,61 & 0,57 \\
+radix2\_par (4) & 1,63 & 0,47 & 0,45 & 0,44 & \textbf{0,51} & 0,47 & 0,48 & 0,48 & 0,49 & 0,49 & 0,44 \\
+radix2\_par (8) & 0,94 & 0,22 & 0,20 & 0,19 & \textbf{0,23} & 0,20 & 0,21 & 0,22 & 0,21 & 0,21 & 0,19 \\
 \addlinespace
-radix2\_par\_v2 (2) & 1,56 & 0,75 & 0,64 & 0,63 & 0,74 & 0,62 & 0,73 & 0,74 & 0,74 & 0,74 & 0,63 \\
-radix2\_par\_v2 (4) & 2,17 & 0,61 & 0,51 & 0,50 & 0,62 & 0,49 & 0,58 & 0,62 & 0,60 & 0,60 & 0,50 \\
-radix2\_par\_v2 (8) & 1,16 & 0,26 & 0,20 & 0,20 & 0,27 & 0,20 & 0,25 & 0,26 & 0,26 & 0,26 & 0,21 \\
+radix2\_par\_v2 (2) & 1,56 & \textbf{0,75} & 0,64 & 0,63 & 0,74 & 0,62 & 0,73 & 0,74 & 0,74 & 0,74 & 0,63 \\
+radix2\_par\_v2 (4) & 2,17 & 0,61 & 0,51 & 0,50 & \textbf{0,62} & 0,49 & 0,58 & \textbf{0,62} & 0,60 & 0,60 & 0,50 \\
+radix2\_par\_v2 (8) & 1,16 & 0,26 & 0,20 & 0,20 & \textbf{0,27} & 0,20 & 0,25 & 0,26 & 0,26 & 0,26 & 0,21 \\
 \addlinespace
-radix4\_par (2) & 1,36 & 0,73 & 0,71 & 0,73 & 0,73 & 0,71 & 0,74 & 0,73 & 0,73 & 0,75 & 0,70 \\
-radix4\_par (4) & 1,61 & 0,54 & 0,54 & 0,57 & 0,55 & 0,54 & 0,57 & 0,58 & 0,60 & 0,57 & 0,54 \\
-radix4\_par (8) & 0,88 & 0,25 & 0,24 & 0,25 & 0,26 & 0,24 & 0,26 & 0,26 & 0,27 & 0,26 & 0,25 \\
+radix4\_par (2) & 1,36 & 0,73 & 0,71 & 0,73 & 0,73 & 0,71 & 0,74 & 0,73 & 0,73 & \textbf{0,75} & 0,70 \\
+radix4\_par (4) & 1,61 & 0,54 & 0,54 & 0,57 & 0,55 & 0,54 & 0,57 & 0,58 & \textbf{0,60} & 0,57 & 0,54 \\
+radix4\_par (8) & 0,88 & 0,25 & 0,24 & 0,25 & 0,26 & 0,24 & 0,26 & 0,26 & \textbf{0,27} & 0,26 & 0,25 \\
 \addlinespace
 \multicolumn{12}{l}{\textit{65536 próbek}} \\[2pt]
-radix2\_par (2) & 1,57 & 1,20 & 1,30 & 1,29 & 1,30 & 1,34 & 1,36 & 1,36 & 1,33 & 1,36 & 1,26 \\
-radix2\_par (4) & 2,40 & 1,51 & 1,57 & 1,51 & 1,60 & 1,54 & 1,54 & 1,52 & 1,60 & 1,64 & 1,48 \\
-radix2\_par (8) & 1,90 & 1,00 & 1,01 & 1,05 & 1,06 & 1,04 & 1,03 & 1,12 & 1,08 & 1,09 & 1,04 \\
+radix2\_par (2) & 1,57 & 1,20 & 1,30 & 1,29 & 1,30 & 1,34 & \textbf{1,36} & \textbf{1,36} & 1,33 & \textbf{1,36} & 1,26 \\
+radix2\_par (4) & 2,40 & 1,51 & 1,57 & 1,51 & 1,60 & 1,54 & 1,54 & 1,52 & 1,60 & \textbf{1,64} & 1,48 \\
+radix2\_par (8) & 1,90 & 1,00 & 1,01 & 1,05 & 1,06 & 1,04 & 1,03 & \textbf{1,12} & 1,08 & 1,09 & 1,04 \\
 \addlinespace
-radix2\_par\_v2 (2) & 1,83 & 1,44 & 1,38 & 1,41 & 1,47 & 1,36 & 1,46 & 1,49 & 1,49 & 1,46 & 1,38 \\
-radix2\_par\_v2 (4) & 3,20 & 1,94 & 1,63 & 1,69 & 1,90 & 1,67 & 1,89 & 2,01 & 1,91 & 1,92 & 1,66 \\
-radix2\_par\_v2 (8) & 2,54 & 1,25 & 1,10 & 1,12 & 1,27 & 1,11 & 1,24 & 1,34 & 1,28 & 1,29 & 1,11 \\
+radix2\_par\_v2 (2) & 1,83 & 1,44 & 1,38 & 1,41 & 1,47 & 1,36 & 1,46 & \textbf{1,49} & \textbf{1,49} & 1,46 & 1,38 \\
+radix2\_par\_v2 (4) & 3,20 & 1,94 & 1,63 & 1,69 & 1,90 & 1,67 & 1,89 & \textbf{2,01} & 1,91 & 1,92 & 1,66 \\
+radix2\_par\_v2 (8) & 2,54 & 1,25 & 1,10 & 1,12 & 1,27 & 1,11 & 1,24 & \textbf{1,34} & 1,28 & 1,29 & 1,11 \\
 \addlinespace
-radix4\_par (2) & 1,73 & 1,25 & 1,22 & 1,25 & 1,20 & 1,28 & 1,25 & 1,23 & 1,27 & 1,23 & 1,22 \\
-radix4\_par (4) & 2,48 & 1,28 & 1,24 & 1,26 & 1,21 & 1,30 & 1,25 & 1,21 & 1,26 & 1,28 & 1,23 \\
-radix4\_par (8) & 1,98 & 1,12 & 1,06 & 1,09 & 1,04 & 1,08 & 1,08 & 1,05 & 1,08 & 1,09 & 1,06 \\
+radix4\_par (2) & 1,73 & 1,25 & 1,22 & 1,25 & 1,20 & \textbf{1,28} & 1,25 & 1,23 & 1,27 & 1,23 & 1,22 \\
+radix4\_par (4) & 2,48 & 1,28 & 1,24 & 1,26 & 1,21 & \textbf{1,30} & 1,25 & 1,21 & 1,26 & 1,28 & 1,23 \\
+radix4\_par (8) & 1,98 & \textbf{1,12} & 1,06 & 1,09 & 1,04 & 1,08 & 1,08 & 1,05 & 1,08 & 1,09 & 1,06 \\
 \addlinespace
 \multicolumn{12}{l}{\textit{1048576 próbek}} \\[2pt]
-radix2\_par (2) & 1,54 & 1,07 & 1,07 & 1,07 & 1,07 & 1,08 & 1,05 & 1,07 & 1,07 & 1,07 & 1,07 \\
-radix2\_par (4) & 2,21 & 1,16 & 1,15 & 1,17 & 1,16 & 1,17 & 1,15 & 1,16 & 1,15 & 1,16 & 1,16 \\
-radix2\_par (8) & 2,04 & 1,03 & 1,03 & 1,04 & 1,04 & 1,06 & 1,03 & 1,03 & 1,03 & 1,04 & 1,04 \\
+radix2\_par (2) & 1,54 & 1,07 & 1,07 & 1,07 & 1,07 & \textbf{1,08} & 1,05 & 1,07 & 1,07 & 1,07 & 1,07 \\
+radix2\_par (4) & 2,21 & 1,16 & 1,15 & \textbf{1,17} & 1,16 & \textbf{1,17} & 1,15 & 1,16 & 1,15 & 1,16 & 1,16 \\
+radix2\_par (8) & 2,04 & 1,03 & 1,03 & 1,04 & 1,04 & \textbf{1,06} & 1,03 & 1,03 & 1,03 & 1,04 & 1,04 \\
 \addlinespace
-radix2\_par\_v2 (2) & 1,79 & 1,05 & 1,03 & 1,03 & 1,03 & 1,03 & 1,02 & 1,03 & 1,02 & 1,03 & 1,03 \\
-radix2\_par\_v2 (4) & 2,89 & 1,19 & 1,17 & 1,18 & 1,16 & 1,17 & 1,16 & 1,17 & 1,16 & 1,16 & 1,17 \\
-radix2\_par\_v2 (8) & 2,64 & 1,13 & 1,12 & 1,13 & 1,11 & 1,13 & 1,11 & 1,11 & 1,11 & 1,12 & 1,12 \\
+radix2\_par\_v2 (2) & 1,79 & \textbf{1,05} & 1,03 & 1,03 & 1,03 & 1,03 & 1,02 & 1,03 & 1,02 & 1,03 & 1,03 \\
+radix2\_par\_v2 (4) & 2,89 & \textbf{1,19} & 1,17 & 1,18 & 1,16 & 1,17 & 1,16 & 1,17 & 1,16 & 1,16 & 1,17 \\
+radix2\_par\_v2 (8) & 2,64 & \textbf{1,13} & 1,12 & \textbf{1,13} & 1,11 & \textbf{1,13} & 1,11 & 1,11 & 1,11 & 1,12 & 1,12 \\
 \addlinespace
-radix4\_par (2) & 1,71 & 1,39 & 1,32 & 1,32 & 1,35 & 1,39 & 1,37 & 1,29 & 1,38 & 1,37 & 1,35 \\
-radix4\_par (4) & 2,37 & 1,65 & 1,53 & 1,54 & 1,57 & 1,62 & 1,62 & 1,50 & 1,63 & 1,61 & 1,57 \\
-radix4\_par (8) & 2,28 & 1,58 & 1,47 & 1,47 & 1,52 & 1,53 & 1,53 & 1,47 & 1,53 & 1,54 & 1,52 \\
+radix4\_par (2) & 1,71 & \textbf{1,39} & 1,32 & 1,32 & 1,35 & \textbf{1,39} & 1,37 & 1,29 & 1,38 & 1,37 & 1,35 \\
+radix4\_par (4) & 2,37 & \textbf{1,65} & 1,53 & 1,54 & 1,57 & 1,62 & 1,62 & 1,50 & 1,63 & 1,61 & 1,57 \\
+radix4\_par (8) & 2,28 & \textbf{1,58} & 1,47 & 1,47 & 1,52 & 1,53 & 1,53 & 1,47 & 1,53 & 1,54 & 1,52 \\
 \bottomrule
 \end{tabular}
 \end{table}
 \subsection{Wpływ sposobu podziału pracy i schematu algorytmu}
-Przy zwiększaniu rozmiarów danych wejściowych coraz lepsze przyśpieszenie uzyskuje wariant
- \texttt{radix4\_par}. Dla 1048576~próbek i~poziomu \texttt{-O2} osiąga 1,53 na
+Przy zwiększaniu rozmiarów danych wejściowych coraz lepsze przyspieszenie uzyskiwał wariant
+ \texttt{radix4\_par}. Dla 1048576~próbek i~poziomu \texttt{-O2} osiągał \textbf{1,53} na
 czterech wątkach, wobec 1,15 i~1,17 dla wariantów radix-2
-(\cref{tab:par-skal-gcc-merged}). Przy 4096~próbkach relacja ta zanika -
-wszystkie trzy implementacje pozostają poniżej jedności.
+(\cref{tab:par-skal-gcc-merged}). Przy 4096~próbkach relacja ta zanikała -
+wszystkie trzy implementacje pozostawały poniżej jedności.
 
-Zysk w stosowaniu \texttt{radix4\_par} można wiązać z~mniejszą liczbą etapów transformaty,
+Zysk ze stosowania \texttt{radix4\_par} można wiązać z~mniejszą liczbą etapów transformaty,
 a~tym samym z~mniejszą liczbą synchronizacji wykorzystujących barierę.
-Potwierdzają to czasy bezwzględne z~\cref{tab:par-med-gcc-1M},
-na jednym wątku wariant ten pozostaje najwolniejszy (279,47~ms wobec 209,69~ms
+Potwierdziły to czasy bezwzględne z~\cref{tab:par-med-gcc-1M}:
+na jednym wątku wariant ten pozostawał najwolniejszy (279,47~ms wobec 209,69~ms
 dla \texttt{radix2\_par} przy \texttt{-O2}), natomiast na czterech wątkach
-różnica względem wariantów radix-2 niemal zanika. Schemat podziału pracy między
-wątki, pozostał przy tym identyczny we wszystkich trzech implementacjach, co pozwala przypisać
+różnica względem wariantów radix-2 niemal zanikała. Schemat podziału pracy między
+wątki pozostał przy tym identyczny we wszystkich trzech implementacjach, co pozwala przypisać
 obserwowane różnice właściwościom samego algorytmu.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Wykorzystanie procesora: instrukcje, IPC, R
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{table}[H]
 \centering
-\caption{Wykonane instrukcje, liczba instrukcji na cykl oraz stosunek czasu procesora do czasu ściany dla GCC i~1048576 próbek, wersja współbieżna.}
+\caption{Wykonane instrukcje, liczba instrukcji na cykl oraz stosunek czasu procesora do czasu ściany dla GCC i~1048576 próbek, wersja współbieżna. Pogrubiono najmniejszą liczbę instrukcji oraz największe IPC i~$R$ w~każdym wierszu z~pominięciem \texttt{-O0}.}
 \label{tab:par-wykorzystanie-gcc-1M}
 \scriptsize
 \setlength{\tabcolsep}{3.0pt}
@@ -803,52 +804,52 @@ obserwowane różnice właściwościom samego algorytmu.
 Algorytm (wątki) & \texttt{O0} & \texttt{O1} & \texttt{O2} & \texttt{O3} & \texttt{Os} & unroll & ffast & mcpu & ff+mcpu & +alias & lto \\
 \midrule
 \multicolumn{12}{l}{\textit{Wykonane instrukcje [mln]}} \\[2pt]
-radix2\_par (1) & 1345,3 & 332,3 & 224,3 & 224,2 & 315,5 & 226,3 & 308,2 & 308,6 & 308,7 & 308,7 & 224,2 \\
-radix2\_par (2) & 1443,1 & 396,6 & 224,6 & 224,6 & 327,4 & 226,7 & 308,5 & 309,0 & 309,0 & 309,1 & 224,7 \\
-radix2\_par (4) & 1443,6 & 397,3 & 225,2 & 225,2 & 328,1 & 227,4 & 309,2 & 309,8 & 309,6 & 309,7 & 225,3 \\
-radix2\_par (8) & 1445,1 & 398,7 & 226,8 & 226,7 & 329,5 & 228,7 & 310,7 & 311,2 & 311,2 & 311,2 & 226,8 \\
+radix2\_par (1) & 1345,3 & 332,3 & 224,3 & \textbf{224,2} & 315,5 & 226,3 & 308,2 & 308,6 & 308,7 & 308,7 & \textbf{224,2} \\
+radix2\_par (2) & 1443,1 & 396,6 & \textbf{224,6} & \textbf{224,6} & 327,4 & 226,7 & 308,5 & 309,0 & 309,0 & 309,1 & 224,7 \\
+radix2\_par (4) & 1443,6 & 397,3 & \textbf{225,2} & \textbf{225,2} & 328,1 & 227,4 & 309,2 & 309,8 & 309,6 & 309,7 & 225,3 \\
+radix2\_par (8) & 1445,1 & 398,7 & 226,8 & \textbf{226,7} & 329,5 & 228,7 & 310,7 & 311,2 & 311,2 & 311,2 & 226,8 \\
 \addlinespace
-radix2\_par\_v2 (1) & 1425,1 & 398,3 & 260,0 & 260,0 & 388,8 & 249,4 & 375,2 & 375,7 & 375,8 & 375,8 & 261,0 \\
-radix2\_par\_v2 (2) & 1425,4 & 398,8 & 260,4 & 260,3 & 389,3 & 250,0 & 375,7 & 376,3 & 376,3 & 376,2 & 261,5 \\
-radix2\_par\_v2 (4) & 1425,7 & 399,4 & 261,0 & 261,0 & 390,1 & 250,8 & 376,3 & 376,8 & 377,0 & 377,1 & 262,1 \\
-radix2\_par\_v2 (8) & 1427,3 & 400,9 & 262,3 & 262,3 & 391,3 & 251,9 & 377,6 & 378,1 & 378,2 & 378,2 & 263,4 \\
+radix2\_par\_v2 (1) & 1425,1 & 398,3 & 260,0 & 260,0 & 388,8 & \textbf{249,4} & 375,2 & 375,7 & 375,8 & 375,8 & 261,0 \\
+radix2\_par\_v2 (2) & 1425,4 & 398,8 & 260,4 & 260,3 & 389,3 & \textbf{250,0} & 375,7 & 376,3 & 376,3 & 376,2 & 261,5 \\
+radix2\_par\_v2 (4) & 1425,7 & 399,4 & 261,0 & 261,0 & 390,1 & \textbf{250,8} & 376,3 & 376,8 & 377,0 & 377,1 & 262,1 \\
+radix2\_par\_v2 (8) & 1427,3 & 400,9 & 262,3 & 262,3 & 391,3 & \textbf{251,9} & 377,6 & 378,1 & 378,2 & 378,2 & 263,4 \\
 \addlinespace
-radix4\_par (1) & 1080,4 & 307,3 & 284,1 & 284,0 & 291,4 & 257,9 & 294,6 & 297,7 & 308,2 & 308,2 & 284,1 \\
-radix4\_par (2) & 1080,6 & 307,4 & 284,4 & 284,4 & 291,8 & 258,2 & 294,9 & 298,0 & 308,5 & 308,5 & 284,4 \\
-radix4\_par (4) & 1080,9 & 307,9 & 284,9 & 284,9 & 292,2 & 258,6 & 295,3 & 298,5 & 309,0 & 309,2 & 284,8 \\
-radix4\_par (8) & 1082,0 & 308,8 & 285,8 & 285,9 & 293,2 & 259,5 & 296,4 & 299,5 & 310,0 & 310,0 & 285,8 \\
+radix4\_par (1) & 1080,4 & 307,3 & 284,1 & 284,0 & 291,4 & \textbf{257,9} & 294,6 & 297,7 & 308,2 & 308,2 & 284,1 \\
+radix4\_par (2) & 1080,6 & 307,4 & 284,4 & 284,4 & 291,8 & \textbf{258,2} & 294,9 & 298,0 & 308,5 & 308,5 & 284,4 \\
+radix4\_par (4) & 1080,9 & 307,9 & 284,9 & 284,9 & 292,2 & \textbf{258,6} & 295,3 & 298,5 & 309,0 & 309,2 & 284,8 \\
+radix4\_par (8) & 1082,0 & 308,8 & 285,8 & 285,9 & 293,2 & \textbf{259,5} & 296,4 & 299,5 & 310,0 & 310,0 & 285,8 \\
 \addlinespace
 \multicolumn{12}{l}{\textit{Liczba instrukcji na cykl (IPC)}} \\[2pt]
-radix2\_par (1) & 1,171 & 0,846 & 0,578 & 0,583 & 0,792 & 0,566 & 0,783 & 0,799 & 0,785 & 0,766 & 0,575 \\
-radix2\_par (2) & 1,111 & 0,645 & 0,363 & 0,368 & 0,534 & 0,370 & 0,501 & 0,500 & 0,500 & 0,488 & 0,361 \\
-radix2\_par (4) & 1,067 & 0,394 & 0,221 & 0,230 & 0,313 & 0,223 & 0,291 & 0,307 & 0,344 & 0,307 & 0,226 \\
-radix2\_par (8) & 1,014 & 0,381 & 0,219 & 0,218 & 0,306 & 0,216 & 0,286 & 0,288 & 0,296 & 0,303 & 0,216 \\
+radix2\_par (1) & 1,171 & \textbf{0,846} & 0,578 & 0,583 & 0,792 & 0,566 & 0,783 & 0,799 & 0,785 & 0,766 & 0,575 \\
+radix2\_par (2) & 1,111 & \textbf{0,645} & 0,363 & 0,368 & 0,534 & 0,370 & 0,501 & 0,500 & 0,500 & 0,488 & 0,361 \\
+radix2\_par (4) & 1,067 & \textbf{0,394} & 0,221 & 0,230 & 0,313 & 0,223 & 0,291 & 0,307 & 0,344 & 0,307 & 0,226 \\
+radix2\_par (8) & 1,014 & \textbf{0,381} & 0,219 & 0,218 & 0,306 & 0,216 & 0,286 & 0,288 & 0,296 & 0,303 & 0,216 \\
 \addlinespace
-radix2\_par\_v2 (1) & 1,107 & 1,042 & 0,677 & 0,649 & 1,011 & 0,621 & 0,981 & 0,991 & 0,988 & 0,953 & 0,672 \\
-radix2\_par\_v2 (2) & 1,108 & 0,628 & 0,410 & 0,415 & 0,616 & 0,389 & 0,593 & 0,576 & 0,591 & 0,583 & 0,400 \\
-radix2\_par\_v2 (4) & 1,086 & 0,346 & 0,250 & 0,246 & 0,362 & 0,170 & 0,358 & 0,357 & 0,362 & 0,288 & 0,246 \\
-radix2\_par\_v2 (8) & 1,086 & 0,399 & 0,250 & 0,258 & 0,384 & 0,252 & 0,370 & 0,369 & 0,372 & 0,366 & 0,256 \\
+radix2\_par\_v2 (1) & 1,107 & \textbf{1,042} & 0,677 & 0,649 & 1,011 & 0,621 & 0,981 & 0,991 & 0,988 & 0,953 & 0,672 \\
+radix2\_par\_v2 (2) & 1,108 & \textbf{0,628} & 0,410 & 0,415 & 0,616 & 0,389 & 0,593 & 0,576 & 0,591 & 0,583 & 0,400 \\
+radix2\_par\_v2 (4) & 1,086 & 0,346 & 0,250 & 0,246 & \textbf{0,362} & 0,170 & 0,358 & 0,357 & \textbf{0,362} & 0,288 & 0,246 \\
+radix2\_par\_v2 (8) & 1,086 & \textbf{0,399} & 0,250 & 0,258 & 0,384 & 0,252 & 0,370 & 0,369 & 0,372 & 0,366 & 0,256 \\
 \addlinespace
-radix4\_par (1) & 0,982 & 0,566 & 0,554 & 0,551 & 0,543 & 0,523 & 0,534 & 0,584 & 0,550 & 0,551 & 0,551 \\
-radix4\_par (2) & 0,956 & 0,479 & 0,439 & 0,444 & 0,442 & 0,428 & 0,446 & 0,453 & 0,466 & 0,453 & 0,441 \\
-radix4\_par (4) & 0,889 & 0,333 & 0,311 & 0,277 & 0,304 & 0,281 & 0,318 & 0,316 & 0,323 & 0,327 & 0,314 \\
-radix4\_par (8) & 0,860 & 0,338 & 0,312 & 0,282 & 0,319 & 0,288 & 0,309 & 0,320 & 0,319 & 0,321 & 0,315 \\
+radix4\_par (1) & 0,982 & 0,566 & 0,554 & 0,551 & 0,543 & 0,523 & 0,534 & \textbf{0,584} & 0,550 & 0,551 & 0,551 \\
+radix4\_par (2) & 0,956 & \textbf{0,479} & 0,439 & 0,444 & 0,442 & 0,428 & 0,446 & 0,453 & 0,466 & 0,453 & 0,441 \\
+radix4\_par (4) & 0,889 & \textbf{0,333} & 0,311 & 0,277 & 0,304 & 0,281 & 0,318 & 0,316 & 0,323 & 0,327 & 0,314 \\
+radix4\_par (8) & 0,860 & \textbf{0,338} & 0,312 & 0,282 & 0,319 & 0,288 & 0,309 & 0,320 & 0,319 & 0,321 & 0,315 \\
 \addlinespace
 \multicolumn{12}{l}{\textit{Stosunek czasu procesora do czasu ściany $R$}} \\[2pt]
 radix2\_par (1) & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 \\
-radix2\_par (2) & 1,73 & 1,71 & 1,72 & 1,72 & 1,71 & 1,73 & 1,71 & 1,71 & 1,73 & 1,72 & 1,71 \\
-radix2\_par (4) & 2,62 & 3,05 & 3,06 & 3,07 & 3,05 & 3,07 & 3,07 & 3,06 & 3,06 & 3,04 & 3,07 \\
-radix2\_par (8) & 2,53 & 2,87 & 2,87 & 2,88 & 2,86 & 2,89 & 2,88 & 2,87 & 2,84 & 2,84 & 2,91 \\
+radix2\_par (2) & 1,73 & 1,71 & 1,72 & 1,72 & 1,71 & \textbf{1,73} & 1,71 & 1,71 & \textbf{1,73} & 1,72 & 1,71 \\
+radix2\_par (4) & 2,62 & 3,05 & 3,06 & \textbf{3,07} & 3,05 & \textbf{3,07} & \textbf{3,07} & 3,06 & 3,06 & 3,04 & \textbf{3,07} \\
+radix2\_par (8) & 2,53 & 2,87 & 2,87 & 2,88 & 2,86 & 2,89 & 2,88 & 2,87 & 2,84 & 2,84 & \textbf{2,91} \\
 \addlinespace
 radix2\_par\_v2 (1) & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 \\
-radix2\_par\_v2 (2) & 1,79 & 1,71 & 1,71 & 1,72 & 1,72 & 1,73 & 1,72 & 1,72 & 1,71 & 1,71 & 1,71 \\
-radix2\_par\_v2 (4) & 2,94 & 3,26 & 3,27 & 3,28 & 3,24 & 3,27 & 3,27 & 3,27 & 3,25 & 3,25 & 3,27 \\
-radix2\_par\_v2 (8) & 2,71 & 3,00 & 3,02 & 3,01 & 3,00 & 3,05 & 3,01 & 3,04 & 3,02 & 3,04 & 2,99 \\
+radix2\_par\_v2 (2) & 1,79 & 1,71 & 1,71 & 1,72 & 1,72 & \textbf{1,73} & 1,72 & 1,72 & 1,71 & 1,71 & 1,71 \\
+radix2\_par\_v2 (4) & 2,94 & 3,26 & 3,27 & \textbf{3,28} & 3,24 & 3,27 & 3,27 & 3,27 & 3,25 & 3,25 & 3,27 \\
+radix2\_par\_v2 (8) & 2,71 & 3,00 & 3,02 & 3,01 & 3,00 & \textbf{3,05} & 3,01 & 3,04 & 3,02 & 3,04 & 2,99 \\
 \addlinespace
 radix4\_par (1) & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 & 1,00 \\
-radix4\_par (2) & 1,65 & 1,65 & 1,66 & 1,66 & 1,65 & 1,70 & 1,66 & 1,65 & 1,66 & 1,65 & 1,66 \\
-radix4\_par (4) & 2,45 & 2,78 & 2,79 & 2,81 & 2,80 & 2,92 & 2,80 & 2,77 & 2,79 & 2,78 & 2,78 \\
-radix4\_par (8) & 2,39 & 2,70 & 2,67 & 2,73 & 2,72 & 2,82 & 2,70 & 2,67 & 2,70 & 2,72 & 2,70 \\
+radix4\_par (2) & 1,65 & 1,65 & 1,66 & 1,66 & 1,65 & \textbf{1,70} & 1,66 & 1,65 & 1,66 & 1,65 & 1,66 \\
+radix4\_par (4) & 2,45 & 2,78 & 2,79 & 2,81 & 2,80 & \textbf{2,92} & 2,80 & 2,77 & 2,79 & 2,78 & 2,78 \\
+radix4\_par (8) & 2,39 & 2,70 & 2,67 & 2,73 & 2,72 & \textbf{2,82} & 2,70 & 2,67 & 2,70 & 2,72 & 2,70 \\
 \bottomrule
 \end{tabular}
 \end{table}

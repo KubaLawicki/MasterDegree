@@ -1,9 +1,39 @@
 \chapter*{Abstract}
+The compiler is an essential tool in the development of computer programs that
+make efficient use of the system's hardware resources. It is often treated,
+however, as a mere code translator, with its optimization capabilities left
+aside, even though the way source code is translated into machine instructions
+directly affects program performance.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec odio sapien, egestas a ullamcorper a, volutpat tempor felis. Proin vel laoreet augue, a tincidunt ex. Nam maximus massa nibh, ac convallis nunc viverra ac. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Maecenas felis mi, venenatis id iaculis eget, aliquam sit amet purus. Ut vehicula convallis finibus. Nam vulputate commodo magna, eu dapibus odio laoreet in. Phasellus tempus bibendum elementum. Pellentesque dapibus pulvinar orci nec sodales. Etiam eu augue non ex sodales sollicitudin vitae quis mi. Nulla vitae elit ac nisl egestas tempor. Nam ut nisl gravida, convallis purus sed, dapibus augue.
+This issue is of particular importance in embedded systems, where improved
+performance often means lower cost and reduced power consumption. This thesis
+presents an embedded system based on the Raspberry Pi 4B platform running Linux,
+designed to study the optimization capabilities of the GCC and Clang compilers.
+The fast Fourier transform was chosen as the test algorithm, for which eleven
+variants were implemented in C, both sequential and multithreaded.
+
+The thesis also covers operating systems in embedded applications, the
+fundamentals of the Fourier transform, and the structure of a compiler together
+with the optimizations it applies. The study covered eleven sets of compilation
+flags and three input data sizes; in addition to execution time, hardware
+counters, output code size, and computational accuracy were analysed.
+
+The largest gain came from moving away from the default \texttt{-O0} level,
+which reduced execution time by a factor of 2.18 to 5.11, whereas further flag
+selection typically yielded around 12\%. For large data sets, execution time was
+determined mainly by the memory access pattern, which made the choice of
+computational scheme as important as the optimization level. Manual
+vectorization using NEON instructions and parallelization of the computation
+brought clear benefits only within specific ranges of data size. The compiler
+did not correct numerical errors resulting from the construction of the
+algorithm. The results indicate that program optimization should begin with the
+choice of algorithm and data organization, with compilation settings treated as
+a complement to them.
+
 \bigskip
 
-\noindent\textbf{Keywords:} Self-organizing maps, unsupervised learning, clustering, classification, WTM algorithm
+\noindent\textbf{Keywords:} compilation optimization, GCC and Clang compilers,
+fast Fourier transform, embedded systems, Linux operating system
 
 \bigskip
 
